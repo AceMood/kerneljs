@@ -1,7 +1,8 @@
 
 var OP = Object.prototype,
     AP = Array.prototype,
-    native_foreach = AP.forEach,
+    native_forEach = AP.forEach,
+    native_map = AP.map,
     hasOwn = OP.hasOwnProperty,
     toString = OP.toString;
 
@@ -23,7 +24,7 @@ function exist_id_error(id) {
  */
 function map(arr, fn, opt_context) {
     var ret = [];
-    if (ap.map && arr.map === ap.map) {
+    if (native_map && arr.map === native_map) {
         ret = arr.map(fn, opt_context)
     } else if (arr.length === +arr.length) {
         for (var i = 0; i < arr.length; ++i) {
@@ -41,7 +42,7 @@ function map(arr, fn, opt_context) {
  * @param {Object?} opt_context fn's context
  */
 function forEach(arr, fn, opt_context) {
-    if (ap.forEach && arr.forEach === ap.forEach) {
+    if (native_forEach && arr.forEach === native_forEach) {
         arr.forEach(fn, opt_context)
     } else if (arr.length === +arr.length) {
         for (var i = 0, length = arr.length; i < length; i++) {
