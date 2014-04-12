@@ -6,6 +6,7 @@ var OP = Object.prototype,
     hasOwn = OP.hasOwnProperty,
     toString = OP.toString;
 
+
 /**
  * if a module with in the same id exists, then define with the id
  * will fail. we throw an error with useful message.
@@ -13,6 +14,7 @@ var OP = Object.prototype,
 function exist_id_error(id) {
     throw "more then one module defined with the same id: " + id;
 }
+
 
 /**
  * iterate the array and map the value to a delegation
@@ -51,20 +53,65 @@ function forEach(arr, fn, opt_context) {
     }
 }
 
+
+/**
+ * find a target in an array, return the index or return -1;
+ * @param arr
+ * @param tar
+ * @return {Number}
+ */
+function indexOf(arr, tar) {
+    for (var i = 0; i < arr.length; ++i) {
+        if (arr[i] === tar)
+            return i;
+    }
+    return -1;
+}
+
+
 var type_map = {
     "[object Object]": "object",
     "[object Array]" : "array",
     "[object Function]": "function",
     "[object RegExp]": "regexp",
     "[object Null]"  : "null",
-    "[object Undefined]" : "undefined"
+    "[object Undefined]" : "undefined",
     "[object String]": "string",
     "[object Number]": "number"
-}
+};
+
 
 /**
  * detect the obj's type
  */
 function typeOf(obj) {
     return type_map[toString.call(obj)]
+}
+
+
+// current adding script node
+var currentAddingScript;
+
+
+/**
+ * get all script nodes in document at present
+ * @return {NodeList}
+ */
+function scripts() {
+    return doc.getElementsByTagName("script");
+}
+
+
+/**
+ * get current executing script
+ * @return {*}
+ */
+function getCurrentScript() {
+    return document.currentScript;
+}
+
+
+function getCurrentPath() {
+    var node = getCurrentScript();
+    return node && node.getAttribute("src", 4);
 }
