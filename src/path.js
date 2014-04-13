@@ -1,15 +1,19 @@
 
-// and a directory file path could be ends with a slash (back slash in window)
+// and a directory file path must be ends with a slash (back slash in window)
 var dirRegExp = /\/$/g,
 // whether a path to a file with extension
-    jsExtRegExp = /\.js$/g;
+    fileExtRegExp = /\.(js|css|tpl)$/g;
 
 
+// retrieve current doc's absolute path
+// It may be a file system path, http path
+// or other protocol path
 var loc = global.location;
 
 
 /**
  * Normalize a string path, taking care of '..' and '.' parts.
+ * This method perform identically with node path.normalize.
  *
  * When multiple slashes are found, they're replaced by a single one;
  * when the path contains a trailing slash, it is preserved.
@@ -23,56 +27,71 @@ var loc = global.location;
  */
 function normalize(p) {
     // step1: combine multi slashes
-    p = p.replace(/(\/)+/g, '/');
+    p = p.replace(/(\/)+/g, "/");
 
-    // step2: resolve `.` and `..`
+    // step2: resolve '.' and '..'
     // Here I used to use /\//ig to split string, but unfortunately
     // it has serious bug in IE<9. See for more:
-    // `http://blog.stevenlevithan.com/archives/cross-browser-split`.
-    p = p.split('/');
+    // 'http://blog.stevenlevithan.com/archives/cross-browser-split'.
+    p = p.split("/");
     for (var i = 0; i < p.length; ++i) {
-        if (p[i] === '.') {
+        if (p[i] === ".") {
             p.splice(i, 1);
             --i;
-        } else if (p[i] === '..' && i > 0 && p[i - 1] != '..') {
+        } else if (p[i] === ".." && i > 0 && p[i - 1] !== "..") {
             p.splice(i - 1, 2);
             i -= 2;
         }
     }
-    return p.join('/');
+    return p.join("/");
 }
 
 
 /**
- * to get current document's directory
+ * To get current doc's directory
  * @return {string}
  */
 function getPageDir() {
-    return dirname(loc.href)
+    return dirname(loc.href);
 }
 
 
 /**
- * Judge if a path is top-level
- * @param {string} p
- * @return {boolean}
+ * Judge if a path is top-level, such as 'core/class.js'
+ * @param {string} p Path to check.
+ * @return {boolean} b
  */
 function isTopLevel(p) {
-    return isRelative(p) && p[0] != '.';
+    return isRelative(p) && p[0] != ".";
 }
 
 
 /**
- * Judge if a path is a relative one.
- * In most environment, start with a single/double dot.
+ * Return if a path is absolute.
+ * In most web environment, absolute url starts with a 'http://' or 'https://';
+ * In Windows File System, starts with a 'file:///' protocol;
+ * In UNIX like System, starts with a single '/';
  *
+ * @param {string} p Path to check.
+ * @return {boolean} b Is p absolute?
+ */
+function isAbsolute(p) {
+    return /:\/\//.test(p) || /^\//.test(p);
+}
+
+
+/**
+ * Return if a path is relative.
+ * In most web environment, relative path start with a single/double dot.
  * e.g: ../a/b/c; ./a/b
  *
- * @param {string} p
- * @return {boolean}
+ * Here we think topLevel path is a kind of relative path.
+ *
+ * @param {string} p Path to check.
+ * @return {boolean} b
  */
 function isRelative(p) {
-    return !isAbsolute(p) && (/^(\.){1,2}\//.test(p) || p[0] != '/')
+    return !isAbsolute(p) && (/^(\.){1,2}\//.test(p) || p[0] !== "/");
 }
 
 
@@ -86,7 +105,7 @@ function isRelative(p) {
  *   module's absolute file path.
  * @return {!string} absolute file path from Internet
  */
-function resolve (id, base) {
+function resolve(id, base) {
 	// step 1: parse built-in modules
 	// step 2: normalize id and parse head part as alias
 	// step 3: parse middle part as map
@@ -95,7 +114,7 @@ function resolve (id, base) {
     var conjuction = id[0] == '/' ? '' : '/';
     var url = (base ? dirname(base) : getPageDir()) + conjuction + id;
 
-    if (!jsExtRegExp.test(url))
+    if (!fileExtRegExp.test(url))
         url += '.js';
 
     //todo
