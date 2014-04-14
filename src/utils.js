@@ -1,10 +1,15 @@
 
+// store useful props
 var OP = Object.prototype,
     AP = Array.prototype,
     native_forEach = AP.forEach,
     native_map = AP.map,
     hasOwn = OP.hasOwnProperty,
     toString = OP.toString;
+
+
+// use such an object to determine cut down a forEach loop;
+var break_obj = {};
 
 
 /**
@@ -38,17 +43,56 @@ function map(arr, fn, opt_context) {
 
 
 /**
- * enhancement for Array.prototype.forEach.
+ * ECMA-262 described:
+ * 15.4.4.18 Array.prototype.forEach ( callbackfn [ , thisArg ] )
+ * callbackfn should be a function that accepts three arguments.
+ * forEach calls callbackfn once for each element present in the array,
+ * in ascending order. callbackfn is called only for elements of the array
+ * which actually exist; it is not called for missing elements of the array.
+ * If a thisArg parameter is provided, it will be used as the this value
+ * for each invocation of callbackfn. If it is not provided, undefined is used instead.
+ * callbackfn is called with three arguments: the value of the element,
+ * the index of the element, and the object being traversed.
+ * forEach does not directly mutate the object on which it is called
+ * but the object may be mutated by the calls to callbackfn.
+ * The range of elements processed by forEach is set before the first call to callbackfn.
+ * Elements which are appended to the array after the call to forEach begins will not
+ * be visited by callbackfn. If existing elements of the array are changed, their value
+ * as passed to callback will be the value at the time forEach visits them;
+ * elements that are deleted after the call to forEach begins and before being visited are not visited.
+ * When the forEach method is called with one or two arguments, the following steps are taken:
+ * 1. Let O be the result of calling ToObject passing the this value as the argument.
+ * 2. Let lenValue be the result of calling the [[Get]] internal method of O with the argument "length".
+ * 3. Let len be ToUint32(lenValue).
+ * 4. If IsCallable(callbackfn) is false, throw a TypeError exception.
+ * 5. If thisArg was supplied, let T be thisArg; else let T be undefined.
+ * 6. Let k be 0.
+ * 7. Repeat, while k < len
+ *  a. Let Pk be ToString(k).
+ *  b. Let kPresent be the result of calling the [[HasProperty]] internal method of O with argument Pk.
+ *  c. If kPresent is true, then
+ *      i. Let kValue be the result of calling the [[Get]] internal method of O with argument Pk.
+ *      ii. Call the [[Call]] internal method of callbackfn with T as the this value and argument list
+ *          containing kValue, k, and O.
+ *  d. Increase k by 1.
+ * 8. Return undefined.
+ * The length property of the forEach method is 1.
+ * NOTE The forEach function is intentionally generic; it does not require that
+ * its this value be an Array object. Therefore it can be transferred to other kinds of objects
+ * for use as a method. Whether the forEach function can be applied successfully to a host object
+ * is implementation-dependent.
+ *
  * @param {Array} arr array to be iterated.
  * @param {Function} fn callback to execute on each item
  * @param {Object?} opt_context fn's context
  */
 function forEach(arr, fn, opt_context) {
     if (native_forEach && arr.forEach === native_forEach) {
-        arr.forEach(fn, opt_context)
+        arr.forEach(fn, opt_context);
     } else if (arr.length === +arr.length) {
         for (var i = 0, length = arr.length; i < length; i++) {
-            fn.call(opt_context, arr[i], i, arr)
+            if (fn.call(opt_context, arr[i], i, arr) === break_obj)
+                break;
         }
     }
 }
@@ -56,8 +100,8 @@ function forEach(arr, fn, opt_context) {
 
 /**
  * find a target in an array, return the index or return -1;
- * @param arr
- * @param tar
+ * @param {Array} arr
+ * @param {*} tar
  * @return {Number}
  */
 function indexOf(arr, tar) {
@@ -89,8 +133,82 @@ function typeOf(obj) {
 }
 
 
+var doc = document,
+    head = doc.head || doc.getElementByTagName("head")[0],
+// It's a classical bug in IE6 found in jQuery.
+// see more: 'http://dev.jquery.com/ticket/2709'
+    $base = doc.getElementsByTagName("base")[0];
+
+
+if ($base) {
+    head = $base.parentNode;
+}
+
+
+// Oh the tragedy, detecting opera. See the usage of isOpera for reason.
+// compatity skills lent from RequireJS 2.1.2 'http://requirejs.org/'
+var isOpera = typeof opera != "undefined" && opera.toString() == "[object Opera]";
+
+
 // current adding script node
-var currentAddingScript;
+//todo when this happens
+var currentAddingScript,
+// In older FF, do not support script.readyState, so we only use this prop in IEs.
+    useInteractive = false,
+// loop all script nodes in doc, if one's readyState is 'interactive'
+// means it's now executing;
+    interactiveScript;
+
+
+/**
+ * load a module through a dynamic script insertion.
+ * once confirm the module loaded and executed, then update
+ * cache's info and exec module's factory function.
+ * @param {!String} url File path to fetch.
+ */
+function fetch(url) {
+    var script = doc.createElement("script");
+    script.charset = "utf-8";
+    script.async = true;
+
+    // event binding
+    // Set up load listener. Test attachEvent first because IE9 has
+    // a subtle issue in its addEventListener and script onload firings
+    // that do not match the behavior of all other browsers with
+    // addEventListener support, which fire the onload event for a
+    // script right after the script execution. See:
+    // https://connect.microsoft.com/IE/feedback/details/648057/script-onload-event-is-not-fired-immediately-after-script-execution
+    // UNFORTUNATELY Opera implements attachEvent but does not follow the script
+    // script execution mode.
+    if (script.attachEvent && !isOpera) {
+        useInteractive = true;
+        script.onreadystatechange = function () {
+            script.onreadystatschange = null;
+            interactiveScript = null;
+            if (/complete/.test(script.readyState)) {
+                head.removeChild(script);
+            }
+        };
+    } else {
+        script.onload = script.onerror = function () {
+            script.onload = script.onerror = null;
+            interactiveScript = null;
+            head.removeChild(script);
+        };
+    }
+
+    // older IEs will request the js file once src has been set,
+    // then readyState will be "loaded" if script complete loading,
+    // but change to "complete" after the code executed.
+    script.src = url;
+    currentAddingScript = script;
+    if ($base) {
+        head.insertBefore(script, $base);
+    } else {
+        head.appendChild(script);
+    }
+    currentAddingScript = null;
+}
 
 
 /**
@@ -107,10 +225,30 @@ function scripts() {
  * @return {*}
  */
 function getCurrentScript() {
-    return document.currentScript;
+    return doc.currentScript || currentAddingScript || (function() {
+        var _scripts;
+        if (interactiveScript && interactiveScript.readyState == "interactive")
+            return interactiveScript;
+        if (useInteractive) {
+            _scripts = scripts();
+            forEach(_scripts, function(script) {
+                if (script.readyState == "interactive") {
+                    interactiveScript = script;
+                    return break_obj;
+                }
+            });
+            return interactiveScript;
+        }
+        return null;
+    })();
 }
 
 
+/**
+ * I mean to retrieve the current executing script node's
+ * absolute path.
+ * @return {*|string}
+ */
 function getCurrentPath() {
     var node = getCurrentScript();
     return node && node.getAttribute("src", 4);

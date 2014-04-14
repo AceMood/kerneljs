@@ -30,15 +30,26 @@ function normalize(p) {
     p = p.replace(/(\/)+/g, "/");
 
     // step2: resolve '.' and '..'
+    p = resolveDot(p);
+    return p;
+}
+
+
+/**
+ * resolve a path with a '.' or '..' part in it.
+ * @param {string} p
+ * @return {string}
+ */
+function resolveDot(p) {
     // Here I used to use /\//ig to split string, but unfortunately
     // it has serious bug in IE<9. See for more:
     // 'http://blog.stevenlevithan.com/archives/cross-browser-split'.
     p = p.split("/");
     for (var i = 0; i < p.length; ++i) {
-        if (p[i] === ".") {
+        if (p[i] == ".") {
             p.splice(i, 1);
             --i;
-        } else if (p[i] === ".." && i > 0 && p[i - 1] !== "..") {
+        } else if (p[i] == ".." && i > 0 && p[i - 1] != "..") {
             p.splice(i - 1, 2);
             i -= 2;
         }
@@ -97,55 +108,46 @@ function isRelative(p) {
 
 /**
  * Map the identifier for a module to a Internet file
- * path. xhrio can use the path to load module from
- * server.
+ * path. SCRIPT insertion will set path with it.
  *
- * @param {!string} id Always the module's identifier.
+ * @param {string} id Always the module's identifier.
  * @param {string?} base A relative baseuri for resolve the
  *   module's absolute file path.
  * @return {!string} absolute file path from Internet
  */
 function resolve(id, base) {
-	// step 1: parse built-in modules
-	// step 2: normalize id and parse head part as alias
-	// step 3: parse middle part as map
-	// step 4: add file extension if necessary
     id = normalize(id);
-    var conjuction = id[0] == '/' ? '' : '/';
+	// step 1: parse built-in modules
+    if (kernel.builtin[id]) {
+        return kernel.builtin[id];
+    }
+	// step 2: normalize id and parse head part as alias
+    if (isTopLevel(id)) {
+        id = parseAlias(id);
+    }
+	// step 3: add file extension if necessary
+    var conjuction = id[0] == "/" ? "" : "/";
     var url = (base ? dirname(base) : getPageDir()) + conjuction + id;
 
     if (!fileExtRegExp.test(url))
-        url += '.js';
+        url += ".js";
 
-    //todo
-    // Here I used to use /\//ig to split string, but unfortunately
-    // it has serious bug in IE<9. See for more:
-    // `http://blog.stevenlevithan.com/archives/cross-browser-split`.
-    url = url.split('/');
-    for (var i = 0; i < url.length; ++i) {
-        if (url[i] === '.') {
-            url.splice(i, 1);
-            --i;
-        } else if (url[i] === '..' && i > 0 && url[i - 1] != '..') {
-            url.splice(i - 1, 2);
-            i -= 2;
-        }
-    }
+    url = resolveDot(url);
 
-    return url.join('/');
+    return url;
 }
 
 
 /**
  * Return the directory name of a path. Similar to the
- * Unix dirname command.
+ * UNIX dirname command.
  *
  * Example:
  * path.dirname('/foo/bar/baz/asdf/quux')
  * returns '/foo/bar/baz/asdf'
  *
- * @param {!string} p
- * @return {!string}
+ * @param {string} p
+ * @return {string}
  */
 function dirname(p) {
     if (dirRegExp.test(p))
@@ -153,17 +155,25 @@ function dirname(p) {
     // Here I used to use /\//ig to split string, but unfortunately
     // it has serious bug in IE<9. See for more:
     // `http://blog.stevenlevithan.com/archives/cross-browser-split`.
-    p = p.split('/');
+    p = p.split("/");
     p.pop();
-    return p.join('/');
+    return p.join("/");
 }
 
 
-function parseAlias() {
+/**
+ * Alias will appear at first word of path.
+ * So replace it if exists in kernel.alias.
+ * @param {string} p
+ * @return {string} s
+ */
+function parseAlias(p) {
+    var parts = p.split("/"),
+        part = parts[0];
+    if (kernel.alias[part]) {
+        part = kernel.alias[part];
 
-}
-
-
-function parseMap() {
-
+    }
+    parts.shift();
+    return [part].concat(parts).join("/");
 }
