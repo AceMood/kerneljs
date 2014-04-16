@@ -113,24 +113,20 @@ function isRelative(p) {
  * @param {string} id Always the module's identifier.
  * @param {string?} base A relative baseuri for resolve the
  *   module's absolute file path.
- * @return {!string} absolute file path from Internet
+ * @return {!(string|object)} exports object or absolute file path from Internet
  */
 function resolve(id, base) {
     id = normalize(id);
-	// step 1: parse built-in modules
-    if (kernel.builtin[id]) {
-        return kernel.builtin[id];
-    }
+	// step 1: parse built-in and already existed modules
+    if (kernel.builtin[id]) return kernel.builtin[id];
+    if (kernel.cache[id]) return kernel.cache[id];
 	// step 2: normalize id and parse head part as alias
-    if (isTopLevel(id)) {
-        id = parseAlias(id);
-    }
+    if (isTopLevel(id)) id = parseAlias(id);
 	// step 3: add file extension if necessary
     var conjuction = id[0] == "/" ? "" : "/";
     var url = (base ? dirname(base) : getPageDir()) + conjuction + id;
 
-    if (!fileExtRegExp.test(url))
-        url += ".js";
+    if (!fileExtRegExp.test(url)) url += ".js";
 
     url = resolveDot(url);
 

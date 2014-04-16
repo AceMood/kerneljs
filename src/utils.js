@@ -145,13 +145,7 @@ if ($base) {
 }
 
 
-// Oh the tragedy, detecting opera. See the usage of isOpera for reason.
-// compatity skills lent from RequireJS 2.1.2 'http://requirejs.org/'
-var isOpera = typeof opera != "undefined" && opera.toString() == "[object Opera]";
-
-
 // current adding script node
-//todo when this happens
 var currentAddingScript,
 // In older FF, do not support script.readyState, so we only use this prop in IEs.
     useInteractive = false,
@@ -171,33 +165,28 @@ function fetch(url) {
     script.charset = "utf-8";
     script.async = true;
 
-    // event binding
-    // Set up load listener. Test attachEvent first because IE9 has
-    // a subtle issue in its addEventListener and script onload firings
-    // that do not match the behavior of all other browsers with
-    // addEventListener support, which fire the onload event for a
-    // script right after the script execution. See:
-    // https://connect.microsoft.com/IE/feedback/details/648057/script-onload-event-is-not-fired-immediately-after-script-execution
-    // UNFORTUNATELY Opera implements attachEvent but does not follow the script
-    // script execution mode.
-    if (script.attachEvent && !isOpera) {
+    // Although 'onload' in IE9 & IE10 have problems, but I do not
+    // care the issure, and whatever async is true or false. We just
+    // remove node in document as the callback of javascript loaded.
+    // Read more about the bug:
+    // 'https://connect.microsoft.com/IE/feedback/details/729164/'
+    // + 'ie10-dynamic-script-element-fires-loaded-readystate-prematurely'
+    // 'https://connect.microsoft.com/IE/feedback/details/648057/'
+    // + 'script-onload-event-is-not-fired-immediately-after-script-execution'
+    if ('readyState' in script) {
         useInteractive = true;
-        script.onreadystatechange = function () {
-            script.onreadystatschange = null;
-            interactiveScript = null;
-            if (/complete/.test(script.readyState)) {
-                head.removeChild(script);
-            }
-        };
-    } else {
-        script.onload = script.onerror = function () {
-            script.onload = script.onerror = null;
-            interactiveScript = null;
-            head.removeChild(script);
-        };
     }
 
-    // older IEs will request the js file once src has been set,
+    // Event binding
+    script.onreadystatechange = script.onload = script.onerror = function () {
+        script.onreadystatschange = script.onload = script.onerror = null;
+        interactiveScript = null;
+        if (!script.readyState || /complete/.test(script.readyState)) {
+            head.removeChild(script);
+        }
+    };
+
+    // Older IEs will request the js file once src has been set,
     // then readyState will be "loaded" if script complete loading,
     // but change to "complete" after the code executed.
     script.src = url;
@@ -225,11 +214,17 @@ function scripts() {
  * @return {*}
  */
 function getCurrentScript() {
+    // It's important to note that this will not reference the <script> element
+    // if the code in the script is being called as a callback or event handler;
+    // it will only reference the element while it's initially being processed.
+    // Read more:
+    //   'https://developer.mozilla.org/en-US/docs/Web/API/document.currentScript'
     return doc.currentScript || currentAddingScript || (function() {
         var _scripts;
-        if (interactiveScript && interactiveScript.readyState == "interactive")
-            return interactiveScript;
         if (useInteractive) {
+            if (interactiveScript && interactiveScript.readyState == "interactive")
+                return interactiveScript;
+
             _scripts = scripts();
             forEach(_scripts, function(script) {
                 if (script.readyState == "interactive") {
@@ -239,6 +234,7 @@ function getCurrentScript() {
             });
             return interactiveScript;
         }
+        // todo in FF early version
         return null;
     })();
 }
