@@ -118,8 +118,8 @@ function isRelative(p) {
 function resolve(id, base) {
     id = normalize(id);
 	// step 1: parse built-in and already existed modules
-    if (kernel.builtin[id]) return kernel.builtin[id];
-    if (kernel.cache[id]) return kernel.cache[id];
+    if (kernel.builtin[id]) return kernel.builtin[id].exports;
+    if (kernel.cache.mods[id]) return kernel.cache.mods[id].exports;
 	// step 2: normalize id and parse head part as alias
     if (isTopLevel(id)) id = parseAlias(id);
 	// step 3: add file extension if necessary

@@ -22,27 +22,27 @@ function load(mod) {
         // available. it's useful after static analyze and combo files
         // into one js file.
         // so check if an object first of all.
-        if (typeOf(dep) == "object") {
+        if (typeOf(dep) != "string") {
             --count;
-            mod.deps[index] = dep;
+            return;
         }
         // else it's a real file path. get its responding uid
-        var uid = cache.path2uid[dep];
+        // var uid = cache.path2uid[dep];
         // file has been fetched
-        if (uid) {
-            --count;
-            mod.deps[index] = cache.mods[uid].exports;
+        // if (uid) {
+        //     --count;
+        //     mod.deps[index] = cache.mods[uid].exports;
         // it's a user-defined or not been fetched file.
         // if it's a user-defined id and not config in global
         // alias, it will produce a 404 error.
-        } else {
+        // } else {
             // record this mod depend on the dep current now.
             if (dependencyList[dep])
                 dependencyList[dep].push(mod);
             else
                 dependencyList[dep] = [mod];
             fetch(dep);
-        }
+        // }
     });
 
     // if all deps module have been cached
@@ -81,8 +81,8 @@ function require(deps, cb) {
     var uid = kernel.uidprefix + kernel.uid++;
     var mod = new Module({
         uid: uid,
-        id: '',
-        url: '',
+        id: "",
+        url: "",
         deps: deps,
         factory: cb,
         status: Module.STATUS.uninit

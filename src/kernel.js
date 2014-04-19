@@ -89,10 +89,7 @@ kernel.cache = {
     id2path: {},
     // each file may have multiple modules. so it's a one-to-many hash
     // constructor.
-    path2uid: {},
-    // each module must have a uid. And construct a uid->path
-    // mapping object. It's a one-to-one object.
-    uid2path: {}
+    path2uid: {}
 };
 
 

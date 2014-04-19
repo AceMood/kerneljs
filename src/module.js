@@ -1,8 +1,4 @@
 
-var doc = document,
-    head = doc.head || doc.getElementByTagName("head")[0];
-
-
 function noop() {}
 
 
@@ -20,9 +16,11 @@ function Module(obj) {
 }
 
 
-//  
-// 
-//
+// Four states of module.
+// 'uninit' module is only inited but without fetching its deps.
+// 'fetching' is fetching its deps now but not execute its factory yet.
+// 'loaded' is specificated in IE means a js file is loaded.
+// 'complete' is module finished resolve and has cached its exports object.
 Module.STATUS = {
     "uninit"    : 0,
     "fetching"  : 1,
@@ -57,8 +55,15 @@ Module.prototype.ready = function(mod) {
 Module.prototype.checkAllDepsOK = function() {
     var ok = true;
     forEach(this.deps, function(dep) {
-        if (typeOf(dep) == "string")
+        if (typeOf(dep) == "string") {
             ok = false;
+            return break_obj;
+        }
     });
     return ok;
+};
+
+
+Module.create = function () {
+
 };

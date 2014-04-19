@@ -134,7 +134,7 @@ function typeOf(obj) {
 
 
 var doc = document,
-    head = doc.head || doc.getElementByTagName("head")[0],
+    head = doc.head || doc.getElementsByTagName("head")[0],
 // It's a classical bug in IE6 found in jQuery.
 // see more: 'http://dev.jquery.com/ticket/2709'
     $base = doc.getElementsByTagName("base")[0];
