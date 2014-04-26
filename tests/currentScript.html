@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+</head>
+<body>
+    <script id="a">
+        function cb() {
+            alert(document.currentScript || '00');
+            if (document.currentScript)
+                alert(document.currentScript.id)
+        }
+    </script>
+    <script id="b">
+        cb();
+    </script>
+</body>
+</html>
