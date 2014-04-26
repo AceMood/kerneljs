@@ -2,7 +2,7 @@
 // and a directory file path must be ends with a slash (back slash in window)
 var dirRegExp = /\/$/g,
 // whether a path to a file with extension
-    fileExtRegExp = /\.(js|css|tpl)$/g;
+    fileExtRegExp = /\.(js|css|tpl|txt)$/g;
 
 
 // retrieve current doc's absolute path
@@ -115,14 +115,21 @@ function isRelative(p) {
  *   module's absolute file path.
  * @return {!(string|object)} exports object or absolute file path from Internet
  */
-function resolve(id, base) {
+function resolveId(id, base) {
+    var _mod = kernel.cache.mods[id];
+    if (id == "require" || id == "module" ||
+        id == "exports" || (_mod &&  _mod != empty_mod))
+        return id;
+
+	// step 1: normalize id and parse head part as alias
+    if (isTopLevel(id)) {
+        id = parseAlias(id);
+        // here if a top-level path then relative base change to
+        // current document's baseUri.
+        base = null;
+    }
+	// step 2: add file extension if necessary
     id = normalize(id);
-	// step 1: parse built-in and already existed modules
-    if (kernel.builtin[id]) return kernel.builtin[id].exports;
-    if (kernel.cache.mods[id]) return kernel.cache.mods[id].exports;
-	// step 2: normalize id and parse head part as alias
-    if (isTopLevel(id)) id = parseAlias(id);
-	// step 3: add file extension if necessary
     var conjuction = id[0] == "/" ? "" : "/";
     var url = (base ? dirname(base) : getPageDir()) + conjuction + id;
 
@@ -150,7 +157,7 @@ function dirname(p) {
         return p.slice(0, -1);
     // Here I used to use /\//ig to split string, but unfortunately
     // it has serious bug in IE<9. See for more:
-    // `http://blog.stevenlevithan.com/archives/cross-browser-split`.
+    // 'http://blog.stevenlevithan.com/archives/cross-browser-split'.
     p = p.split("/");
     p.pop();
     return p.join("/");
@@ -168,7 +175,6 @@ function parseAlias(p) {
         part = parts[0];
     if (kernel.alias[part]) {
         part = kernel.alias[part];
-
     }
     parts.shift();
     return [part].concat(parts).join("/");

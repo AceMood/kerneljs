@@ -12,6 +12,20 @@ var OP = Object.prototype,
 var break_obj = {};
 
 
+// initialize a module
+var empty_mod = {
+    id: null,
+    uid: null,
+    url: null,
+    status: null,
+    exports: {}
+};
+
+
+// for no-op function, used for a default callback function
+function noop() {}
+
+
 /**
  * if a module with in the same id exists, then define with the id
  * will fail. we throw an error with useful message.
@@ -241,7 +255,7 @@ function getCurrentScript() {
 
 
 /**
- * I mean to retrieve the current executing script node's
+ * Retrieve the current executing script node's
  * absolute path.
  * @return {*|string}
  */

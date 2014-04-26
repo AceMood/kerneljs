@@ -45,8 +45,12 @@ var fetchingList = {
 var dependencyList = {};
 
 
-// initialize a module
-var empty_mod = {};
+// if a module a fetching now means the corresponding script is loading now,
+// before it complete loaded, we should not fetch it twice, but only when
+// define the module it would record in the 'cache.path2uid', so here we just
+// record here to avoid fetch twice.
+// the hash will be path -> bool constructor.
+var sendingList = {};
 
 
 /**
@@ -101,10 +105,7 @@ kernel.config({
     alias: {},
     map: {},
     builtin: {
-        /*
-        require: require,
-        module: Module.create(),
-        exports: noop*/
+        require: require
     }
 });
 
@@ -124,3 +125,4 @@ kernel.reset = function() {
 // exports APIs functions
 global.require = require;
 global.define = define;
+global.kernel = kernel;
