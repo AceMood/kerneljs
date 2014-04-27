@@ -102,7 +102,6 @@ kernel.cache = {
 kernel.config({
     baseUri: "",
     debug: true,
-    alias: {},
     map: {},
     builtin: {
         require: require

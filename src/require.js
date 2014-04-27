@@ -1,13 +1,16 @@
 
 /**
  * load all dependencies of mod.
- * @param {Object} mod
+ * @param {Object|Module} mod Whose deps to be fetched.
  */
 function load(mod) {
     var cache = kernel.cache;
     var count = mod.deps.length;
+    var currentPath = getCurrentPath();
+    var inPathConfig = kernel.paths && kernel.paths[mod.id] ? true : false;
 
-    // record in fetchingList
+    // record in fetchingList to represent the module is now
+    // fetching its dependencies.
     fetchingList.add(mod);
 
     // update mod's status
@@ -15,7 +18,8 @@ function load(mod) {
 
     // register module in global cache with an empty
     // export for later checking if its status is available.
-    if (!cache.mods[mod.uid]) cache.mods[mod.uid]= empty_mod;
+    if (!cache.mods[mod.uid])
+        cache.mods[mod.uid]= empty_mod;
 
     forEach(mod.deps, function(dep, index) {
         // after resolving, built-in module and existed modules are
@@ -27,7 +31,11 @@ function load(mod) {
             return;
         }
         // else it's a real file path. get its responding uid
-        var uid = cache.path2uid[dep];
+        if (inPathConfig) {
+            currentPath = loc.href;
+        }
+        var _dep = resolveId(dep, currentPath);
+        var uid = cache.path2uid[_dep];
         // file has been fetched
         if (uid) {
             --count;
@@ -37,14 +45,15 @@ function load(mod) {
         // alias, it will produce a 404 error.
         } else {
             // record this mod depend on the dep current now.
-            if (dependencyList[dep])
-                dependencyList[dep].push(mod);
-            else
-                dependencyList[dep] = [mod];
+            if (!dependencyList[_dep])
+                dependencyList[_dep] = [mod];
+            else if (indexOf(dependencyList[_dep], mod) < 0)
+                dependencyList[_dep].push(mod);
 
-            if (!sendingList[dep]) {
-                sendingList[dep] = true;
-                fetch(dep);
+            if (!sendingList[_dep]) {
+                sendingList[_dep] = true;
+                // script insertion
+                fetch(_dep, dep);
             }
         }
     });
@@ -67,32 +76,19 @@ function load(mod) {
  * @param {Function?} cb
  */
 function require(deps, cb) {
+    // pass-in a config object
     if (typeOf(deps) == "object" && !cb) {
         kernel.config(deps);
         return;
     }
-
-    if (deps.length == 0 && cb) return cb();
+    // no deps
+    if (deps.length == 0 && cb)
+        return cb();
 
     // Type conversion
     // it's a single module dependency and no callback
-    if (typeOf(deps) == "string") deps = [deps];
-
-    // Each item of deps have been resolved.
-    // But there has two conditions after resolved:
-    //   a. path is a real file path
-    //   b. path is a unique user-defined id
-    // for the second condition, we must look into the
-    // kernel.alias, if user not config the mapping path
-    // for id-path in alias, then we do not know what the
-    // id stand for in load function.
-    // So we expect all deps resolved to a real file path
-    // here.
-    deps = map(deps, function(dep) {
-        // it's not allowed to require 'require', 'module' &
-        // 'exports' as arguments. so resolveId directly.
-        return resolveId(dep, getCurrentPath());
-    });
+    if (typeOf(deps) == "string")
+        deps = [deps];
 
     var uid;
     if (cb) {
@@ -108,18 +104,20 @@ function require(deps, cb) {
             status: Module.STATUS.uninit
         });
         mod.depMods = map(deps, function(dep) {
-            return resolve(dep);
+            var path = resolveId(dep, getCurrentPath());
+            return resolve(dep) || resolve(path);
         });
 
         load(mod);
     } else {
+        var _dep = resolveId(deps[0], getCurrentPath());
         // a simple require statements always be resolved preload.
         // so if length == 1 then return its exports object.
         var _mod = resolve(deps[0]);
         if (deps.length == 1 && _mod)
             return _mod;
         else {
-            uid = kernel.cache.path2uid[deps[0]][0];
+            uid = kernel.cache.path2uid[_dep][0];
             return kernel.cache.mods[uid].exports || null;
         }
     }
@@ -166,6 +164,30 @@ function notify(mod) {
                 dependant.ready(mod);
         });
     }
+}
+
+
+/**
+ * Used in the CommonJS wrapper form of define a module.
+ * @param {String} dep
+ * @param {Module} mod Pass-in this argument is to used in a cjs
+ *   wrapper form, if not we could not refer the module and exports
+ *
+ * @return {Object}
+ */
+function resolve(dep, mod) {
+    // step 1: parse built-in and already existed modules
+    if (kernel.builtin[dep]) {
+        return kernel.builtin[dep];
+    }
+    if (kernel.cache.mods[dep]) return kernel.cache.mods[dep].exports;
+
+    // step 2: cjs-wrapper form
+    if (dep == "require") return require;
+    else if (dep == "module") return mod;
+    else if (dep == "exports") return mod && mod.exports;
+
+    return null;
 }
 
 

@@ -49,8 +49,11 @@ Module.STATUS = {
  */
 Module.prototype.ready = function(mod) {
     if (mod.url) {
+        if (kernel.paths && kernel.paths[this.id])
+            var inPathConfig = true;
         for(var i = 0; i < this.deps.length; ++i) {
-            if (this.deps[i] === mod.url) {
+            var path = resolveId(this.deps[i], inPathConfig ? loc.href : this.url);
+            if (path === mod.url) {
                 this.depMods[i] = mod.exports;
                 break;
             }
@@ -71,12 +74,15 @@ Module.prototype.ready = function(mod) {
  */
 Module.prototype.checkAllDepsOK = function() {
     var ok = true;
-    forEach(this.depMods, function(mod) {
-        if (typeOf(mod) == "undefined" ||
-            typeOf(mod) == "null") {
+    // I do not use forEach here because native forEach will
+    // pass through all values are undefined, so it will introduce
+    // some tricky results.
+    for(var i= 0; i < this.depMods.length; ++i) {
+        if (typeOf(this.depMods[i]) == "undefined" ||
+            typeOf(this.depMods[i]) == "null") {
             ok = false;
-            return break_obj;
+            break;
         }
-    });
+    }
     return ok;
 };

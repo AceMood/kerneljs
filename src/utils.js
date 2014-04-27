@@ -169,15 +169,20 @@ var currentAddingScript,
 
 
 /**
- * load a module through a dynamic script insertion.
+ * Load a module use dynamic script insertion.
  * once confirm the module loaded and executed, then update
  * cache's info and exec module's factory function.
- * @param {!String} url File path to fetch.
+ * @param {String} url File path to fetch.
+ * @param {String} name Original name to require this module.
+ *   maybe a top-level name, relative name or absolute name.
  */
-function fetch(url) {
+function fetch(url, name) {
     var script = doc.createElement("script");
     script.charset = "utf-8";
     script.async = true;
+    // custom attribute to remember the original required name
+    // which written in dependant module.
+    script.kernel_name = name;
 
     // Although 'onload' in IE9 & IE10 have problems, but I do not
     // care the issure, and whatever async is true or false. We just
@@ -228,6 +233,7 @@ function scripts() {
  * @return {*}
  */
 function getCurrentScript() {
+    // todo: In chrome and FF and Opera, use Error.prototype.stack
     // It's important to note that this will not reference the <script> element
     // if the code in the script is being called as a callback or event handler;
     // it will only reference the element while it's initially being processed.

@@ -108,26 +108,28 @@ function isRelative(p) {
 
 /**
  * Map the identifier for a module to a Internet file
- * path. SCRIPT insertion will set path with it.
+ * path. SCRIPT insertion will set path with it, except
+ * build-in names.
  *
- * @param {string} id Always the module's identifier.
+ * @param {string} id Always the module's name or identifier.
  * @param {string?} base A relative baseuri for resolve the
  *   module's absolute file path.
  * @return {!(string|object)} exports object or absolute file path from Internet
  */
 function resolveId(id, base) {
-    var _mod = kernel.cache.mods[id];
+    // var _mod = kernel.cache.mods[id];
     if (id == "require" || id == "module" ||
-        id == "exports" || (_mod &&  _mod != empty_mod))
+        id == "exports" /*|| (_mod &&  _mod != empty_mod)*/)
         return id;
 
-	// step 1: normalize id and parse head part as alias
     if (isTopLevel(id)) {
-        id = parseAlias(id);
+        // step 1: normalize id and parse head part as paths
+        id = parsePaths(id);
         // here if a top-level path then relative base change to
         // current document's baseUri.
         base = null;
     }
+
 	// step 2: add file extension if necessary
     id = normalize(id);
     var conjuction = id[0] == "/" ? "" : "/";
@@ -178,4 +180,18 @@ function parseAlias(p) {
     }
     parts.shift();
     return [part].concat(parts).join("/");
+}
+
+
+/**
+ * Alias will appear at first word of path.
+ * So replace it if exists in kernel.paths.
+ * @param {string} p
+ * @return {string} s
+ */
+function parsePaths(p) {
+    if (kernel.paths && kernel.paths[p]) {
+        p = kernel.paths[p];
+    }
+    return p;
 }

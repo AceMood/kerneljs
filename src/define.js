@@ -20,7 +20,9 @@ function define(id, deps, factory) {
         cache = kernel.cache,
         uid = kernel.uidprefix + kernel.uid++;
 
-    // todo: document.currentScript stuned me
+    // document.currentScript stuned me in a callback and
+    // event handler conditions.
+    // but if define in a single file, this could be trusted.
     var base = getCurrentPath();
 
     // deal with optional arguments
@@ -29,7 +31,6 @@ function define(id, deps, factory) {
         deps = id;
         id = null;
     }
-
     if (typeOf(deps) != "array") {
         factory = deps;
         deps = null;
@@ -38,26 +39,21 @@ function define(id, deps, factory) {
     // only when user-defined id presents, we record it
     // in id2path cache. First check module with the same id.
     if (id) {
-        if (cache.id2path[id]) {
-            exist_id_error(id);
-            return;
-        }
+        if (cache.id2path[id]) return exist_id_error(id);
         cache.id2path[id] = base;
         cache.mods[id] = empty_mod;
     }
 
     // record
-    if (cache.path2uid[base])
-        cache.path2uid[base].push(uid);
-    else
-        cache.path2uid[base] = [uid];
+    if (cache.path2uid[base]) cache.path2uid[base].push(uid);
+    else cache.path2uid[base] = [uid];
 
     // register module in global cache
     mod = cache.mods[uid] = empty_mod;
 
     // If no name, and factory is a function, then figure out if it a
     // CommonJS thing with dependencies. I don't intend to support it.
-    // But many projects used RequireJS may depend on this functionality.
+    // But many projects used RequireJS may depend on this functional.
     // Code below in the if-else statements lent from RequireJS
     if (!deps && typeOf(factory) == "function") {
         deps = [];
@@ -81,6 +77,7 @@ function define(id, deps, factory) {
         }
     }
 
+    // init current module
     mod = cache.mods[uid] = new Module({
         uid: uid,
         id: id,
@@ -90,17 +87,23 @@ function define(id, deps, factory) {
         status: Module.STATUS.uninit
     });
 
-    // resolve paths
-    if (mod.deps) {
+    var name = getCurrentScript().kernel_name;
+    if (isTopLevel(name) && !mod.id)
+        mod.id = name;
+
+    // fill exports list to depMods
+    if (mod.deps && mod.deps.length > 0) {
         mod.deps = map(mod.deps, function(dep, index) {
             if (dep == "exports" || dep == "module")
                 mod.cjsWrapper = true;
+
             var inject = resolve(dep, mod);
             if (inject) mod.depMods[index] = inject;
-            return resolveId(dep, base);
+            return dep;
         });
     }
 
+    // load dependencies.
     load(mod);
 }
 
@@ -134,36 +137,3 @@ define.amd = {
     email: "zmike86@gmail.com",
     version: "1.0"
 };
-
-
-/**
- * Used in the CommonJS wrapper form of define a module.
- * @param {Array} dep
- * @param {Module} mod
- * @return {Object}
- */
-function resolve(dep, mod) {
-    // step 1: parse built-in and already existed modules
-    if (kernel.builtin[dep]) {
-        var uid, ret;
-        switch (dep) {
-            case "module":
-                uid = kernel.cache.path2uid[base][0];
-                ret = kernel.cache.mods[uid];
-                break;
-            case "exports":
-                uid = kernel.cache.path2uid[base][0];
-                ret = kernel.cache.mods[uid].exports;
-                break;
-        }
-        return ret || kernel.builtin[dep];
-    }
-    if (kernel.cache.mods[dep]) return kernel.cache.mods[dep].exports;
-
-    // step 2: cjs-wrapper form
-    if (dep == "require") return require;
-    else if (dep == "module") return mod;
-    else if (dep == "exports") return mod && mod.exports;
-
-    return null;
-}
