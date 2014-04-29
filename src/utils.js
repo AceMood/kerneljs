@@ -162,7 +162,15 @@ if ($base) {
 // current adding script node
 var currentAddingScript,
 // In older FF, do not support script.readyState, so we only use this prop in IEs.
-    useInteractive = false,
+// Although 'onload' in IE9 & IE10 have problems, but I do not
+// care the issure, and whatever async is true or false. We just
+// remove node in document as the callback of javascript loaded.
+// Read more about the bug:
+// 'https://connect.microsoft.com/IE/feedback/details/729164/'
+// + 'ie10-dynamic-script-element-fires-loaded-readystate-prematurely'
+// 'https://connect.microsoft.com/IE/feedback/details/648057/'
+// + 'script-onload-event-is-not-fired-immediately-after-script-execution'
+    useInteractive = ('readyState' in doc.createElement("script")),
 // loop all script nodes in doc, if one's readyState is 'interactive'
 // means it's now executing;
     interactiveScript;
@@ -183,18 +191,6 @@ function fetch(url, name) {
     // custom attribute to remember the original required name
     // which written in dependant module.
     script.kernel_name = name;
-
-    // Although 'onload' in IE9 & IE10 have problems, but I do not
-    // care the issure, and whatever async is true or false. We just
-    // remove node in document as the callback of javascript loaded.
-    // Read more about the bug:
-    // 'https://connect.microsoft.com/IE/feedback/details/729164/'
-    // + 'ie10-dynamic-script-element-fires-loaded-readystate-prematurely'
-    // 'https://connect.microsoft.com/IE/feedback/details/648057/'
-    // + 'script-onload-event-is-not-fired-immediately-after-script-execution'
-    if ('readyState' in script) {
-        useInteractive = true;
-    }
 
     // Event binding
     script.onreadystatechange = script.onload = script.onerror = function () {

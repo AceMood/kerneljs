@@ -78,8 +78,7 @@ Module.prototype.checkAllDepsOK = function() {
     // pass through all values are undefined, so it will introduce
     // some tricky results.
     for(var i= 0; i < this.depMods.length; ++i) {
-        if (typeOf(this.depMods[i]) == "undefined" ||
-            typeOf(this.depMods[i]) == "null") {
+        if (this.depMods[i] === undefined || this.depMods[i] === null) {
             ok = false;
             break;
         }

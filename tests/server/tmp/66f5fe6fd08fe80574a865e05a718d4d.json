@@ -1,0 +1,32 @@
+{
+	"state": 1,
+	"analysisData": {
+		"dependencyList": [
+			"/basic_circular/_reporter",
+			"/basic_circular/one",
+			"/basic_circular/two",
+			"/basic_circular/funcOne",
+			"/basic_circular/funcTwo",
+			"/basic_circular/funcFour",
+			"/basic_circular/funcThree"
+		],
+		"pluginRefs": {},
+		"missingNamesList": [],
+		"shims": {
+			"require": "\n(function(root, cfg) {\ndefine('require', function() {\n});\n}(this, zazl._getConfig()));\n",
+			"exports": "\n(function(root, cfg) {\ndefine('exports', function() {\n});\n}(this, zazl._getConfig()));\n",
+			"module": "\n(function(root, cfg) {\ndefine('module', function() {\n});\n}(this, zazl._getConfig()));\n"
+		},
+		"key": "66f5fe6fd08fe80574a865e05a718d4d",
+		"checksum": "137162140bdde4cbbf3a9822554c29a4"
+	},
+	"timestamps": {
+		"/basic_circular/_reporter": 1374562516000,
+		"/basic_circular/one": 1374562516000,
+		"/basic_circular/two": 1374562516000,
+		"/basic_circular/funcOne": 1374562516000,
+		"/basic_circular/funcTwo": 1374562516000,
+		"/basic_circular/funcFour": 1374562516000,
+		"/basic_circular/funcThree": 1374562516000
+	}
+}

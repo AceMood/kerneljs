@@ -1,0 +1,38 @@
+{
+	"state": 1,
+	"analysisData": {
+		"dependencyList": [
+			"/anon_simple/_reporter",
+			"/anon_simple/a",
+			"/anon_simple/sub/c",
+			"/anon_simple/b"
+		],
+		"pluginRefs": {},
+		"missingNamesList": [
+			{
+				"uri": "/anon_simple/a",
+				"id": "a",
+				"nameIndex": 7
+			},
+			{
+				"uri": "/anon_simple/b",
+				"id": "b",
+				"nameIndex": 7
+			},
+			{
+				"uri": "/anon_simple/sub/c",
+				"id": "sub/c",
+				"nameIndex": 7
+			}
+		],
+		"shims": {},
+		"key": "71011c1986a65471eec6e2f911314d69",
+		"checksum": "18affe2ce7f4763ae7c98447c9fb3bf5"
+	},
+	"timestamps": {
+		"/anon_simple/_reporter": 1374562516000,
+		"/anon_simple/a": 1374562516000,
+		"/anon_simple/sub/c": 1374562516000,
+		"/anon_simple/b": 1374562516000
+	}
+}

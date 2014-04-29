@@ -1,0 +1,16 @@
+{
+	"state": 1,
+	"analysisData": {
+		"dependencyList": [
+			"/basic_empty_deps/_reporter"
+		],
+		"pluginRefs": {},
+		"missingNamesList": [],
+		"shims": {},
+		"key": "16283ad6cec27b16ade7e92b70cffb95",
+		"checksum": "b0b1779c26ec45b7db00cd9a34dfd9d9"
+	},
+	"timestamps": {
+		"/basic_empty_deps/_reporter": 1398356158000
+	}
+}

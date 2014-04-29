@@ -1,0 +1,38 @@
+{
+	"state": 1,
+	"analysisData": {
+		"dependencyList": [
+			"/config_map_star_adapter/_reporter",
+			"/config_map_star_adapter/d",
+			"/config_map_star_adapter/adapter/d",
+			"/config_map_star_adapter/e"
+		],
+		"pluginRefs": {},
+		"missingNamesList": [
+			{
+				"uri": "/config_map_star_adapter/e",
+				"id": "e",
+				"nameIndex": 7
+			},
+			{
+				"uri": "/config_map_star_adapter/adapter/d",
+				"id": "adapter/d",
+				"nameIndex": 7
+			},
+			{
+				"uri": "/config_map_star_adapter/d",
+				"id": "d",
+				"nameIndex": 7
+			}
+		],
+		"shims": {},
+		"key": "000984d68e51622894b8b994af97bd77",
+		"checksum": "04763b944bb8745e560c11d99888234c"
+	},
+	"timestamps": {
+		"/config_map_star_adapter/_reporter": 1374562516000,
+		"/config_map_star_adapter/d": 1374562516000,
+		"/config_map_star_adapter/adapter/d": 1374562516000,
+		"/config_map_star_adapter/e": 1374562516000
+	}
+}

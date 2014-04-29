@@ -1,0 +1,22 @@
+{
+	"state": 1,
+	"analysisData": {
+		"dependencyList": [
+			"/plugin_normalize/prime/c"
+		],
+		"pluginRefs": {},
+		"missingNamesList": [
+			{
+				"uri": "/plugin_normalize/prime/c",
+				"id": "prime/c",
+				"nameIndex": 7
+			}
+		],
+		"shims": {},
+		"key": "076cf69af221e26a9a920fbecb48a5b0",
+		"checksum": "65b804d42f8aa7c85ca0effb61bc0624"
+	},
+	"timestamps": {
+		"/plugin_normalize/prime/c": 1374562516000
+	}
+}

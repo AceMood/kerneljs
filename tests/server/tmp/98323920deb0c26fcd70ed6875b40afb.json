@@ -1,0 +1,18 @@
+{
+	"state": 1,
+	"analysisData": {
+		"dependencyList": [
+			"/basic_require/c"
+		],
+		"pluginRefs": {},
+		"missingNamesList": [],
+		"shims": {
+			"require": "\n(function(root, cfg) {\ndefine('require', function() {\n});\n}(this, zazl._getConfig()));\n"
+		},
+		"key": "98323920deb0c26fcd70ed6875b40afb",
+		"checksum": "22d5d50ad99bd72ce2add6e09cc10267"
+	},
+	"timestamps": {
+		"/basic_require/c": 1374562516000
+	}
+}

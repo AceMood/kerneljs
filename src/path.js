@@ -73,7 +73,11 @@ function getPageDir() {
  * @return {boolean} b
  */
 function isTopLevel(p) {
-    return isRelative(p) && p[0] != ".";
+    // if we use array-like as string[index] will return undefined
+    // in IE6 & 7, so we should use string.charAt(index) instead.
+    // see more:
+    // 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String#section_5'
+    return isRelative(p) && p.charAt(0) != ".";
 }
 
 

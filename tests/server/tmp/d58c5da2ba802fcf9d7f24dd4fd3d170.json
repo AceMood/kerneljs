@@ -1,0 +1,80 @@
+{
+	"state": 1,
+	"analysisData": {
+		"dependencyList": [
+			"/config_map/_reporter",
+			"/config_map/c1",
+			"/config_map/c1/sub",
+			"/config_map/a1",
+			"/config_map/c",
+			"/config_map/c/sub",
+			"/config_map/b",
+			"/config_map/c2",
+			"/config_map/c2/sub",
+			"/config_map/a1/sub/one"
+		],
+		"pluginRefs": {},
+		"missingNamesList": [
+			{
+				"uri": "/config_map/a1",
+				"id": "a",
+				"nameIndex": 7
+			},
+			{
+				"uri": "/config_map/c1",
+				"id": "c1",
+				"nameIndex": 7
+			},
+			{
+				"uri": "/config_map/c1/sub",
+				"id": "c1/sub",
+				"nameIndex": 7
+			},
+			{
+				"uri": "/config_map/b",
+				"id": "b",
+				"nameIndex": 7
+			},
+			{
+				"uri": "/config_map/c",
+				"id": "c",
+				"nameIndex": 7
+			},
+			{
+				"uri": "/config_map/c/sub",
+				"id": "c/sub",
+				"nameIndex": 7
+			},
+			{
+				"uri": "/config_map/a1/sub/one",
+				"id": "a/sub/one",
+				"nameIndex": 7
+			},
+			{
+				"uri": "/config_map/c2",
+				"id": "c2",
+				"nameIndex": 7
+			},
+			{
+				"uri": "/config_map/c2/sub",
+				"id": "c2/sub",
+				"nameIndex": 7
+			}
+		],
+		"shims": {},
+		"key": "d58c5da2ba802fcf9d7f24dd4fd3d170",
+		"checksum": "73c1ae0af80ff626bf1373e16468184c"
+	},
+	"timestamps": {
+		"/config_map/_reporter": 1374562516000,
+		"/config_map/c1": 1374562516000,
+		"/config_map/c1/sub": 1374562516000,
+		"/config_map/a1": 1374562516000,
+		"/config_map/c": 1374562516000,
+		"/config_map/c/sub": 1374562516000,
+		"/config_map/b": 1374562516000,
+		"/config_map/c2": 1374562516000,
+		"/config_map/c2/sub": 1374562516000,
+		"/config_map/a1/sub/one": 1374562516000
+	}
+}

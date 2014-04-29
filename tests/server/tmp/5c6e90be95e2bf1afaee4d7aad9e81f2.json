@@ -1,0 +1,22 @@
+{
+	"state": 1,
+	"analysisData": {
+		"dependencyList": [
+			"/plugin_normalize/a"
+		],
+		"pluginRefs": {},
+		"missingNamesList": [
+			{
+				"uri": "/plugin_normalize/a",
+				"id": "a",
+				"nameIndex": 7
+			}
+		],
+		"shims": {},
+		"key": "5c6e90be95e2bf1afaee4d7aad9e81f2",
+		"checksum": "da870a2f359587771d09de1f449ef543"
+	},
+	"timestamps": {
+		"/plugin_normalize/a": 1374562516000
+	}
+}

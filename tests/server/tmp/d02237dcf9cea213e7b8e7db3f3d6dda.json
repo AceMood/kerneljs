@@ -1,0 +1,87 @@
+{
+	"state": 1,
+	"analysisData": {
+		"dependencyList": [
+			"/config_map_star/_reporter",
+			"/config_map_star/c1",
+			"/config_map_star/c1/sub",
+			"/config_map_star/a1",
+			"/config_map_star/another/minor",
+			"/config_map_star/another/c",
+			"/config_map_star/another/c/dim",
+			"/config_map_star/another/c/sub",
+			"/config_map_star/b",
+			"/config_map_star/c2",
+			"/config_map_star/a1/sub/one"
+		],
+		"pluginRefs": {},
+		"missingNamesList": [
+			{
+				"uri": "/config_map_star/a1",
+				"id": "a",
+				"nameIndex": 7
+			},
+			{
+				"uri": "/config_map_star/c1",
+				"id": "c1",
+				"nameIndex": 7
+			},
+			{
+				"uri": "/config_map_star/c1/sub",
+				"id": "c1/sub",
+				"nameIndex": 7
+			},
+			{
+				"uri": "/config_map_star/b",
+				"id": "b",
+				"nameIndex": 7
+			},
+			{
+				"uri": "/config_map_star/another/c",
+				"id": "another/c",
+				"nameIndex": 7
+			},
+			{
+				"uri": "/config_map_star/another/minor",
+				"id": "another/minor",
+				"nameIndex": 7
+			},
+			{
+				"uri": "/config_map_star/another/c/sub",
+				"id": "another/c/sub",
+				"nameIndex": 7
+			},
+			{
+				"uri": "/config_map_star/another/c/dim",
+				"id": "another/c/dim",
+				"nameIndex": 7
+			},
+			{
+				"uri": "/config_map_star/a1/sub/one",
+				"id": "a/sub/one",
+				"nameIndex": 7
+			},
+			{
+				"uri": "/config_map_star/c2",
+				"id": "c2",
+				"nameIndex": 7
+			}
+		],
+		"shims": {},
+		"key": "d02237dcf9cea213e7b8e7db3f3d6dda",
+		"checksum": "101ccdcfe8a89f6d024352b0fb7d61d6"
+	},
+	"timestamps": {
+		"/config_map_star/_reporter": 1374562516000,
+		"/config_map_star/c1": 1374562516000,
+		"/config_map_star/c1/sub": 1374562516000,
+		"/config_map_star/a1": 1374562516000,
+		"/config_map_star/another/minor": 1374562516000,
+		"/config_map_star/another/c": 1374562516000,
+		"/config_map_star/another/c/dim": 1374562516000,
+		"/config_map_star/another/c/sub": 1374562516000,
+		"/config_map_star/b": 1374562516000,
+		"/config_map_star/c2": 1374562516000,
+		"/config_map_star/a1/sub/one": 1374562516000
+	}
+}

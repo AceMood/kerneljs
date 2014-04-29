@@ -87,8 +87,10 @@ function define(id, deps, factory) {
         status: Module.STATUS.uninit
     });
 
+    // if in a concatenate file define will occur first,
+    // there would be no kernel_name here.
     var name = getCurrentScript().kernel_name;
-    if (isTopLevel(name) && !mod.id)
+    if (name && isTopLevel(name) && !mod.id)
         mod.id = name;
 
     // fill exports list to depMods
