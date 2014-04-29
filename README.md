@@ -15,6 +15,9 @@ productions in our Company, Department, I expect.
 
 Support:
 IE6-9
+
 Chrome
+
 FF (to be tested)
+
 Safari (to be tested)
