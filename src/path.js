@@ -106,7 +106,7 @@ function isAbsolute(p) {
  * @return {boolean} b
  */
 function isRelative(p) {
-    return !isAbsolute(p) && (/^(\.){1,2}\//.test(p) || p[0] !== "/");
+    return !isAbsolute(p) && (/^(\.){1,2}\//.test(p) || p.charAt(0) !== "/");
 }
 
 
@@ -136,7 +136,7 @@ function resolveId(id, base) {
 
 	// step 2: add file extension if necessary
     id = normalize(id);
-    var conjuction = id[0] == "/" ? "" : "/";
+    var conjuction = id.charAt(0) == "/" ? "" : "/";
     var url = (base ? dirname(base) : getPageDir()) + conjuction + id;
 
     if (!fileExtRegExp.test(url)) url += ".js";
@@ -176,7 +176,7 @@ function dirname(p) {
  * @param {string} p
  * @return {string} s
  */
-function parseAlias(p) {
+function parseMap(p) {
     var parts = p.split("/"),
         part = parts[0];
     if (kernel.alias[part]) {
