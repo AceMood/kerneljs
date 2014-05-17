@@ -1,28 +1,32 @@
 
 /**
- * load all dependencies of mod.
+ * Load all dependencies of a specific module.
  * @param {Object|Module} mod Whose deps to be fetched.
  */
 function load(mod) {
+
     var cache = kernel.cache;
     var count = mod.deps.length;
-    var currentPath = getCurrentPath();
     var inPathConfig = kernel.paths && kernel.paths[mod.id] ? true : false;
+    // todo I doubt about the uri in paths config and all its rel path
+    // will be resolved relative to location.href, See
+    // test case: config_path_relative for more information.
+    var currentPath = inPathConfig ? loc.href : getCurrentPath();
 
-    // record in fetchingList to represent the module is now
+    // Record in fetchingList to represent the module is now
     // fetching its dependencies.
     fetchingList.add(mod);
 
-    // update mod's status
+    // Update mod's status
     mod.status = Module.STATUS.fetching;
 
-    // register module in global cache with an empty
+    // Register module in global cache with an empty.
     // export for later checking if its status is available.
     if (!cache.mods[mod.uid])
         cache.mods[mod.uid]= empty_mod;
 
     forEach(mod.deps, function(dep, index) {
-        // after resolving, built-in module and existed modules are
+        // After resolving, built-in module and existed modules are
         // available. it's useful after static analyze and combo files
         // into one js file.
         // so check if an object first of all.
@@ -30,19 +34,24 @@ function load(mod) {
             --count;
             return;
         }
+
         // else it's a real file path. get its responding uid
-        if (inPathConfig) {
-            currentPath = loc.href;
-        }
         var _dep = resolveId(dep, currentPath);
         var uid = cache.path2uid[_dep];
-        // file has been fetched
-        if (uid) {
+
+        // File has been fetched, but its deps may not being fetched yet,
+        // so its status is 'fetching' now.
+        // we check circular reference first, if it there, we return the
+        // empty_mod immediately.
+        if (uid && cache.mods[uid[0]] &&
+            (cache.mods[uid[0]].status == Module.STATUS.complete ||
+                checkCycle(_dep, mod))) {
             --count;
             mod.depMods[index] = cache.mods[uid[0]].exports;
-        // it's a user-defined or not been fetched file.
-        // if it's a user-defined id and not config in global
-        // alias, it will produce a 404 error.
+
+        // It's a user-defined or not been fetched file.
+        // If it's a user-defined id and not config in global alias,
+        // it will produce a 404 error.
         } else {
             // record this mod depend on the dep current now.
             if (!dependencyList[_dep])
@@ -58,7 +67,7 @@ function load(mod) {
         }
     });
 
-    // if all deps module have been cached
+    // If all module have been cached.
     // In notify, mod will be removed from fetchingList
     count == 0 && notify(mod);
 }
@@ -79,38 +88,46 @@ function require(deps, cb) {
     // pass-in a config object
     if (typeOf(deps) == "object" && !cb) {
         kernel.config(deps);
-        return;
+        return null;
     }
     // no deps
-    if (deps.length == 0 && cb)
-        return cb();
+    if (typeOf(deps) == "array" && deps.length == 0) {
+        if (typeOf(cb) == "function") return cb();
+        else return cb;
+    }
 
     // Type conversion
-    // it's a single module dependency and no callback
+    // it's a single module dependency and with no callback
     if (typeOf(deps) == "string")
         deps = [deps];
 
-    var uid;
+    var uid, _currentPath = getCurrentPath();
     if (cb) {
-        // require may introduce an anonymous module,
-        // it has the unique uid and id is empty string;
+        // 'require' invoke can introduce an anonymous module,
+        // it has the unique uid and id is null.
         uid = kernel.uidprefix + kernel.uid++;
         var mod = new Module({
             uid: uid,
             id: null,
-            url: null,
+            url: _currentPath,
             deps: deps,
             factory: cb,
             status: Module.STATUS.uninit
         });
+
+        // convert dependency names to an object Array, of course,
+        // if any rely module's export haven't resolved, use the
+        // default name replace it.
         mod.depMods = map(deps, function(dep) {
-            var path = resolveId(dep, getCurrentPath());
+            var path = resolveId(dep, _currentPath);
             return resolve(dep) || resolve(path);
         });
 
         load(mod);
+        return null;
+
     } else {
-        var _dep = resolveId(deps[0], getCurrentPath());
+        var _dep = resolveId(deps[0], _currentPath);
         // a simple require statements always be resolved preload.
         // so if length == 1 then return its exports object.
         var _mod = resolve(deps[0]);
@@ -125,13 +142,15 @@ function require(deps, cb) {
 
 
 /**
- * when a module prepared, mean all its dependencies have already
- * resolved and its factory has evaluated. notify all other modules
- * depend on it
+ * Whenever a module is prepared, means all its dependencies have already
+ * been fetched and its factory function has executed. So notify all other
+ * modules depend on it.
  * @param {Module} mod
  */
 function notify(mod) {
+
     fetchingList.remove(mod);
+
     // amd
     if (!mod.cjsWrapper)
         mod.exports = typeOf(mod.factory) == "object" ?
@@ -141,23 +160,26 @@ function notify(mod) {
         mod.factory.apply(null, mod.depMods);
 
     mod.status = Module.STATUS.complete;
-    // register module in global cache
+
+    // Register module in global cache
     kernel.cache.mods[mod.uid] = mod;
+    // two keys are the same thing
     if (mod.id) {
         kernel.cache.mods[mod.id] = mod;
     }
-    // dispatch ready event
-    // all other modules recorded in dependencyList depend on this mod
-    // will execute their factories in order.
+
+    // Dispatch ready event.
+    // All other modules recorded in dependencyList depend on this mod
+    // will execute their factories by order.
     var depandants = dependencyList[mod.url];
     if (depandants) {
-        // here I first delete it because a complex condition:
+        // Here I first delete it because a complex condition:
         // if a define occurs in a factory function, and the module whose
         // factory function is current executing, it's a callback executing.
         // which means the currentScript would be mod just been fetched successfully.
         // the url would be the previous one. and we store the record in global cache
-        // dependencyList. SO we must delete it first to avoid the factory function
-        // execute twice.
+        // dependencyList.
+        // So we must delete it first to avoid the factory function execute twice.
         delete dependencyList[mod.url];
         forEach(depandants, function(dependant) {
             if (dependant.ready && dependant.status == Module.STATUS.fetching)
@@ -177,10 +199,17 @@ function notify(mod) {
  */
 function resolve(dep, mod) {
     // step 1: parse built-in and already existed modules
-    if (kernel.builtin[dep]) {
-        return kernel.builtin[dep];
+    if (kernel.builtin[dep]) return kernel.builtin[dep];
+    if (kernel.cache.mods[dep]) {
+        var currentPath = getCurrentPath(),
+            _dep = resolveId(dep, currentPath);
+        // we check circular reference first, if it there, we return the
+        // empty_mod immediately.
+        if (kernel.cache.mods[dep].status == Module.STATUS.complete ||
+            checkCycle(_dep, mod))
+            return kernel.cache.mods[dep].exports;
     }
-    if (kernel.cache.mods[dep]) return kernel.cache.mods[dep].exports;
+
 
     // step 2: cjs-wrapper form
     if (dep == "require") return require;
@@ -199,3 +228,34 @@ function resolve(dep, mod) {
 require.toUrl = function(id) {
     return resolveId(id);
 };
+
+
+/**
+ * A mechanism to check cycle reference.
+ * More about cycle reference can be solved by design pattern, and a
+ * well-designed API(Architecture) can avoid this problem, but in case
+ * it happened, we do the same thing for dojo loader and specification
+ * written on RequireJS website. See:
+ *  'http://requirejs.org/docs/api.html#circular'
+ *   and
+ *  'http://dojotoolkit.org/documentation/tutorials/1.9/modules_advanced/'
+ *
+ * todo simple cycle refer done here
+ * @param {String} dep A file path that contains the fetching module.
+ *     We should resolve the module with url set to this dep and check its
+ *     dependencies to know whether there  produce a cycle reference.
+ * @param {Module|Object} mod current parse module.
+ * @return {Boolean} true if there has a cycle reference and vice versa.
+ */
+function checkCycle(dep, mod) {
+    var ret = false;
+    var uid = kernel.cache.path2uid[dep];
+    var m;
+    if (uid && (m = kernel.cache.mods[uid[0]])) {
+        if (indexOf(dependencyList[mod.url], m) >= 0) {
+            ret = true;
+        }
+    }
+
+    return ret;
+}

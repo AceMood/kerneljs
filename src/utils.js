@@ -259,7 +259,7 @@ function getCurrentScript() {
 /**
  * Retrieve the current executing script node's
  * absolute path.
- * @return {*|string}
+ * @return {*|String}
  */
 function getCurrentPath() {
     var node = getCurrentScript();

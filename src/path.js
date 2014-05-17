@@ -129,12 +129,14 @@ function resolveId(id, base) {
     if (isTopLevel(id)) {
         // step 1: normalize id and parse head part as paths
         id = parsePaths(id);
+        // step 2: normalize id and parse head part as pkgs
+        id = parsePackages(id);
         // here if a top-level path then relative base change to
         // current document's baseUri.
         base = null;
     }
 
-	// step 2: add file extension if necessary
+	// step 3: add file extension if necessary
     id = normalize(id);
     var conjuction = id.charAt(0) == "/" ? "" : "/";
     var url = (base ? dirname(base) : getPageDir()) + conjuction + id;
@@ -188,14 +190,41 @@ function parseMap(p) {
 
 
 /**
- * Alias will appear at first word of path.
+ * Alias will appear at head part of path.
  * So replace it if exists in kernel.paths.
- * @param {string} p
- * @return {string} s
+ * @param {String} p
+ * @return {String} s
  */
 function parsePaths(p) {
     if (kernel.paths && kernel.paths[p]) {
         p = kernel.paths[p];
+    }
+    return p;
+}
+
+
+/**
+ * pkg name can also impact on path resolving.
+ * After paths, we should find it in pkg configuration.
+ * So replace it if exists in kernel.packages.
+ * @param {String} p
+ * @return {String} s
+ */
+function parsePackages(p) {
+    var pkgs = kernel.packages,
+        fpath = "";
+    if (pkgs && pkgs.length > 0) {
+        forEach(pkgs, function(pkg) {
+            // starts with a package name
+            if (p.indexOf(pkg.name) === 0) {
+                // absolutely equal
+                if (p.length === pkg.name.length) {
+                    fpath = "/" + (pkg.main ? pkg.main : 'main');
+                }
+                p = p.replace(pkg.name, pkg.location || pkg.name) + fpath;
+                return break_obj;
+            }
+        })
     }
     return p;
 }

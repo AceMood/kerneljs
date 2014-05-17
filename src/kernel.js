@@ -11,10 +11,10 @@ if (global.kernel) {
 
 // universal global module id
 kernel.uid = 0;
-kernel.uidprefix = "kernel_";
+kernel.uidprefix = "AceMood@kernel_";
 
 
-// all modules being fetched means the module's dependencies
+// All modules being fetched means the module's dependencies
 // is now fetching, and the key is mod's uid, value is mod itself;
 var fetchingList = {
     mods: {},
@@ -25,7 +25,6 @@ var fetchingList = {
         this.mods[mod.uid] = mod;
     },
     clear: function() {
-        this.mods = null;
         this.mods = {};
     },
     remove: function(mod) {
@@ -37,7 +36,7 @@ var fetchingList = {
 };
 
 
-// if requiring a module, then record it here. So that once the
+// If requiring a module, then record it here. So that once the
 // module complete, notify all its dependants.
 // Due to add module dependency when resolve id->path, we can not use
 // module's uid as the key of dependencyList, so we use url here,
@@ -45,7 +44,7 @@ var fetchingList = {
 var dependencyList = {};
 
 
-// if a module a fetching now means the corresponding script is loading now,
+// If a module a fetching now means the corresponding script is loading now,
 // before it complete loaded, we should not fetch it twice, but only when
 // define the module it would record in the 'cache.path2uid', so here we just
 // record here to avoid fetch twice.
@@ -54,12 +53,12 @@ var sendingList = {};
 
 
 /**
- * dynamic config kernel.
+ * Dynamic config kernel.
  * property of obj can be:
  * [alias]: a collection of short names will be used to stand for 
  *     a long name or long path module.
- * [map]: a hash 
- * [baseUri]:   
+ * [paths]: a hash
+ * [baseUrl]:
  */
 kernel.config = function(obj) {
     if (typeOf(obj) != "object")
@@ -78,7 +77,7 @@ kernel.config = function(obj) {
 };
 
 
-// global cache.
+// Global cache.
 kernel.cache = {
     // use a global cache to store uid-module pairs.
     // each uid mapping to a unique module, so it's a
@@ -100,17 +99,16 @@ kernel.cache = {
 // default built-in modules
 // map the short name and relative path?
 kernel.config({
-    baseUri: "",
+    baseUrl: "",
     debug: true,
-    map: {},
     builtin: {
-        require: require
+
     }
 });
 
 
 /**
- * clear all cache.
+ * Clear all cache.
  */
 kernel.reset = function() {
     kernel.cache = {
