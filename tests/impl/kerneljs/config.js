@@ -14,8 +14,8 @@ var config = require,
         namedWrapped: true,
         require: true,
         //plugins: false,
-        pathsConfig: false
-        //packagesConfig: false,
+        pathsConfig: false,
+        packagesConfig: false
         //mapConfig: false,
         //moduleConfig: false,
         //shimConfig: false
