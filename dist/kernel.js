@@ -291,7 +291,7 @@ function getCurrentScript() {
  */
 function getCurrentPath() {
     var node = getCurrentScript();
-    return node && node.getAttribute("src", 4);
+    return node && (node.hasAttribute ? node.src : node.getAttribute("src", 4));
 }
 
 
@@ -359,7 +359,7 @@ function define(id, deps, factory) {
         if (factory.length) {
             factory
                 .toString()
-                .replace(commentRegExp, '')
+                .replace(commentRegExp, "")
                 .replace(cjsRequireRegExp, function(match, quote, dep) {
                     deps.push(dep);
                 });
@@ -463,7 +463,7 @@ function load(mod) {
     if (!cache.mods[mod.uid])
         cache.mods[mod.uid]= empty_mod;
 
-    forEach(mod.deps, function(dep, index) {
+    forEach(mod.deps, function(name, index) {
         // After resolving, built-in module and existed modules are
         // available. it's useful after static analyze and combo files
         // into one js file.
@@ -474,8 +474,8 @@ function load(mod) {
         }
 
         // else it's a real file path. get its responding uid
-        var _dep = resolveId(dep, currentPath);
-        var uid = cache.path2uid[_dep];
+        var path = resolveId(name, currentPath);
+        var uid = cache.path2uid[path];
 
         // File has been fetched, but its deps may not being fetched yet,
         // so its status is 'fetching' now.
@@ -483,7 +483,7 @@ function load(mod) {
         // empty_mod immediately.
         if (uid && cache.mods[uid[0]] &&
             (cache.mods[uid[0]].status == Module.STATUS.complete ||
-                checkCycle(_dep, mod))) {
+                checkCycle(path, mod))) {
             --count;
             mod.depMods[index] = cache.mods[uid[0]].exports;
 
@@ -492,15 +492,15 @@ function load(mod) {
         // it will produce a 404 error.
         } else {
             // record this mod depend on the dep current now.
-            if (!dependencyList[_dep])
-                dependencyList[_dep] = [mod];
-            else if (indexOf(dependencyList[_dep], mod) < 0)
-                dependencyList[_dep].push(mod);
+            if (!dependencyList[path])
+                dependencyList[path] = [mod];
+            else if (indexOf(dependencyList[path], mod) < 0)
+                dependencyList[path].push(mod);
 
-            if (!sendingList[_dep]) {
-                sendingList[_dep] = true;
+            if (!sendingList[path]) {
+                sendingList[path] = true;
                 // script insertion
-                fetch(_dep, dep);
+                fetch(path, name);
             }
         }
     });
@@ -592,10 +592,9 @@ function notify(mod) {
     // amd
     if (!mod.cjsWrapper)
         mod.exports = typeOf(mod.factory) == "object" ?
-            mod.factory : (mod.factory.apply(null, mod.depMods) || {});
+            mod.factory : mod.factory.apply(null, mod.depMods);
     // cmd
-    else
-        mod.factory.apply(null, mod.depMods);
+    else mod.factory.apply(null, mod.depMods);
 
     mod.status = Module.STATUS.complete;
 
@@ -629,30 +628,30 @@ function notify(mod) {
 
 /**
  * Used in the CommonJS wrapper form of define a module.
- * @param {String} dep
+ * @param {String} name
  * @param {Module} mod Pass-in this argument is to used in a cjs
  *   wrapper form, if not we could not refer the module and exports
  *
  * @return {Object}
  */
-function resolve(dep, mod) {
+function resolve(name, mod) {
     // step 1: parse built-in and already existed modules
-    if (kernel.builtin[dep]) return kernel.builtin[dep];
-    if (kernel.cache.mods[dep]) {
+    if (kernel.builtin[name]) return kernel.builtin[name];
+    if (kernel.cache.mods[name]) {
         var currentPath = getCurrentPath(),
-            _dep = resolveId(dep, currentPath);
+            path = resolveId(name, currentPath);
         // we check circular reference first, if it there, we return the
         // empty_mod immediately.
-        if (kernel.cache.mods[dep].status == Module.STATUS.complete ||
-            checkCycle(_dep, mod))
-            return kernel.cache.mods[dep].exports;
+        if (kernel.cache.mods[name].status == Module.STATUS.complete ||
+            checkCycle(path, mod))
+            return kernel.cache.mods[name].exports;
     }
 
 
     // step 2: cjs-wrapper form
-    if (dep == "require") return require;
-    else if (dep == "module") return mod;
-    else if (dep == "exports") return mod && mod.exports;
+    if (name == "require") return require;
+    else if (name == "module") return mod;
+    else if (name == "exports") return mod && mod.exports;
 
     return null;
 }
@@ -678,16 +677,16 @@ require.toUrl = function(id) {
  *   and
  *  'http://dojotoolkit.org/documentation/tutorials/1.9/modules_advanced/'
  *
- * todo simple cycle refer done here
- * @param {String} dep A file path that contains the fetching module.
+ * todo only simple cycle refer done here
+ * @param {String} path A file path that contains the fetching module.
  *     We should resolve the module with url set to this dep and check its
  *     dependencies to know whether there  produce a cycle reference.
  * @param {Module|Object} mod current parse module.
  * @return {Boolean} true if there has a cycle reference and vice versa.
  */
-function checkCycle(dep, mod) {
+function checkCycle(path, mod) {
     var ret = false;
-    var uid = kernel.cache.path2uid[dep];
+    var uid = kernel.cache.path2uid[path];
     var m;
     if (uid && (m = kernel.cache.mods[uid[0]])) {
         if (indexOf(dependencyList[mod.url], m) >= 0) {

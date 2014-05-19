@@ -63,7 +63,7 @@ function define(id, deps, factory) {
         if (factory.length) {
             factory
                 .toString()
-                .replace(commentRegExp, '')
+                .replace(commentRegExp, "")
                 .replace(cjsRequireRegExp, function(match, quote, dep) {
                     deps.push(dep);
                 });

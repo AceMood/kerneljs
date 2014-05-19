@@ -263,5 +263,5 @@ function getCurrentScript() {
  */
 function getCurrentPath() {
     var node = getCurrentScript();
-    return node && node.getAttribute("src", 4);
+    return node && (node.hasAttribute ? node.src : node.getAttribute("src", 4));
 }
