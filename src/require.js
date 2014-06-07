@@ -153,10 +153,14 @@ function notify(mod) {
 
     // amd
     if (!mod.cjsWrapper)
-        mod.exports = typeOf(mod.factory) == "object" ?
-            mod.factory : mod.factory.apply(null, mod.depMods);
+        mod.exports = typeOf(mod.factory) == "function" ?
+            mod.factory.apply(null, mod.depMods) : mod.factory;
     // cmd
     else mod.factory.apply(null, mod.depMods);
+
+    if (isNull(mod.exports)) {
+        mod.exports = {};
+    }
 
     mod.status = Module.STATUS.complete;
 

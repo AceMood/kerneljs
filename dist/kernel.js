@@ -85,40 +85,6 @@ function map(arr, fn, opt_context) {
 
 
 /**
- * ECMA-262 described:
- * 15.4.4.18 Array.prototype.forEach ( callbackfn [ , thisArg ] )
- * callbackfn should be a function that accepts three arguments.
- * forEach calls callbackfn once for each element present in the array,
- * in ascending order. callbackfn is called only for elements of the array
- * which actually exist; it is not called for missing elements of the array.
- * If a thisArg parameter is provided, it will be used as the this value
- * for each invocation of callbackfn. If it is not provided, undefined is used instead.
- * callbackfn is called with three arguments: the value of the element,
- * the index of the element, and the object being traversed.
- * forEach does not directly mutate the object on which it is called
- * but the object may be mutated by the calls to callbackfn.
- * The range of elements processed by forEach is set before the first call to callbackfn.
- * Elements which are appended to the array after the call to forEach begins will not
- * be visited by callbackfn. If existing elements of the array are changed, their value
- * as passed to callback will be the value at the time forEach visits them;
- * elements that are deleted after the call to forEach begins and before being visited are not visited.
- * When the forEach method is called with one or two arguments, the following steps are taken:
- * 1. Let O be the result of calling ToObject passing the this value as the argument.
- * 2. Let lenValue be the result of calling the [[Get]] internal method of O with the argument "length".
- * 3. Let len be ToUint32(lenValue).
- * 4. If IsCallable(callbackfn) is false, throw a TypeError exception.
- * 5. If thisArg was supplied, let T be thisArg; else let T be undefined.
- * 6. Let k be 0.
- * 7. Repeat, while k < len
- *  a. Let Pk be ToString(k).
- *  b. Let kPresent be the result of calling the [[HasProperty]] internal method of O with argument Pk.
- *  c. If kPresent is true, then
- *      i. Let kValue be the result of calling the [[Get]] internal method of O with argument Pk.
- *      ii. Call the [[Call]] internal method of callbackfn with T as the this value and argument list
- *          containing kValue, k, and O.
- *  d. Increase k by 1.
- * 8. Return undefined.
- * The length property of the forEach method is 1.
  * NOTE The forEach function is intentionally generic; it does not require that
  * its this value be an Array object. Therefore it can be transferred to other kinds of objects
  * for use as a method. Whether the forEach function can be applied successfully to a host object
@@ -160,8 +126,6 @@ var type_map = {
     "[object Array]" : "array",
     "[object Function]": "function",
     "[object RegExp]": "regexp",
-    "[object Null]"  : "null",
-    "[object Undefined]" : "undefined",
     "[object String]": "string",
     "[object Number]": "number"
 };
@@ -172,6 +136,16 @@ var type_map = {
  */
 function typeOf(obj) {
     return type_map[toString.call(obj)]
+}
+
+
+/**
+ * If obj is undefined or null
+ * @param obj
+ * @return {Boolean}
+ */
+function isNull(obj) {
+    return obj === void 0 || obj === null;
 }
 
 
@@ -280,7 +254,36 @@ function getCurrentScript() {
         }
         // todo in FF early version
         return null;
-    })();
+    })() || getAbsPathOfScript();
+}
+
+
+function getAbsPathOfScript() {
+    var ret = null;
+    var stack;
+    try {
+        throw new Error();
+    } catch(e) {
+        stack = e.stack;
+    }
+
+    if (!stack) return ret;
+
+    // chrome uses at, FF uses @
+    var e = stack.indexOf(" at ") != -1 ? " at " : "@";
+    while (stack.indexOf(e) !== -1)
+        stack = stack.substring(stack.indexOf(e) + e.length);
+    stack = stack.substring(0, stack.indexOf(".js") + 3);
+
+    var _scripts = scripts();
+    forEach(_scripts, function(script) {
+        var path = script.hasAttribute ? script.src : script.getAttribute("src", 4);
+        if (path == stack) {
+            ret = script;
+            return break_obj;
+        }
+    });
+    return ret;
 }
 
 
@@ -433,7 +436,7 @@ function define(id, deps, factory) {
 define.amd = {
     creator: "AceMood",
     email: "zmike86@gmail.com",
-    version: "1.0"
+    version: "0.9"
 };
 
 
@@ -591,10 +594,14 @@ function notify(mod) {
 
     // amd
     if (!mod.cjsWrapper)
-        mod.exports = typeOf(mod.factory) == "object" ?
-            mod.factory : mod.factory.apply(null, mod.depMods);
+        mod.exports = typeOf(mod.factory) == "function" ?
+            mod.factory.apply(null, mod.depMods) : mod.factory;
     // cmd
     else mod.factory.apply(null, mod.depMods);
+
+    if (isNull(mod.exports)) {
+        mod.exports = {};
+    }
 
     mod.status = Module.STATUS.complete;
 
@@ -1134,7 +1141,7 @@ Module.prototype.checkAllDepsOK = function() {
     // pass through all values are undefined, so it will introduce
     // some tricky results.
     for(var i= 0; i < this.depMods.length; ++i) {
-        if (this.depMods[i] === undefined || this.depMods[i] === null) {
+        if (isNull(this.depMods[i])) {
             ok = false;
             break;
         }

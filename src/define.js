@@ -137,5 +137,5 @@ function define(id, deps, factory) {
 define.amd = {
     creator: "AceMood",
     email: "zmike86@gmail.com",
-    version: "1.0"
+    version: "0.9"
 };
