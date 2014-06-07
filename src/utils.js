@@ -226,36 +226,43 @@ function getCurrentScript() {
         }
         // todo in FF early version
         return null;
-    })() || getAbsPathOfScript();
+    })() || (function() {
+        var ret = null;
+        var stack;
+        try {
+            throw new Error();
+        } catch(e) {
+            stack = e.stack;
+        }
+
+        if (!stack) return ret;
+
+        // chrome uses at, FF uses @
+        var e = stack.indexOf(" at ") != -1 ? " at " : "@";
+        while (stack.indexOf(e) !== -1)
+            stack = stack.substring(stack.indexOf(e) + e.length);
+        stack = stack.substring(0, stack.indexOf(".js") + 3);
+
+        var _scripts = scripts();
+        forEach(_scripts, function(script) {
+            var path = getAbsPathOfScript(script);
+            if (path == stack) {
+                ret = script;
+                return break_obj;
+            }
+        });
+        return ret;
+    })();
 }
 
 
-function getAbsPathOfScript() {
-    var ret = null;
-    var stack;
-    try {
-        throw new Error();
-    } catch(e) {
-        stack = e.stack;
-    }
-
-    if (!stack) return ret;
-
-    // chrome uses at, FF uses @
-    var e = stack.indexOf(" at ") != -1 ? " at " : "@";
-    while (stack.indexOf(e) !== -1)
-        stack = stack.substring(stack.indexOf(e) + e.length);
-    stack = stack.substring(0, stack.indexOf(".js") + 3);
-
-    var _scripts = scripts();
-    forEach(_scripts, function(script) {
-        var path = script.hasAttribute ? script.src : script.getAttribute("src", 4);
-        if (path == stack) {
-            ret = script;
-            return break_obj;
-        }
-    });
-    return ret;
+/**
+ * Retrieve the absolute path of script node cross browser.
+ * @param {HTMLScriptElement} script
+ * @return {*}
+ */
+function getAbsPathOfScript(script) {
+    return script.hasAttribute ? script.src : script.getAttribute("src", 4);
 }
 
 
@@ -266,5 +273,5 @@ function getAbsPathOfScript() {
  */
 function getCurrentPath() {
     var node = getCurrentScript();
-    return node && (node.hasAttribute ? node.src : node.getAttribute("src", 4));
+    return node && getAbsPathOfScript(node);
 }
