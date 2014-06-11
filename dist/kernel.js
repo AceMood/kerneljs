@@ -1035,10 +1035,17 @@ function parseMap(p) {
  * @return {String} s
  */
 function parsePaths(p) {
-    if (kernel.paths && kernel.paths[p]) {
-        p = kernel.paths[p];
+    var ret = [];
+    if (kernel.paths) {
+		var part = p;
+        var parts = p.split("/");
+        while (!(part in kernel.paths) && parts.length) {
+            ret.unshift(parts.pop());
+			part = parts.join("/");
+        }
+        p = kernel.paths[part] ? kernel.paths[part] : part;
     }
-    return p;
+    return p + ret.join("/");
 }
 
 
@@ -1058,7 +1065,7 @@ function parsePackages(p) {
             if (p.indexOf(pkg.name) === 0) {
                 // absolutely equal
                 if (p.length === pkg.name.length) {
-                    fpath = "/" + (pkg.main ? pkg.main : 'main');
+                    fpath = "/" + (pkg.main ? pkg.main : "main");
                 }
                 p = p.replace(pkg.name, pkg.location || pkg.name) + fpath;
                 return break_obj;
