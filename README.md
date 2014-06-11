@@ -1,19 +1,21 @@
 KernelJS
 ========
 
-Module pool (all modules should in a AMD form)
+KernelJS是一个符合AMD规范的前端模块加载器。目前处于第一版本，通过AMD官方的
+80%测试用例，其余部分主要差别在插件机制的实现上。我本人在没有想到最好的解决
+方案前不愿轻易添加插件的实现，毕竟目前在项目中已有功能已经足够。KernelJS作为
+轻量级的加载器，代码量小，易读性高，我保证只要会一点JS的人都可以读懂。可喜的
+是它还通过了AMD官方变态的测试用例^_^。
 
-I expect this tool would be the foundation of sojs project.
-
-In next version production of our team, I will promote all members
-to use the loader. All other modules already exist could be easily
-reused.
-
-sojo is a modules pool of AMD. It finally provides supports of all
-productions in our Company, Department, I expect.
-
+接下来仍然又要做的事情：
+一是对现有代码进行优化，代码还有上升的可能，不过使用者不必担心，因为公开API
+    不会改变。
+二是插件机制的添加。
+三是配套的打包工具，目前不想做的太复杂，打算先提供一个类似r.js的打包脚本，至于
+    注册成node模块或者添加到grunt插件，bower等都是后话。
 
 Support:
+
 IE6.0+
 
 Chrome1.0+
