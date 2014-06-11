@@ -14,10 +14,10 @@ productions in our Company, Department, I expect.
 
 
 Support:
-IE6-9
+IE6.0+
 
-Chrome
+Chrome1.0+
 
-FF (to be tested)
+FF3.5+
 
 Safari (to be tested)
