@@ -224,16 +224,6 @@ function resolve(name, mod) {
 
 
 /**
- * Resolve path of the given id.
- * @param {String} id
- * @return {!(String|Object)}
- */
-require.toUrl = function(id) {
-    return resolveId(id);
-};
-
-
-/**
  * A mechanism to check cycle reference.
  * More about cycle reference can be solved by design pattern, and a
  * well-designed API(Architecture) can avoid this problem, but in case
@@ -262,3 +252,34 @@ function checkCycle(path, mod) {
 
     return ret;
 }
+
+
+/**
+ * Resolve path of the given id.
+ * @param {String} id
+ * @return {!(String|Object)}
+ */
+require.toUrl = function(id) {
+  return resolveId(id);
+};
+
+
+/**
+ * Used to Load module after page loaded.
+ * @param {!String} id Identifier or path to module.
+ * @param {!Function} callback Factory function.
+ */
+require.async = function(id, callback) {
+  require([id], callback);
+};
+
+
+/**
+ * For build tool to compile it.
+ * Without checking the type of arguments.
+ * @param {!String} url
+ * @returns {!String}
+ */
+require.url = function(url) {
+  return url;
+};
