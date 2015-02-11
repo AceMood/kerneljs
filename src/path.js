@@ -2,7 +2,7 @@
 // and a directory file path must be ends with a slash (back slash in window)
 var dirRegExp = /\/$/g,
 // whether a path to a file with extension
-    fileExtRegExp = /\.(js|css|tpl|txt)$/g;
+  fileExtRegExp = /\.(js|css|tpl|txt)$/g;
 
 
 // retrieve current doc's absolute path
@@ -26,12 +26,12 @@ var loc = global.location;
  * @param {string} p
  */
 function normalize(p) {
-    // step1: combine multi slashes
-    p = p.replace(/(\/)+/g, "/");
+  // step1: combine multi slashes
+  p = p.replace(/(\/)+/g, "/");
 
-    // step2: resolve '.' and '..'
-    p = resolveDot(p);
-    return p;
+  // step2: resolve '.' and '..'
+  p = resolveDot(p);
+  return p;
 }
 
 
@@ -41,20 +41,20 @@ function normalize(p) {
  * @return {string}
  */
 function resolveDot(p) {
-    // Here I used to use /\//ig to split string, but unfortunately
-    // it has serious bug in IE<9. See for more:
-    // 'http://blog.stevenlevithan.com/archives/cross-browser-split'.
-    p = p.split("/");
-    for (var i = 0; i < p.length; ++i) {
-        if (p[i] == ".") {
-            p.splice(i, 1);
-            --i;
-        } else if (p[i] == ".." && i > 0 && p[i - 1] != "..") {
-            p.splice(i - 1, 2);
-            i -= 2;
-        }
+  // Here I used to use /\//ig to split string, but unfortunately
+  // it has serious bug in IE<9. See for more:
+  // 'http://blog.stevenlevithan.com/archives/cross-browser-split'.
+  p = p.split("/");
+  for (var i = 0; i < p.length; ++i) {
+    if (p[i] == ".") {
+      p.splice(i, 1);
+      --i;
+    } else if (p[i] == ".." && i > 0 && p[i - 1] != "..") {
+      p.splice(i - 1, 2);
+      i -= 2;
     }
-    return p.join("/");
+  }
+  return p.join("/");
 }
 
 
@@ -63,7 +63,7 @@ function resolveDot(p) {
  * @return {string}
  */
 function getPageDir() {
-    return dirname(loc.href);
+  return dirname(loc.href);
 }
 
 
@@ -73,11 +73,11 @@ function getPageDir() {
  * @return {boolean} b
  */
 function isTopLevel(p) {
-    // if we use array-like as string[index] will return undefined
-    // in IE6 & 7, so we should use string.charAt(index) instead.
-    // see more:
-    // 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String#section_5'
-    return isRelative(p) && p.charAt(0) != ".";
+  // if we use array-like as string[index] will return undefined
+  // in IE6 & 7, so we should use string.charAt(index) instead.
+  // see more:
+  // 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String#section_5'
+  return isRelative(p) && p.charAt(0) != ".";
 }
 
 
@@ -91,7 +91,7 @@ function isTopLevel(p) {
  * @return {boolean} b Is p absolute?
  */
 function isAbsolute(p) {
-    return /:\/\//.test(p) || /^\//.test(p);
+  return /:\/\//.test(p) || /^\//.test(p);
 }
 
 
@@ -106,7 +106,7 @@ function isAbsolute(p) {
  * @return {boolean} b
  */
 function isRelative(p) {
-    return !isAbsolute(p) && (/^(\.){1,2}\//.test(p) || p.charAt(0) !== "/");
+  return !isAbsolute(p) && (/^(\.){1,2}\//.test(p) || p.charAt(0) !== "/");
 }
 
 
@@ -121,31 +121,31 @@ function isRelative(p) {
  * @return {!(string|object)} exports object or absolute file path from Internet
  */
 function resolveId(id, base) {
-    // var _mod = kernel.cache.mods[id];
-    if (id == "require" || id == "module" ||
-        id == "exports" /*|| (_mod &&  _mod != empty_mod)*/)
-        return id;
+  // var _mod = kernel.cache.mods[id];
+  if (id == "require" || id == "module" ||
+    id == "exports" /*|| (_mod &&  _mod != empty_mod)*/)
+    return id;
 
-    if (isTopLevel(id)) {
-        // step 1: normalize id and parse head part as paths
-        id = parsePaths(id);
-        // step 2: normalize id and parse head part as pkgs
-        id = parsePackages(id);
-        // here if a top-level path then relative base change to
-        // current document's baseUri.
-        base = null;
-    }
+  if (isTopLevel(id)) {
+    // step 1: normalize id and parse head part as paths
+    id = parsePaths(id);
+    // step 2: normalize id and parse head part as pkgs
+    id = parsePackages(id);
+    // here if a top-level path then relative base change to
+    // current document's baseUri.
+    base = null;
+  }
 
-	// step 3: add file extension if necessary
-    id = normalize(id);
-    var conjuction = id.charAt(0) == "/" ? "" : "/";
-    var url = (base ? dirname(base) : getPageDir()) + conjuction + id;
+  // step 3: add file extension if necessary
+  id = normalize(id);
+  var conjuction = id.charAt(0) == "/" ? "" : "/";
+  var url = (base ? dirname(base) : getPageDir()) + conjuction + id;
 
-    if (!fileExtRegExp.test(url)) url += ".js";
+  if (!fileExtRegExp.test(url)) url += ".js";
 
-    url = resolveDot(url);
+  url = resolveDot(url);
 
-    return url;
+  return url;
 }
 
 
@@ -161,14 +161,14 @@ function resolveId(id, base) {
  * @return {string}
  */
 function dirname(p) {
-    if (dirRegExp.test(p))
-        return p.slice(0, -1);
-    // Here I used to use /\//ig to split string, but unfortunately
-    // it has serious bug in IE<9. See for more:
-    // 'http://blog.stevenlevithan.com/archives/cross-browser-split'.
-    p = p.split("/");
-    p.pop();
-    return p.join("/");
+  if (dirRegExp.test(p))
+    return p.slice(0, -1);
+  // Here I used to use /\//ig to split string, but unfortunately
+  // it has serious bug in IE<9. See for more:
+  // 'http://blog.stevenlevithan.com/archives/cross-browser-split'.
+  p = p.split("/");
+  p.pop();
+  return p.join("/");
 }
 
 
@@ -179,13 +179,13 @@ function dirname(p) {
  * @return {string} s
  */
 function parseMap(p) {
-    var parts = p.split("/"),
-        part = parts[0];
-    if (kernel.alias[part]) {
-        part = kernel.alias[part];
-    }
-    parts.shift();
-    return [part].concat(parts).join("/");
+  var parts = p.split("/"),
+    part = parts[0];
+  if (kernel.alias[part]) {
+    part = kernel.alias[part];
+  }
+  parts.shift();
+  return [part].concat(parts).join("/");
 }
 
 
@@ -196,17 +196,17 @@ function parseMap(p) {
  * @return {String} s
  */
 function parsePaths(p) {
-    var ret = [];
-    if (kernel.paths) {
-		var part = p;
-        var parts = p.split("/");
-        while (!(part in kernel.paths) && parts.length) {
-            ret.unshift(parts.pop());
-			part = parts.join("/");
-        }
-        p = kernel.paths[part] ? kernel.paths[part] : part;
+  var ret = [];
+  if (kernel.paths) {
+    var part = p;
+    var parts = p.split("/");
+    while (!(part in kernel.paths) && parts.length) {
+      ret.unshift(parts.pop());
+      part = parts.join("/");
     }
-    return p + ret.join("/");
+    p = kernel.paths[part] ? kernel.paths[part] : part;
+  }
+  return p + ret.join("/");
 }
 
 
@@ -218,20 +218,20 @@ function parsePaths(p) {
  * @return {String} s
  */
 function parsePackages(p) {
-    var pkgs = kernel.packages,
-        fpath = "";
-    if (pkgs && pkgs.length > 0) {
-        forEach(pkgs, function(pkg) {
-            // starts with a package name
-            if (p.indexOf(pkg.name) === 0) {
-                // absolutely equal
-                if (p.length === pkg.name.length) {
-                    fpath = "/" + (pkg.main ? pkg.main : "main");
-                }
-                p = p.replace(pkg.name, pkg.location || pkg.name) + fpath;
-                return break_obj;
-            }
-        })
-    }
-    return p;
+  var pkgs = kernel.packages,
+    fpath = "";
+  if (pkgs && pkgs.length > 0) {
+    forEach(pkgs, function(pkg) {
+      // starts with a package name
+      if (p.indexOf(pkg.name) === 0) {
+        // absolutely equal
+        if (p.length === pkg.name.length) {
+          fpath = "/" + (pkg.main ? pkg.main : "main");
+        }
+        p = p.replace(pkg.name, pkg.location || pkg.name) + fpath;
+        return break_obj;
+      }
+    })
+  }
+  return p;
 }
