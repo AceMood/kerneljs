@@ -46,10 +46,10 @@ function resolveDot(p) {
   // 'http://blog.stevenlevithan.com/archives/cross-browser-split'.
   p = p.split("/");
   for (var i = 0; i < p.length; ++i) {
-    if (p[i] == ".") {
+    if (p[i] === ".") {
       p.splice(i, 1);
       --i;
-    } else if (p[i] == ".." && i > 0 && p[i - 1] != "..") {
+    } else if (p[i] === ".." && i > 0 && p[i - 1] !== "..") {
       p.splice(i - 1, 2);
       i -= 2;
     }
@@ -76,8 +76,9 @@ function isTopLevel(p) {
   // if we use array-like as string[index] will return undefined
   // in IE6 & 7, so we should use string.charAt(index) instead.
   // see more:
-  // 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String#section_5'
-  return isRelative(p) && p.charAt(0) != ".";
+  // 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/
+  // +Global_Objects/String#section_5'
+  return isRelative(p) && p.charAt(0) !== ".";
 }
 
 
@@ -122,9 +123,11 @@ function isRelative(p) {
  */
 function resolveId(id, base) {
   // var _mod = kernel.cache.mods[id];
-  if (id == "require" || id == "module" ||
-    id == "exports" /*|| (_mod &&  _mod != empty_mod)*/)
+  if (id === "require" ||
+    id === "module" ||
+    id === "exports" /*|| (_mod &&  _mod != empty_mod)*/) {
     return id;
+  }
 
   if (isTopLevel(id)) {
     // step 1: normalize id and parse head part as paths
@@ -138,10 +141,12 @@ function resolveId(id, base) {
 
   // step 3: add file extension if necessary
   id = normalize(id);
-  var conjuction = id.charAt(0) == "/" ? "" : "/";
+  var conjuction = id.charAt(0) === "/" ? "" : "/";
   var url = (base ? dirname(base) : getPageDir()) + conjuction + id;
 
-  if (!fileExtRegExp.test(url)) url += ".js";
+  if (!fileExtRegExp.test(url)) {
+    url += ".js";
+  }
 
   url = resolveDot(url);
 
@@ -161,8 +166,9 @@ function resolveId(id, base) {
  * @return {string}
  */
 function dirname(p) {
-  if (dirRegExp.test(p))
+  if (dirRegExp.test(p)) {
     return p.slice(0, -1);
+  }
   // Here I used to use /\//ig to split string, but unfortunately
   // it has serious bug in IE<9. See for more:
   // 'http://blog.stevenlevithan.com/archives/cross-browser-split'.
@@ -231,7 +237,7 @@ function parsePackages(p) {
         p = p.replace(pkg.name, pkg.location || pkg.name) + fpath;
         return break_obj;
       }
-    })
+    });
   }
   return p;
 }

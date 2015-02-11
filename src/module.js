@@ -10,9 +10,10 @@
  * # deps is an array to store the dependency module in require or define
  *   form, also it will retrieve the requrie statements in function's
  *   string value in case that a CMD wrapper is used.
- * # status is a int value to know the current module state, came from Module.STATUS.
- * # factory and exports is the callback function to export the module's value and
- *   the real value of the module.
+ * # status
+ *   is a int value to know the current module state, came from Module.STATUS.
+ * # factory and exports is the callback function to export the module's
+ *   value and the real value of the module.
  *
  * @constructor
  */
@@ -47,9 +48,11 @@ Module.STATUS = {
  * @param {Module|Object} mod
  */
 Module.prototype.ready = function(mod) {
+  var inPathConfig;
   if (mod.url) {
-    if (kernel.paths && kernel.paths[this.id])
-      var inPathConfig = true;
+    if (kernel.paths && kernel.paths[this.id]) {
+      inPathConfig = true;
+    }
     for(var i = 0; i < this.deps.length; ++i) {
       var path = resolveId(this.deps[i], inPathConfig ? loc.href : this.url);
       if (path === mod.url) {

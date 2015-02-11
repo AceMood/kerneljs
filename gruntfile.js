@@ -1,25 +1,35 @@
 module.exports = function(grunt) {
 
   grunt.initConfig({
-    clean: ['dist/*.js'],
+    clean: ['dist/*'],
     jshint: {
-      files: ['src/*.js'],
+      files: [
+        'src/utils.js',
+        'src/path.js',
+        'src/module.js',
+        'src/define.js',
+        'src/require.js',
+        'src/kernel.js'
+      ],
       options: {
+        curly: true,
+        eqeqeq: true,
+        es3: true,
+        maxlen: 80,
+        nonew: true,
+        freeze: true,
         globals: {
-          jQuery: true
+          document: true
         }
       }
     },
     concat: {
       options: {
-        separator: ';',
+        separator: '',
         stripBanners: false,
-        nonull: true,
-        process: function(src, filepath) {
-          debugger;
-        }
+        nonull: true
       },
-      dist: {
+      main: {
         src: [
           'src/intro.js',
           'src/utils.js',
@@ -33,11 +43,12 @@ module.exports = function(grunt) {
         dest: 'dist/kernel.js'
       }
     },
-    minify: {
+    uglify: {
       options: {
         report: 'gzip',
         sourceMap: true,
-        banner: 'kernel.js by AceMood',
+        sourceMapName: 'dist/kernel.map',
+        banner: '/** kernel.js by AceMood@Saber-Team */',
         compress: {
           "sequences"     : true,  // join consecutive statemets with the “comma operator”
           "properties"    : true,  // optimize property access: a["foo"] → a.foo
@@ -62,7 +73,7 @@ module.exports = function(grunt) {
           }
         }
       },
-      build: {
+      main: {
         files: {
           'dist/kernel.min.js': ['dist/kernel.js']
         }
@@ -70,15 +81,12 @@ module.exports = function(grunt) {
     },
     copy: {
       main: {
-        files: [
-          // includes files within path
-          {
-            expand: true,
-            src: ['dist/kernel.js'],
-            dest: 'tests/impl/kerneljs/',
-            filter: 'isFile'
-          }
-        ]
+        nonull: true,
+        expand: true,
+        src: 'dist/kernel.js',
+        dest: 'tests/impl/kerneljs/',
+        filter: 'isFile',
+        flatten: true
       }
     }
   });
@@ -93,7 +101,7 @@ module.exports = function(grunt) {
     'clean',
     'jshint',
     'concat',
-    'minify',
+    'uglify',
     'copy'
   ]);
 

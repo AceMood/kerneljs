@@ -19,9 +19,10 @@ kernel.uidprefix = "AceMood@kernel_";
 var fetchingList = {
   mods: {},
   add: function(mod) {
-    if (this.mods[mod.uid])
+    if (this.mods[mod.uid]) {
       throw "current mod with uid: " + mod.uid +
         " and file path: " + mod.url + " is fetching now";
+    }
     this.mods[mod.uid] = mod;
   },
   clear: function() {
@@ -61,8 +62,9 @@ var sendingList = {};
  * [baseUrl]:
  */
 kernel.config = function(obj) {
-  if (typeOf(obj) != "object")
+  if (typeOf(obj) !== "object") {
     throw "config object must an object";
+  }
   var key, k;
   for (key in obj) {
     if (hasOwn.call(obj, key)) {
@@ -70,8 +72,9 @@ kernel.config = function(obj) {
         for (k in obj[key]) {
           kernel[key][k] = obj[key][k];
         }
-      } else
+      } else {
         kernel[key] = obj[key];
+      }
     }
   }
 };

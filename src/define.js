@@ -26,12 +26,12 @@ function define(id, deps, factory) {
   var base = getCurrentPath();
 
   // deal with optional arguments
-  if (typeOf(id) != "string") {
+  if (typeOf(id) !== "string") {
     factory = deps;
     deps = id;
     id = null;
   }
-  if (typeOf(deps) != "array") {
+  if (typeOf(deps) !== "array") {
     factory = deps;
     deps = null;
   }
@@ -53,8 +53,11 @@ function define(id, deps, factory) {
   }
 
   // record
-  if (cache.path2uid[base]) cache.path2uid[base].push(uid);
-  else cache.path2uid[base] = [uid];
+  if (cache.path2uid[base]) {
+    cache.path2uid[base].push(uid);
+  } else {
+    cache.path2uid[base] = [uid];
+  }
 
   // register module in global cache
   mod = cache.mods[uid] = empty_mod;
@@ -63,7 +66,7 @@ function define(id, deps, factory) {
   // CommonJS thing with dependencies. I don't intend to support it.
   // But many projects used RequireJS may depend on this functional.
   // Code below in the if-else statements lent from RequireJS
-  if (!deps && typeOf(factory) == "function") {
+  if (!deps && typeOf(factory) === "function") {
     deps = [];
     // Remove comments from the callback string,
     // look for require calls, and pull them into the dependencies,
@@ -81,7 +84,8 @@ function define(id, deps, factory) {
       // work though if it just needs require.
       // REQUIRES the function to expect the CommonJS variables in the
       // order listed below.
-      deps = (factory.length === 1 ? ["require"] : ["require", "exports", "module"]).concat(deps);
+      deps = (factory.length === 1 ?
+        ["require"] : ["require", "exports", "module"]).concat(deps);
     }
   }
 
@@ -98,17 +102,21 @@ function define(id, deps, factory) {
   // if in a concatenate file define will occur first,
   // there would be no kernel_name here.
   var name = getCurrentScript().kernel_name;
-  if (name && isTopLevel(name) && !mod.id)
+  if (name && isTopLevel(name) && !mod.id) {
     mod.id = name;
+  }
 
   // fill exports list to depMods
   if (mod.deps && mod.deps.length > 0) {
     mod.deps = map(mod.deps, function(dep, index) {
-      if (dep == "exports" || dep == "module")
+      if (dep === "exports" || dep === "module") {
         mod.cjsWrapper = true;
+      }
 
       var inject = resolve(dep, mod);
-      if (inject) mod.depMods[index] = inject;
+      if (inject) {
+        mod.depMods[index] = inject;
+      }
       return dep;
     });
   }

@@ -22,8 +22,9 @@ function load(mod) {
 
   // Register module in global cache with an empty.
   // export for later checking if its status is available.
-  if (!cache.mods[mod.uid])
-    cache.mods[mod.uid]= empty_mod;
+  if (!cache.mods[mod.uid]) {
+    cache.mods[mod.uid] = empty_mod;
+  }
 
   forEach(mod.deps, function(name, index) {
     // After resolving, built-in module and existed modules are
@@ -44,7 +45,7 @@ function load(mod) {
     // we check circular reference first, if it there, we return the
     // empty_mod immediately.
     if (uid && cache.mods[uid[0]] &&
-      (cache.mods[uid[0]].status == Module.STATUS.complete ||
+      (cache.mods[uid[0]].status === Module.STATUS.complete ||
         checkCycle(path, mod))) {
       --count;
       mod.depMods[index] = cache.mods[uid[0]].exports;
@@ -54,10 +55,11 @@ function load(mod) {
       // it will produce a 404 error.
     } else {
       // record this mod depend on the dep current now.
-      if (!dependencyList[path])
+      if (!dependencyList[path]) {
         dependencyList[path] = [mod];
-      else if (indexOf(dependencyList[path], mod) < 0)
+      } else if (indexOf(dependencyList[path], mod) < 0) {
         dependencyList[path].push(mod);
+      }
 
       if (!sendingList[path]) {
         sendingList[path] = true;
@@ -69,7 +71,9 @@ function load(mod) {
 
   // If all module have been cached.
   // In notify, mod will be removed from fetchingList
-  count == 0 && notify(mod);
+  if (count === 0) {
+    notify(mod);
+  }
 }
 
 
@@ -86,20 +90,24 @@ function load(mod) {
  */
 function require(deps, cb) {
   // pass-in a config object
-  if (typeOf(deps) == "object" && !cb) {
+  if (typeOf(deps) === "object" && !cb) {
     kernel.config(deps);
     return null;
   }
   // no deps
-  if (typeOf(deps) == "array" && deps.length == 0) {
-    if (typeOf(cb) == "function") return cb();
-    else return cb;
+  if (typeOf(deps) === "array" && deps.length === 0) {
+    if (typeOf(cb) === "function") {
+      return cb();
+    } else {
+      return cb;
+    }
   }
 
   // Type conversion
   // it's a single module dependency and with no callback
-  if (typeOf(deps) == "string")
+  if (typeOf(deps) === "string") {
     deps = [deps];
+  }
 
   var uid, _currentPath = getCurrentPath();
   if (cb) {
@@ -131,9 +139,9 @@ function require(deps, cb) {
     // a simple require statements always be resolved preload.
     // so if length == 1 then return its exports object.
     var _mod = resolve(deps[0]);
-    if (deps.length == 1 && _mod)
+    if (deps.length === 1 && _mod) {
       return _mod;
-    else {
+    } else {
       uid = kernel.cache.path2uid[_dep][0];
       return kernel.cache.mods[uid].exports || null;
     }
@@ -152,11 +160,14 @@ function notify(mod) {
   fetchingList.remove(mod);
 
   // amd
-  if (!mod.cjsWrapper)
-    mod.exports = typeOf(mod.factory) == "function" ?
+  if (!mod.cjsWrapper) {
+    mod.exports = typeOf(mod.factory) === "function" ?
       mod.factory.apply(null, mod.depMods) : mod.factory;
+  }
   // cmd
-  else mod.factory.apply(null, mod.depMods);
+  else {
+    mod.factory.apply(null, mod.depMods);
+  }
 
   if (isNull(mod.exports)) {
     mod.exports = {};
@@ -179,14 +190,15 @@ function notify(mod) {
     // Here I first delete it because a complex condition:
     // if a define occurs in a factory function, and the module whose
     // factory function is current executing, it's a callback executing.
-    // which means the currentScript would be mod just been fetched successfully.
-    // the url would be the previous one. and we store the record in global cache
-    // dependencyList.
+    // which means the currentScript would be mod just been fetched
+    // successfully. The url would be the previous one, and we store the
+    // record in global cache dependencyList.
     // So we must delete it first to avoid the factory function execute twice.
     delete dependencyList[mod.url];
     forEach(depandants, function(dependant) {
-      if (dependant.ready && dependant.status == Module.STATUS.fetching)
+      if (dependant.ready && dependant.status === Module.STATUS.fetching) {
         dependant.ready(mod);
+      }
     });
   }
 }
@@ -202,22 +214,31 @@ function notify(mod) {
  */
 function resolve(name, mod) {
   // step 1: parse built-in and already existed modules
-  if (kernel.builtin[name]) return kernel.builtin[name];
+  if (kernel.builtin[name]) {
+    return kernel.builtin[name];
+  }
   if (kernel.cache.mods[name]) {
     var currentPath = getCurrentPath(),
       path = resolveId(name, currentPath);
     // we check circular reference first, if it there, we return the
     // empty_mod immediately.
-    if (kernel.cache.mods[name].status == Module.STATUS.complete ||
-      checkCycle(path, mod))
+    if (kernel.cache.mods[name].status === Module.STATUS.complete ||
+      checkCycle(path, mod)) {
       return kernel.cache.mods[name].exports;
+    }
   }
 
 
   // step 2: cjs-wrapper form
-  if (name == "require") return require;
-  else if (name == "module") return mod;
-  else if (name == "exports") return mod && mod.exports;
+  if (name === "require") {
+    return require;
+  }
+  else if (name === "module") {
+    return mod;
+  }
+  else if (name === "exports") {
+    return mod && mod.exports;
+  }
 
   return null;
 }

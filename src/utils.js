@@ -46,10 +46,10 @@ function exist_id_error(id) {
 function map(arr, fn, opt_context) {
   var ret = [];
   if (native_map && arr.map === native_map) {
-    ret = arr.map(fn, opt_context)
+    ret = arr.map(fn, opt_context);
   } else if (arr.length === +arr.length) {
     for (var i = 0; i < arr.length; ++i) {
-      ret.push(fn.call(opt_context || null, arr[i], i, arr))
+      ret.push(fn.call(opt_context || null, arr[i], i, arr));
     }
   }
   return ret;
@@ -57,10 +57,12 @@ function map(arr, fn, opt_context) {
 
 
 /**
- * NOTE The forEach function is intentionally generic; it does not require that
- * its this value be an Array object. Therefore it can be transferred to other kinds of objects
- * for use as a method. Whether the forEach function can be applied successfully to a host object
- * is implementation-dependent.
+ * NOTE:
+ * The forEach function is intentionally generic;
+ * it does not require that its this value be an Array object.
+ * Therefore it can be transferred to other kinds of objects
+ * for use as a method. Whether the forEach function can be applied
+ * successfully to a host object is implementation-dependent.
  *
  * @param {Array} arr array to be iterated.
  * @param {Function} fn callback to execute on each item
@@ -71,8 +73,9 @@ function forEach(arr, fn, opt_context) {
     arr.forEach(fn, opt_context);
   } else if (arr.length === +arr.length) {
     for (var i = 0, length = arr.length; i < length; i++) {
-      if (fn.call(opt_context, arr[i], i, arr) === break_obj)
+      if (fn.call(opt_context, arr[i], i, arr) === break_obj) {
         break;
+      }
     }
   }
 }
@@ -86,8 +89,9 @@ function forEach(arr, fn, opt_context) {
  */
 function indexOf(arr, tar) {
   for (var i = 0; i < arr.length; ++i) {
-    if (arr[i] === tar)
+    if (arr[i] === tar) {
       return i;
+    }
   }
   return -1;
 }
@@ -107,7 +111,7 @@ var type_map = {
  * detect the obj's type
  */
 function typeOf(obj) {
-  return type_map[toString.call(obj)]
+  return type_map[toString.call(obj)];
 }
 
 
@@ -135,8 +139,8 @@ if ($base) {
 
 // current adding script node
 var currentAddingScript,
-// In older FF, do not support script.readyState, so we only use this prop in IEs.
-// Although 'onload' in IE9 & IE10 have problems, but I do not
+// In older FF, do not support script.readyState, so we only use this prop
+// in IEs. Although 'onload' in IE9 & IE10 have problems, but I do not
 // care the issure, and whatever async is true or false. We just
 // remove node in document as the callback of javascript loaded.
 // Read more about the bug:
@@ -212,12 +216,14 @@ function getCurrentScript() {
   return doc.currentScript || currentAddingScript || (function() {
     var _scripts;
     if (useInteractive) {
-      if (interactiveScript && interactiveScript.readyState == "interactive")
+      if (interactiveScript &&
+        interactiveScript.readyState === "interactive") {
         return interactiveScript;
+      }
 
       _scripts = scripts();
       forEach(_scripts, function(script) {
-        if (script.readyState == "interactive") {
+        if (script.readyState === "interactive") {
           interactiveScript = script;
           return break_obj;
         }
@@ -235,7 +241,9 @@ function getCurrentScript() {
       stack = e.stack;
     }
 
-    if (!stack) return ret;
+    if (!stack) {
+      return ret;
+    }
 
     /**
      * chrome uses at, FF uses @
@@ -252,22 +260,22 @@ function getCurrentScript() {
      * y/a<@file:///D:/Develop/SOI/demo/lib/events/util.js:2:2610
      *
      * chrome 39.0 e.g.
-     * at file:///D:/Develop/SOI/lib/kernel.js:261:15
-     * at getCurrentScript (file:///D:/Develop/SOI/lib/kernel.js:294:7)
-     * at getCurrentPath (file:///D:/Develop/SOI/lib/kernel.js:314:16)
-     * at require (file:///D:/Develop/SOI/lib/kernel.js:563:29)
-     * at Function.require.async (file:///D:/Develop/SOI/lib/kernel.js:1178:5)
-     * at HTMLButtonElement.<anonymous> (file:///D:/Develop/SOI/demo/assets/js/app.js:25:17)
-     * at F (file:///D:/Develop/SOI/demo/lib/events/util.js:2:4218)
-     * at q (file:///D:/Develop/SOI/demo/lib/events/util.js:2:1034)
-     * at HTMLButtonElement.<anonymous> (file:///D:/Develop/SOI/demo/lib/events/util.js:2:2610)"
+     * at file:///D:/lib/kernel.js:261:15
+     * at getCurrentScript (file:///D:/lib/kernel.js:294:7)
+     * at getCurrentPath (file:///D:/lib/kernel.js:314:16)
+     * at require (file:///D:/lib/kernel.js:563:29)
+     * at Function.require.async (file:///D:/lib/kernel.js:1178:5)
+     * at HTMLButtonElement.<anonymous> (file:///D:/assets/js/app.js:25:17)
+     * at F (file:///D:/lib/events/util.js:2:4218)
+     * at q (file:///D:/lib/events/util.js:2:1034)
+     * at HTMLButtonElement.<anonymous> (file:///D:/lib/events/util.js:2:2610)"
      *
      * IE11 e.g.
      * at Anonymous function (file:///D:/Develop/SOI/lib/kernel.js:294:7)
      * at getCurrentPath (file:///D:/Develop/SOI/lib/kernel.js:314:16)
      * at Global code (file:///D:/Develop/SOI/lib/kernel.js:563:29)
      */
-    var e = stack.indexOf(" at ") != -1 ? " at " : "@";
+    var e = stack.indexOf(" at ") !== -1 ? " at " : "@";
     var index = stack.indexOf(".async");
     if (index > -1) {
       stack = stack.substring(index + 7);
@@ -286,7 +294,7 @@ function getCurrentScript() {
     var _scripts = scripts();
     forEach(_scripts, function(script) {
       var path = getAbsPathOfScript(script);
-      if (path == stack) {
+      if (path === stack) {
         ret = script;
         return break_obj;
       }
