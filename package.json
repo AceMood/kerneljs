@@ -1,0 +1,30 @@
+{
+  "name": "kerneljs",
+  "version": "0.9.1",
+  "description": "Browser Side JavaScript module loader.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AceMood/kerneljs.git"
+  },
+  "keywords": [
+    "kerneljs",
+    "oaslojs",
+    "soi",
+    "modular",
+    "loader",
+    "javascript"
+  ],
+  "author": "AceMood",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/AceMood/kerneljs/issues"
+  },
+  "homepage": "https://github.com/AceMood/kerneljs"
+}
