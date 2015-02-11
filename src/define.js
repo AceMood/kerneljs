@@ -2,7 +2,7 @@
 // A regexp to filter `require('xxx')`
 var cjsRequireRegExp = /\brequire\s*\(\s*(["'])([^'"\s]+)\1\s*\)/g,
 // A regexp to drop comments in source code
-    commentRegExp = /(\/\*([\s\S]*?)\*\/|([^:]|^)\/\/(.*)$)/mg;
+  commentRegExp = /(\/\*([\s\S]*?)\*\/|([^:]|^)\/\/(.*)$)/mg;
 
 
 /**
@@ -16,97 +16,105 @@ var cjsRequireRegExp = /\brequire\s*\(\s*(["'])([^'"\s]+)\1\s*\)/g,
  * @param {(Function|Object)?} factory
  */
 function define(id, deps, factory) {
-    var mod,
-        cache = kernel.cache,
-        uid = kernel.uidprefix + kernel.uid++;
+  var mod,
+    cache = kernel.cache,
+    uid = kernel.uidprefix + kernel.uid++;
 
-    // document.currentScript stuned me in a callback and
-    // event handler conditions.
-    // but if define in a single file, this could be trusted.
-    var base = getCurrentPath();
+  // document.currentScript stuned me in a callback and
+  // event handler conditions.
+  // but if define in a single file, this could be trusted.
+  var base = getCurrentPath();
 
-    // deal with optional arguments
-    if (typeOf(id) != "string") {
-        factory = deps;
-        deps = id;
-        id = null;
+  // deal with optional arguments
+  if (typeOf(id) != "string") {
+    factory = deps;
+    deps = id;
+    id = null;
+  }
+  if (typeOf(deps) != "array") {
+    factory = deps;
+    deps = null;
+  }
+
+  // Only when user-defined id presents, we record it in id2path cache.
+  // First check module with the same id.
+  //
+  // Note: after build, in require.async conditions, we could not
+  // know which module will be loaded first if more than two modules
+  // need a non-registered 3rd module. So the 3rd will be compiled
+  // into package 2 and package 3 together, which means define with same
+  // identifier will be called twice.
+  if (id) {
+    if (cache.id2path[id] && kernel.debug) {
+      return exist_id_error(id);
     }
-    if (typeOf(deps) != "array") {
-        factory = deps;
-        deps = null;
-    }
+    cache.id2path[id] = base;
+    cache.mods[id] = empty_mod;
+  }
 
-    // only when user-defined id presents, we record it
-    // in id2path cache. First check module with the same id.
-    if (id) {
-        if (cache.id2path[id]) return exist_id_error(id);
-        cache.id2path[id] = base;
-        cache.mods[id] = empty_mod;
-    }
+  // record
+  if (cache.path2uid[base]) cache.path2uid[base].push(uid);
+  else cache.path2uid[base] = [uid];
 
-    // record
-    if (cache.path2uid[base]) cache.path2uid[base].push(uid);
-    else cache.path2uid[base] = [uid];
+  // register module in global cache
+  mod = cache.mods[uid] = empty_mod;
 
-    // register module in global cache
-    mod = cache.mods[uid] = empty_mod;
-
-    // If no name, and factory is a function, then figure out if it a
-    // CommonJS thing with dependencies. I don't intend to support it.
-    // But many projects used RequireJS may depend on this functional.
-    // Code below in the if-else statements lent from RequireJS
-    if (!deps && typeOf(factory) == "function") {
-        deps = [];
-        // Remove comments from the callback string,
-        // look for require calls, and pull them into the dependencies,
-        // but only if there are function args.
-        if (factory.length) {
-            factory
-                .toString()
-                .replace(commentRegExp, "")
-                .replace(cjsRequireRegExp, function(match, quote, dep) {
-                    deps.push(dep);
-                });
-
-            // May be a CommonJS thing even without require calls, but still
-            // could use exports, and module. Avoid doing exports and module
-            // work though if it just needs require.
-            // REQUIRES the function to expect the CommonJS variables in the
-            // order listed below.
-            deps = (factory.length === 1 ? ["require"] : ["require", "exports", "module"]).concat(deps);
-        }
-    }
-
-    // init current module
-    mod = cache.mods[uid] = new Module({
-        uid: uid,
-        id: id,
-        url: base,
-        deps: deps,
-        factory: factory,
-        status: Module.STATUS.uninit
-    });
-
-    // if in a concatenate file define will occur first,
-    // there would be no kernel_name here.
-    var name = getCurrentScript().kernel_name;
-    if (name && isTopLevel(name) && !mod.id)
-        mod.id = name;
-
-    // fill exports list to depMods
-    if (mod.deps && mod.deps.length > 0) {
-        mod.deps = map(mod.deps, function(dep, index) {
-            if (dep == "exports" || dep == "module")
-                mod.cjsWrapper = true;
-
-            var inject = resolve(dep, mod);
-            if (inject) mod.depMods[index] = inject;
-            return dep;
+  // If no name, and factory is a function, then figure out if it a
+  // CommonJS thing with dependencies. I don't intend to support it.
+  // But many projects used RequireJS may depend on this functional.
+  // Code below in the if-else statements lent from RequireJS
+  if (!deps && typeOf(factory) == "function") {
+    deps = [];
+    // Remove comments from the callback string,
+    // look for require calls, and pull them into the dependencies,
+    // but only if there are function args.
+    if (factory.length) {
+      factory
+        .toString()
+        .replace(commentRegExp, "")
+        .replace(cjsRequireRegExp, function(match, quote, dep) {
+          deps.push(dep);
         });
-    }
 
-    // load dependencies.
-    load(mod);
+      // May be a CommonJS thing even without require calls, but still
+      // could use exports, and module. Avoid doing exports and module
+      // work though if it just needs require.
+      // REQUIRES the function to expect the CommonJS variables in the
+      // order listed below.
+      deps = (factory.length === 1 ? ["require"] : ["require", "exports", "module"]).concat(deps);
+    }
+  }
+
+  // init current module
+  mod = cache.mods[uid] = new Module({
+    uid: uid,
+    id: id,
+    url: base,
+    deps: deps,
+    factory: factory,
+    status: Module.STATUS.uninit
+  });
+
+  // if in a concatenate file define will occur first,
+  // there would be no kernel_name here.
+  var name = getCurrentScript().kernel_name;
+  if (name && isTopLevel(name) && !mod.id)
+    mod.id = name;
+
+  // fill exports list to depMods
+  if (mod.deps && mod.deps.length > 0) {
+    mod.deps = map(mod.deps, function(dep, index) {
+      if (dep == "exports" || dep == "module")
+        mod.cjsWrapper = true;
+
+      var inject = resolve(dep, mod);
+      if (inject) mod.depMods[index] = inject;
+      return dep;
+    });
+  }
+
+  // load dependencies.
+  load(mod);
 }
 
 
@@ -135,7 +143,7 @@ function define(id, deps, factory) {
  * @type {Object}
  */
 define.amd = {
-    creator: "AceMood",
-    email: "zmike86@gmail.com",
-    version: "0.9"
+  creator: "AceMood",
+  email: "zmike86@gmail.com",
+  version: "0.9.1"
 };
