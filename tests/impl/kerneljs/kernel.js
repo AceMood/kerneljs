@@ -1,7 +1,7 @@
 /**
  * Author:  AceMood
  * Email:   zmike86@gmail.com
- * Version: 0.9.2
+ * Version: 0.2.2
  */
 
 /**
@@ -23,7 +23,7 @@
  *
  */
 
-var kerneljs, require, define;
+var kerneljs, require, define, _req, _def;
 
 (function (global, undefined) {
 
@@ -111,7 +111,7 @@ function forEach(arr, fn, opt_context) {
 
 
 /**
- * find a target in an array, return the index or return -1;
+ * 正向寻找指定项在数组的位置;
  * @param {Array} arr
  * @param {*} tar
  * @return {Number}
@@ -149,9 +149,9 @@ function typeOf(obj) {
 
 
 /**
- * If obj is undefined or null
- * @param obj
- * @return {Boolean}
+ * 判断是否为undefined或者null
+ * @param {*} obj
+ * @return {boolean}
  */
 function isNull(obj) {
   return obj === void 0 || obj === null;
@@ -160,8 +160,8 @@ function isNull(obj) {
 
 var doc = document,
   head = doc.head || doc.getElementsByTagName('head')[0],
-  // It's a classical bug in IE6 found in jQuery.
-  // see more: 'http://dev.jquery.com/ticket/2709'
+// It's a classical bug in IE6 found in jQuery.
+// see more: 'http://dev.jquery.com/ticket/2709'
   $base = doc.getElementsByTagName('base')[0];
 
 if ($base) {
@@ -647,7 +647,7 @@ Module.STATUS = {
 Module.prototype.ready = function(mod) {
   var inPathConfig;
   if (mod.url) {
-    if (kernel.paths && kernel.paths[this.id]) {
+    if (kerneljs.paths && kerneljs.paths[this.id]) {
       inPathConfig = true;
     }
     for(var i = 0; i < this.deps.length; ++i) {
@@ -665,18 +665,19 @@ Module.prototype.ready = function(mod) {
 
 
 /**
- * check if all mod's deps have been ready.
+ * 检查是否模块的依赖项都已complete的状态.
  * Here has a problem. if we do the type checking,
  * the string exports will be filtered, but it's possible
  * that module export an string as a module itself,
  * so we do the
+ * @return {boolean}
  */
 Module.prototype.checkAllDepsOK = function() {
   var ok = true;
   // I do not use forEach here because native forEach will
-  // pass through all values are undefined, so it will introduce
+  // bypass all undefined values, so it will introduce
   // some tricky results.
-  for(var i= 0; i < this.depMods.length; ++i) {
+  for (var i = 0; i < this.depMods.length; ++i) {
     if (isNull(this.depMods[i])) {
       ok = false;
       break;
@@ -701,7 +702,7 @@ var cjsRequireRegExp = /\brequire\s*\(\s*(["'])([^'"\s]+)\1\s*\)/g,
  * @param {Array|Function|Object} deps
  * @param {(Function|Object)?} factory
  */
-define = function(id, deps, factory) {
+define = _def = function(id, deps, factory) {
   var mod,
     cache = kernel.cache,
     uid = kernel.uidprefix + kernel.uid++;
@@ -930,7 +931,7 @@ define.amd = {
  * @param {!Array|String} deps
  * @param {Function?} cb
  */
-require = function(deps, cb) {
+require = _req = function(deps, cb) {
   // pass-in a config object
   if (typeOf(deps) === "object" && !cb) {
     kernel.config(deps);
@@ -1154,12 +1155,6 @@ require.url = function(url) {
 kerneljs = {};
 
 
-// 若之前引入过其他全局变量, 则替换成私有变量_kerneljs, 而原有kerneljs则会被替换
-if (global.kerneljs) {
-  kerneljs.kerneljs = global.kerneljs;
-}
-
-
 kerneljs.uid = 0;
 kerneljs.uidprefix = 'AceMood@kernel_';
 
@@ -1247,15 +1242,12 @@ kerneljs.config = function(obj) {
 kerneljs.cache = {
   // 全局缓存uid和对应模块. 是一对一的映射关系.
   mods: {},
-  // and id2path record all module that have a user-defined id.
-  // its a pairs; not all modules have user-defined id, so this object
-  // if lack of some modules in debug mode;
-  // But imagine build, all modules will have self-generated id.
-  // It's a one-to-one hash constructor, because a user-defined id
-  // can only defined in one file.
+  // id2path记录所有的用户自定义id的模块. 在开发时不提倡自己写id但实际也可以自己写, 没啥意义
+  // 因为请求还是以路径来做. 可以通过paths配置来require短id, 这个缓存对象在开发时会有不少缺失的模块,
+  // 但在打包后id已经自生成所以它会记录完全. 这个结构是一个一对一的结构.
   id2path: {},
-  // each file may have multiple modules. so it's a one-to-many hash
-  // constructor.
+  // 理论上每个文件可能定义多个模块, 也就是define了多次. 这种情况应该在开发时严格避免,
+  // 但经过打包之后一定会出现这种状况. 所以我们必须要做一些处理, 也使得这个结构是一对多的.
   path2uid: {},
   // kerneljs的订阅者缓存
   events: {}
@@ -1265,7 +1257,8 @@ kerneljs.cache = {
 // 基础配置
 kerneljs.config({
   baseUrl: '',
-  debug: true
+  debug: true,
+  paths: {}
 });
 
 
@@ -1273,12 +1266,18 @@ kerneljs.config({
  * 重置全局缓存
  */
 kerneljs.reset = function() {
-  this.cache = {
-    mods: {},
-    id2path: {},
-    path2uid: {},
-    events: {}
-  };
+  this.cache.mods = {};
+  this.cache.id2path = {};
+  this.cache.path2uid = {};
+};
+
+/**
+ * kerneljs内部分发的事件名称
+ * @typedef {Object}
+ */
+kerneljs.events = {
+  LOADED: 'loaded',
+  ERROR: 'error'
 };
 
 
@@ -1312,20 +1311,6 @@ kerneljs.trigger = function(eventName, args) {
       obj.handler.apply(obj.context, args);
     });
   }
-};
-
-
-/** 导出全局短命名 APIs */
-global._req = require;
-global._def = define;
-
-/**
- * kerneljs内部分发的事件名称
- * @typedef {Object}
- */
-kerneljs.events = {
-  LOADED: 'loaded',
-  ERROR: 'error'
 };
 
 }(this));
