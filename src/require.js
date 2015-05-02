@@ -10,7 +10,7 @@
  * @param {!Array|String} deps
  * @param {Function?} cb
  */
-require = function(deps, cb) {
+require = _req = function(deps, cb) {
   // pass-in a config object
   if (typeOf(deps) === "object" && !cb) {
     kernel.config(deps);

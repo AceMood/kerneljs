@@ -48,7 +48,7 @@ Module.STATUS = {
 Module.prototype.ready = function(mod) {
   var inPathConfig;
   if (mod.url) {
-    if (kernel.paths && kernel.paths[this.id]) {
+    if (kerneljs.paths && kerneljs.paths[this.id]) {
       inPathConfig = true;
     }
     for(var i = 0; i < this.deps.length; ++i) {
@@ -66,18 +66,19 @@ Module.prototype.ready = function(mod) {
 
 
 /**
- * check if all mod's deps have been ready.
+ * 检查是否模块的依赖项都已complete的状态.
  * Here has a problem. if we do the type checking,
  * the string exports will be filtered, but it's possible
  * that module export an string as a module itself,
  * so we do the
+ * @return {boolean}
  */
 Module.prototype.checkAllDepsOK = function() {
   var ok = true;
   // I do not use forEach here because native forEach will
-  // pass through all values are undefined, so it will introduce
+  // bypass all undefined values, so it will introduce
   // some tricky results.
-  for(var i= 0; i < this.depMods.length; ++i) {
+  for (var i = 0; i < this.depMods.length; ++i) {
     if (isNull(this.depMods[i])) {
       ok = false;
       break;

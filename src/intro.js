@@ -1,7 +1,7 @@
 /**
  * Author:  AceMood
  * Email:   zmike86@gmail.com
- * Version: 0.9.2
+ * Version: 0.2.2
  */
 
 /**
@@ -23,7 +23,7 @@
  *
  */
 
-var kerneljs, require, define;
+var kerneljs, require, define, _req, _def;
 
 (function (global, undefined) {
 

@@ -15,7 +15,7 @@ var cjsRequireRegExp = /\brequire\s*\(\s*(["'])([^'"\s]+)\1\s*\)/g,
  * @param {Array|Function|Object} deps
  * @param {(Function|Object)?} factory
  */
-define = function(id, deps, factory) {
+define = _def = function(id, deps, factory) {
   var mod,
     cache = kernel.cache,
     uid = kernel.uidprefix + kernel.uid++;

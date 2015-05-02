@@ -11,6 +11,7 @@ module.exports = function(grunt) {
     jshint: {
       files: [
         'src/utils.js',
+        'src/dom.js',
         'src/path.js',
         'src/module.js',
         'src/define.js',
@@ -40,6 +41,7 @@ module.exports = function(grunt) {
         src: [
           'src/intro.js',
           'src/utils.js',
+          'src/dom.js',
           'src/path.js',
           'src/module.js',
           'src/define.js',

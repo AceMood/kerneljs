@@ -6,12 +6,6 @@
 kerneljs = {};
 
 
-// 若之前引入过其他全局变量, 则替换成私有变量_kerneljs, 而原有kerneljs则会被替换
-if (global.kerneljs) {
-  kerneljs.kerneljs = global.kerneljs;
-}
-
-
 kerneljs.uid = 0;
 kerneljs.uidprefix = 'AceMood@kernel_';
 
@@ -99,15 +93,12 @@ kerneljs.config = function(obj) {
 kerneljs.cache = {
   // 全局缓存uid和对应模块. 是一对一的映射关系.
   mods: {},
-  // and id2path record all module that have a user-defined id.
-  // its a pairs; not all modules have user-defined id, so this object
-  // if lack of some modules in debug mode;
-  // But imagine build, all modules will have self-generated id.
-  // It's a one-to-one hash constructor, because a user-defined id
-  // can only defined in one file.
+  // id2path记录所有的用户自定义id的模块. 在开发时不提倡自己写id但实际也可以自己写, 没啥意义
+  // 因为请求还是以路径来做. 可以通过paths配置来require短id, 这个缓存对象在开发时会有不少缺失的模块,
+  // 但在打包后id已经自生成所以它会记录完全. 这个结构是一个一对一的结构.
   id2path: {},
-  // each file may have multiple modules. so it's a one-to-many hash
-  // constructor.
+  // 理论上每个文件可能定义多个模块, 也就是define了多次. 这种情况应该在开发时严格避免,
+  // 但经过打包之后一定会出现这种状况. 所以我们必须要做一些处理, 也使得这个结构是一对多的.
   path2uid: {},
   // kerneljs的订阅者缓存
   events: {}
@@ -117,7 +108,8 @@ kerneljs.cache = {
 // 基础配置
 kerneljs.config({
   baseUrl: '',
-  debug: true
+  debug: true,
+  paths: {}
 });
 
 
@@ -125,48 +117,7 @@ kerneljs.config({
  * 重置全局缓存
  */
 kerneljs.reset = function() {
-  this.cache = {
-    mods: {},
-    id2path: {},
-    path2uid: {},
-    events: {}
-  };
+  this.cache.mods = {};
+  this.cache.id2path = {};
+  this.cache.path2uid = {};
 };
-
-
-/**
- * 订阅事件
- * @param {String} eventName 事件名称定义在event.js
- * @param {Function} handler 事件处理器
- * @param {*} context 事件处理器上下文
- */
-kerneljs.on = function(eventName, handler, context) {
-  if (!this.cache.events[eventName]) {
-    this.cache.events[eventName] = [];
-  }
-  this.cache.events[eventName].push({
-    handler: handler,
-    context: context
-  });
-};
-
-
-/**
- * 触发订阅事件
- * @param {String} eventName 事件名称定义在event.js
- * @param {Array.<Object>} args 参数
- */
-kerneljs.trigger = function(eventName, args) {
-  // 缓存防止事件处理器改变kerneljs.cache对象
-  var arr = this.cache.events[eventName];
-  if (arr) {
-    forEach(arr, function(obj) {
-      obj.handler.apply(obj.context, args);
-    });
-  }
-};
-
-
-/** 导出全局短命名 APIs */
-global._req = require;
-global._def = define;
