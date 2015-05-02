@@ -88,7 +88,7 @@ function load(mod) {
  * @param {!Array|String} deps
  * @param {Function?} cb
  */
-function require(deps, cb) {
+require = function(deps, cb) {
   // pass-in a config object
   if (typeOf(deps) === "object" && !cb) {
     kernel.config(deps);
@@ -146,7 +146,7 @@ function require(deps, cb) {
       return kernel.cache.mods[uid].exports || null;
     }
   }
-}
+};
 
 
 /**

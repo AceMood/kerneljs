@@ -6,7 +6,7 @@ var cjsRequireRegExp = /\brequire\s*\(\s*(["'])([^'"\s]+)\1\s*\)/g,
 
 
 /**
- * define a module.
+ * 全局define函数.
  * The specification defines a single function "define" that is available
  * as a free variable or a global variable. The signature of the function:
  * define(id?, dependencies?, factory);
@@ -15,7 +15,7 @@ var cjsRequireRegExp = /\brequire\s*\(\s*(["'])([^'"\s]+)\1\s*\)/g,
  * @param {Array|Function|Object} deps
  * @param {(Function|Object)?} factory
  */
-function define(id, deps, factory) {
+define = function(id, deps, factory) {
   var mod,
     cache = kernel.cache,
     uid = kernel.uidprefix + kernel.uid++;

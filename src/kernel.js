@@ -1,18 +1,13 @@
 
-// @global
-var kernel = {};
+kerneljs = {};
 
-
-// preserve existed kernel object;
-if (global.kernel) {
-  kernel._kernel = global.kernel;
+// 若之前引入过其他全局变量, 则替换成私有变量_kerneljs, 而原有kerneljs则会被替换
+if (global.kerneljs) {
+  kerneljs.kerneljs = global.kerneljs;
 }
 
-
-// universal global module id
-kernel.uid = 0;
-kernel.uidprefix = "AceMood@kernel_";
-
+kerneljs.uid = 0;
+kerneljs.uidprefix = "AceMood@kerneljs_";
 
 // All modules being fetched means the module's dependencies
 // is now fetching, and the key is mod's uid, value is mod itself;
@@ -36,7 +31,6 @@ var fetchingList = {
   }
 };
 
-
 // If requiring a module, then record it here. So that once the
 // module complete, notify all its dependants.
 // Due to add module dependency when resolve id->path, we can not use
@@ -44,14 +38,12 @@ var fetchingList = {
 // the hash will be path -> [mod] constructor.
 var dependencyList = {};
 
-
 // If a module a fetching now means the corresponding script is loading now,
 // before it complete loaded, we should not fetch it twice, but only when
 // define the module it would record in the 'cache.path2uid', so here we just
 // record here to avoid fetch twice.
 // the hash will be path -> bool constructor.
 var sendingList = {};
-
 
 /**
  * Dynamic config kernel.
@@ -61,27 +53,26 @@ var sendingList = {};
  * [paths]: a hash
  * [baseUrl]:
  */
-kernel.config = function(obj) {
+kerneljs.config = function(obj) {
   if (typeOf(obj) !== "object") {
     throw "config object must an object";
   }
   var key, k;
   for (key in obj) {
     if (hasOwn.call(obj, key)) {
-      if (kernel[key]) {
+      if (kerneljs[key]) {
         for (k in obj[key]) {
-          kernel[key][k] = obj[key][k];
+          kerneljs[key][k] = obj[key][k];
         }
       } else {
-        kernel[key] = obj[key];
+        kerneljs[key] = obj[key];
       }
     }
   }
 };
 
-
 // Global cache.
-kernel.cache = {
+kerneljs.cache = {
   // use a global cache to store uid-module pairs.
   // each uid mapping to a unique module, so it's a
   // one-to-one hash constructor.
@@ -98,10 +89,9 @@ kernel.cache = {
   path2uid: {}
 };
 
-
 // default built-in modules
 // map the short name and relative path?
-kernel.config({
+kerneljs.config({
   baseUrl: "",
   debug: true,
   builtin: {
@@ -109,20 +99,19 @@ kernel.config({
   }
 });
 
-
-/**
- * Clear all cache.
- */
-kernel.reset = function() {
-  kernel.cache = {
+/** 重置全局缓存 */
+kerneljs.reset = function() {
+  kerneljs.cache = {
     mods: {},
     id2path: {},
     path2uid: {}
   };
 };
 
+kerneljs.on = function() {
 
-// exports APIs functions
-global.require = global._req = require;
-global.define = global._def = define;
-global.kernel = kernel;
+};
+
+// exports shortened APIs functions
+global._req = require;
+global._def = define;

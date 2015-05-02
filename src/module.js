@@ -19,31 +19,30 @@ function Module(obj) {
   this.url = obj.url;
   this.deps = obj.deps || [];
   this.depMods = new Array(this.deps.length);
-  this.status = obj.status || Module.STATUS.uninit;
+  this.status = obj.status || Module.STATUS.init;
   this.factory = obj.factory || noop;
-  this.exports = {};
+  this.exports = {}; // todo
 }
 
 
 /**
- * 模块的5种状态.
- * # uninit   module is only inited but without fetching its deps.
- * # fetching is fetching its deps now but not execute its factory yet.
- * # loaded is specificated in IE means a js file is loaded.
- * # complete is module finished resolve and has cached its exports object.
+ * 模块的4种状态.
+ * # init     模块刚被创建, 还没有获取自身依赖的模块.
+ * # loading  正在获取自身依赖模块但还没导出自身模块.
+ * # loaded   只在<IE11出现, 表示js模块已经下载完成.
+ * # complete 模块已被导出且缓存到模块池中.
  */
 Module.STATUS = {
-  "uninit"    : 0,
-  "fetching"  : 1,
-  "loaded"    : 2,
-  'ready'     : 3,
-  "complete"  : 4
+  'init'      : 0,
+  'loading'   : 1,
+  'loaded'    : 2,
+  'complete'  : 3
 };
 
 
 /**
- * When a mod prepared, then will notify all the modules depend on it.
- * So pass the mod and invoke depandant.ready(mod);
+ * 当模块已被缓存<code>mod.status = Module.STATUS.complete</code>,
+ * 则需要通知所有依赖于它的模块, 需要调用depandant.ready(mod);
  * @param {Module|Object} mod
  */
 Module.prototype.ready = function(mod) {
