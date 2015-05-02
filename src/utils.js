@@ -1,5 +1,4 @@
 
-// store useful props
 var OP = Object.prototype,
   AP = Array.prototype,
   native_forEach = AP.forEach,
@@ -7,10 +6,8 @@ var OP = Object.prototype,
   hasOwn = OP.hasOwnProperty,
   toString = OP.toString;
 
-
 // use such an object to determine cut down a forEach loop;
 var break_obj = {};
-
 
 // initialize a module
 var empty_mod = {
@@ -21,10 +18,8 @@ var empty_mod = {
   exports: {}
 };
 
-
 // for no-op function, used for a default callback function
 function noop() {}
-
 
 /**
  * if a module with in the same id exists, then define with the id
@@ -33,7 +28,6 @@ function noop() {}
 function exist_id_error(id) {
   throw "more then one module defined with the same id: " + id;
 }
-
 
 /**
  * iterate the array and map the value to a delegation
@@ -54,7 +48,6 @@ function map(arr, fn, opt_context) {
   }
   return ret;
 }
-
 
 /**
  * NOTE:
@@ -80,7 +73,6 @@ function forEach(arr, fn, opt_context) {
   }
 }
 
-
 /**
  * find a target in an array, return the index or return -1;
  * @param {Array} arr
@@ -96,24 +88,25 @@ function indexOf(arr, tar) {
   return -1;
 }
 
-
-var type_map = {
-  "[object Object]": "object",
-  "[object Array]" : "array",
-  "[object Function]": "function",
-  "[object RegExp]": "regexp",
-  "[object String]": "string",
-  "[object Number]": "number"
+/**
+ * 类型映射
+ * @type {Object}
+ */
+var typeMap = {
+  '[object Object]'   : 'object',
+  '[object Array]'    : 'array',
+  '[object Function]' : 'function',
+  '[object RegExp]'   : 'regexp',
+  '[object String]'   : 'string',
+  '[object Number]'   : 'number'
 };
 
-
 /**
- * detect the obj's type
+ * 判断对象类型, 见typeMap
  */
 function typeOf(obj) {
-  return type_map[toString.call(obj)];
+  return typeMap[toString.call(obj)];
 }
-
 
 /**
  * If obj is undefined or null
@@ -124,18 +117,15 @@ function isNull(obj) {
   return obj === void 0 || obj === null;
 }
 
-
 var doc = document,
-  head = doc.head || doc.getElementsByTagName("head")[0],
-// It's a classical bug in IE6 found in jQuery.
-// see more: 'http://dev.jquery.com/ticket/2709'
-  $base = doc.getElementsByTagName("base")[0];
-
+  head = doc.head || doc.getElementsByTagName('head')[0],
+  // It's a classical bug in IE6 found in jQuery.
+  // see more: 'http://dev.jquery.com/ticket/2709'
+  $base = doc.getElementsByTagName('base')[0];
 
 if ($base) {
   head = $base.parentNode;
 }
-
 
 // current adding script node
 var currentAddingScript,
@@ -303,7 +293,6 @@ function getCurrentScript() {
   })();
 }
 
-
 /**
  * Retrieve the absolute path of script node cross browser.
  * @param {HTMLScriptElement} script
@@ -313,11 +302,10 @@ function getAbsPathOfScript(script) {
   return script.hasAttribute ? script.src : script.getAttribute("src", 4);
 }
 
-
 /**
  * Retrieve the current executing script node's
  * absolute path.
- * @return {*|String}
+ * @return {String}
  */
 function getCurrentPath() {
   var node = getCurrentScript();
