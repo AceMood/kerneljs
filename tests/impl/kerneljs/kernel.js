@@ -23,11 +23,12 @@
  *
  */
 
+var kerneljs, require, define;
+
 (function (global, undefined) {
 
 'use strict';
 
-// store useful props
 var OP = Object.prototype,
   AP = Array.prototype,
   native_forEach = AP.forEach,
@@ -125,21 +126,25 @@ function indexOf(arr, tar) {
 }
 
 
-var type_map = {
-  "[object Object]": "object",
-  "[object Array]" : "array",
-  "[object Function]": "function",
-  "[object RegExp]": "regexp",
-  "[object String]": "string",
-  "[object Number]": "number"
+/**
+ * 类型映射
+ * @type {Object}
+ */
+var typeMap = {
+  '[object Object]'   : 'object',
+  '[object Array]'    : 'array',
+  '[object Function]' : 'function',
+  '[object RegExp]'   : 'regexp',
+  '[object String]'   : 'string',
+  '[object Number]'   : 'number'
 };
 
 
 /**
- * detect the obj's type
+ * 判断对象类型, 见typeMap
  */
 function typeOf(obj) {
-  return type_map[toString.call(obj)];
+  return typeMap[toString.call(obj)];
 }
 
 
@@ -154,16 +159,14 @@ function isNull(obj) {
 
 
 var doc = document,
-  head = doc.head || doc.getElementsByTagName("head")[0],
-// It's a classical bug in IE6 found in jQuery.
-// see more: 'http://dev.jquery.com/ticket/2709'
-  $base = doc.getElementsByTagName("base")[0];
-
+  head = doc.head || doc.getElementsByTagName('head')[0],
+  // It's a classical bug in IE6 found in jQuery.
+  // see more: 'http://dev.jquery.com/ticket/2709'
+  $base = doc.getElementsByTagName('base')[0];
 
 if ($base) {
   head = $base.parentNode;
 }
-
 
 // current adding script node
 var currentAddingScript,
@@ -345,7 +348,7 @@ function getAbsPathOfScript(script) {
 /**
  * Retrieve the current executing script node's
  * absolute path.
- * @return {*|String}
+ * @return {String}
  */
 function getCurrentPath() {
   var node = getCurrentScript();
@@ -596,21 +599,17 @@ function parsePackages(p) {
 }
 
 /**
- * Module Wrapper Class.
- * # uid is a self-generated global id to identify a unique module.
- * # id is a user-defined name for the module, it's optional but if we
- *   lost the id property, it will break down some of the test cases
- *   in AMDJS(see anon_circular case), so I change the AMDJS serveral
- *   cases to protect this.
- * # url is the file path where to fetch the module.
- * # deps is an array to store the dependency module in require or define
- *   form, also it will retrieve the requrie statements in function's
- *   string value in case that a CMD wrapper is used.
- * # status
- *   is a int value to know the current module state, came from Module.STATUS.
- * # factory and exports is the callback function to export the module's
- *   value and the real value of the module.
- *
+ * Module包装类.
+ * # uid    自生成的uid标识唯一模块.
+ * # id     用户自定义的模块名, 是可选的但如果我们不写id会使一些测试用例失败(see anon_circular case),
+ *          于是对一些不必要的测试用例作了修改.
+ * # url    模块对用的物理文件路径.
+ * # deps   依赖模块的字面亮表示, 也是require|define源码的写法中依赖数组的值.
+ *          (todo it also retrieve the requrie statements in function's
+ *          string value in case that a CMD wrapper is used. 考虑去掉对cmd的支持)
+ * # depMods依赖模块的表示对象数组.
+ * # status 当前模块状态, 见 Module.STATUS.
+ * # factory模块的导出函数, 通过工厂函数导出模块的表示值.
  * @constructor
  */
 function Module(obj) {
@@ -619,28 +618,30 @@ function Module(obj) {
   this.url = obj.url;
   this.deps = obj.deps || [];
   this.depMods = new Array(this.deps.length);
-  this.status = obj.status || Module.STATUS.uninit;
+  this.status = obj.status || Module.STATUS.init;
   this.factory = obj.factory || noop;
-  this.exports = {};
+  this.exports = {}; // todo
 }
 
 
-// Four states of module.
-// 'uninit' module is only inited but without fetching its deps.
-// 'fetching' is fetching its deps now but not execute its factory yet.
-// 'loaded' is specificated in IE means a js file is loaded.
-// 'complete' is module finished resolve and has cached its exports object.
+/**
+ * 模块的4种状态.
+ * # init     模块刚被创建, 还没有获取自身依赖的模块.
+ * # fetching 正在获取自身依赖模块但还没导出自身模块.
+ * # loaded   只在<IE11出现, 表示js模块已经下载完成.
+ * # complete 模块已被导出且缓存到模块池中.
+ */
 Module.STATUS = {
-  "uninit"    : 0,
-  "fetching"  : 1,
-  "loaded"    : 2,
-  "complete"  : 3
+  'init'      : 0,
+  'fetching'  : 1,
+  'loaded'    : 2,
+  'complete'  : 3
 };
 
 
 /**
- * When a mod prepared, then will notify all the modules depend on it.
- * So pass the mod and invoke depandant.ready(mod);
+ * 当模块已被缓存<code>mod.status = Module.STATUS.complete</code>,
+ * 则需要通知所有依赖于它的模块, 需要调用depandant.ready(mod);
  * @param {Module|Object} mod
  */
 Module.prototype.ready = function(mod) {
@@ -691,7 +692,7 @@ var cjsRequireRegExp = /\brequire\s*\(\s*(["'])([^'"\s]+)\1\s*\)/g,
 
 
 /**
- * define a module.
+ * 全局define函数.
  * The specification defines a single function "define" that is available
  * as a free variable or a global variable. The signature of the function:
  * define(id?, dependencies?, factory);
@@ -700,7 +701,7 @@ var cjsRequireRegExp = /\brequire\s*\(\s*(["'])([^'"\s]+)\1\s*\)/g,
  * @param {Array|Function|Object} deps
  * @param {(Function|Object)?} factory
  */
-function define(id, deps, factory) {
+define = function(id, deps, factory) {
   var mod,
     cache = kernel.cache,
     uid = kernel.uidprefix + kernel.uid++;
@@ -808,38 +809,8 @@ function define(id, deps, factory) {
 
   // load dependencies.
   load(mod);
-}
-
-
-/**
- * define.amd property
- *
- * To allow a clear indicator that a global define function
- * (as needed for script src browser loading) conforms to the AMD API,
- * any global define function SHOULD have a property called "amd" whose
- * value is an object. This helps avoid conflict with any other existing
- * JavaScript code that could have defined a define() function that
- * does not conform to the AMD API.
- *
- * The properties inside the define.amd object are not specified at this time.
- * It can be used by implementers who want to inform of other capabilities
- * beyond the basic API that the implementation supports.
- *
- * Existence of the define.amd property with an object value indicates
- * conformance with this API. If there is another version of the API,
- * it will likely define another property, like define.amd2, to indicate
- * implementations that conform to that version of the API.
- *
- * An example of how it may be defined for an implementation that allows
- * loading more than one version of a module in an environment:
- *
- * @type {Object}
- */
-define.amd = {
-  creator: "AceMood",
-  email: "zmike86@gmail.com",
-  version: "0.9.1"
 };
+
 
 /**
  * Load all dependencies of a specific module.
@@ -920,6 +891,36 @@ function load(mod) {
 
 
 /**
+ * define.amd property
+ *
+ * To allow a clear indicator that a global define function
+ * (as needed for script src browser loading) conforms to the AMD API,
+ * any global define function SHOULD have a property called "amd" whose
+ * value is an object. This helps avoid conflict with any other existing
+ * JavaScript code that could have defined a define() function that
+ * does not conform to the AMD API.
+ *
+ * The properties inside the define.amd object are not specified at this time.
+ * It can be used by implementers who want to inform of other capabilities
+ * beyond the basic API that the implementation supports.
+ *
+ * Existence of the define.amd property with an object value indicates
+ * conformance with this API. If there is another version of the API,
+ * it will likely define another property, like define.amd2, to indicate
+ * implementations that conform to that version of the API.
+ *
+ * An example of how it may be defined for an implementation that allows
+ * loading more than one version of a module in an environment:
+ *
+ * @type {Object}
+ */
+define.amd = {
+  creator: "AceMood",
+  email: "zmike86@gmail.com",
+  version: "0.9.1"
+};
+
+/**
  * set up page logic or manually request a module asynchronously.
  * two forms usage:
  * var mod = require("module");
@@ -930,7 +931,7 @@ function load(mod) {
  * @param {!Array|String} deps
  * @param {Function?} cb
  */
-function require(deps, cb) {
+require = function(deps, cb) {
   // pass-in a config object
   if (typeOf(deps) === "object" && !cb) {
     kernel.config(deps);
@@ -988,7 +989,7 @@ function require(deps, cb) {
       return kernel.cache.mods[uid].exports || null;
     }
   }
-}
+};
 
 
 /**
@@ -1147,29 +1148,39 @@ require.url = function(url) {
   return url;
 };
 
-// @global
-var kernel = {};
+/**
+ * 全局kerneljs对象
+ * @typedef {Object}
+ */
+kerneljs = {};
 
 
-// preserve existed kernel object;
-if (global.kernel) {
-  kernel._kernel = global.kernel;
+// 若之前引入过其他全局变量, 则替换成私有变量_kerneljs, 而原有kerneljs则会被替换
+if (global.kerneljs) {
+  kerneljs.kerneljs = global.kerneljs;
 }
 
 
-// universal global module id
-kernel.uid = 0;
-kernel.uidprefix = "AceMood@kernel_";
+kerneljs.uid = 0;
+kerneljs.uidprefix = 'AceMood@kernel_';
 
 
-// All modules being fetched means the module's dependencies
-// is now fetching, and the key is mod's uid, value is mod itself;
+/**
+ * 保存所有正在获取依赖模块的模块信息.
+ * key是模块的uid, value是模块自身.
+ * @typedef {Object}
+ */
 var fetchingList = {
   mods: {},
   add: function(mod) {
     if (this.mods[mod.uid]) {
-      throw "current mod with uid: " + mod.uid +
-        " and file path: " + mod.url + " is fetching now";
+      kerneljs.trigger('error', [[
+        'current mod with uid: ',
+        mod.uid,
+        ' and file path: ',
+        mod.url,
+        ' is fetching now'
+      ].join('')]);
     }
     this.mods[mod.uid] = mod;
   },
@@ -1185,51 +1196,56 @@ var fetchingList = {
 };
 
 
-// If requiring a module, then record it here. So that once the
-// module complete, notify all its dependants.
 // Due to add module dependency when resolve id->path, we can not use
-// module's uid as the key of dependencyList, so we use url here,
-// the hash will be path -> [mod] constructor.
+// module's uid as the key of dependencyList, so we use url here.
+/**
+ * 记录模块的依赖关系. 如果模块状态置为complete, 则用此对象同志所有依赖他的模块项.
+ * 因为解析依赖的时候一般是通过相对路径（除非预配置一些短命名id和路径的映射）
+ * 这个结构是以path路径作为key, 模块数组作为value
+ * @typedef {Object}
+ */
 var dependencyList = {};
 
 
-// If a module a fetching now means the corresponding script is loading now,
-// before it complete loaded, we should not fetch it twice, but only when
-// define the module it would record in the 'cache.path2uid', so here we just
-// record here to avoid fetch twice.
-// the hash will be path -> bool constructor.
+/**
+ * 如果某个模块处于fetching的状态则说明依赖的js模块文件正在下载, 在完成下载之前我们不希望同一个文件
+ * 发起两次下载请求. define时会缓存到cache.path2uid对象中, 我们这里用path作为key标识模块文件正在下载.
+ * @typedef {Object}
+ */
 var sendingList = {};
 
 
 /**
- * Dynamic config kernel.
- * property of obj can be:
+ * 动态配置kerneljs对象. 配置对象的属性可以是:
  * [alias]: a collection of short names will be used to stand for
  *     a long name or long path module.
  * [paths]: a hash
  * [baseUrl]:
  */
-kernel.config = function(obj) {
-  if (typeOf(obj) !== "object") {
-    throw "config object must an object";
+kerneljs.config = function(obj) {
+  if (typeOf(obj) !== 'object') {
+    throw 'config object must an object';
   }
   var key, k;
   for (key in obj) {
     if (hasOwn.call(obj, key)) {
-      if (kernel[key]) {
+      if (kerneljs[key]) {
         for (k in obj[key]) {
-          kernel[key][k] = obj[key][k];
+          kerneljs[key][k] = obj[key][k];
         }
       } else {
-        kernel[key] = obj[key];
+        kerneljs[key] = obj[key];
       }
     }
   }
 };
 
 
-// Global cache.
-kernel.cache = {
+/**
+ * 全局缓存对象
+ * @typedef {Object}
+ */
+kerneljs.cache = {
   // use a global cache to store uid-module pairs.
   // each uid mapping to a unique module, so it's a
   // one-to-one hash constructor.
@@ -1243,14 +1259,15 @@ kernel.cache = {
   id2path: {},
   // each file may have multiple modules. so it's a one-to-many hash
   // constructor.
-  path2uid: {}
+  path2uid: {},
+  events: {}
 };
 
 
 // default built-in modules
 // map the short name and relative path?
-kernel.config({
-  baseUrl: "",
+kerneljs.config({
+  baseUrl: '',
   debug: true,
   builtin: {
 
@@ -1259,20 +1276,53 @@ kernel.config({
 
 
 /**
- * Clear all cache.
+ * 重置全局缓存
  */
-kernel.reset = function() {
-  kernel.cache = {
+kerneljs.reset = function() {
+  this.cache = {
     mods: {},
     id2path: {},
-    path2uid: {}
+    path2uid: {},
+    events: {}
   };
 };
 
 
-// exports APIs functions
-global.require = global._req = require;
-global.define = global._def = define;
-global.kernel = kernel;
+/**
+ * 订阅事件
+ * @param {String} eventName 事件名称定义在event.js
+ * @param {Function} handler 事件处理器
+ * @param {*} context 事件处理器上下文
+ */
+kerneljs.on = function(eventName, handler, context) {
+  if (!this.cache.events[eventName]) {
+    this.cache.events[eventName] = [];
+  }
+  this.cache.events[eventName].push({
+    handler: handler,
+    context: context
+  });
+};
+
+
+/**
+ * 触发订阅事件
+ * @param {String} eventName 事件名称定义在event.js
+ * @param {Array.<Object>} args 参数
+ */
+kerneljs.trigger = function(eventName, args) {
+  // 缓存防止事件处理器改变kerneljs.cache对象
+  var arr = this.cache.events[eventName];
+  if (arr) {
+    forEach(arr, function(obj) {
+      obj.handler.apply(obj.context, args);
+    });
+  }
+};
+
+
+/** 导出全局短命名 APIs */
+global._req = require;
+global._def = define;
 
 }(this));

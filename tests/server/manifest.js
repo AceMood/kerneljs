@@ -6,7 +6,7 @@ exports.manifest.requirejs = {
     impl:   'requirejs/require.js',
     config: 'requirejs/config.js'
 };
-
+/*
 exports.manifest.needs = {
     name:   'Needs JS @ a915dce3',
     impl:   'needs/needs.js',
@@ -30,7 +30,7 @@ exports.manifest.zazl = {
     impl:   'zazl/zazl.js',
     config: 'zazl/config.js',
     installer: '../impl/zazl/installer'
-};
+};*/
 
 exports.manifest.kerneljs = {
     name:   'kerneljs @ 0.9.1',

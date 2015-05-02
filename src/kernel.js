@@ -1,4 +1,8 @@
 
+/**
+ * 全局kerneljs对象
+ * @typedef {Object}
+ */
 kerneljs = {};
 
 
@@ -13,8 +17,9 @@ kerneljs.uidprefix = 'AceMood@kernel_';
 
 
 /**
- * All modules being fetched means the module's dependencies
- * is now fetching, and the key is mod's uid, value is mod itself;
+ * 保存所有正在获取依赖模块的模块信息.
+ * key是模块的uid, value是模块自身.
+ * @typedef {Object}
  */
 var fetchingList = {
   mods: {},
@@ -42,33 +47,35 @@ var fetchingList = {
 };
 
 
-// If requiring a module, then record it here. So that once the
-// module complete, notify all its dependants.
 // Due to add module dependency when resolve id->path, we can not use
-// module's uid as the key of dependencyList, so we use url here,
-// the hash will be path -> [mod] constructor.
+// module's uid as the key of dependencyList, so we use url here.
+/**
+ * 记录模块的依赖关系. 如果模块状态置为complete, 则用此对象同志所有依赖他的模块项.
+ * 因为解析依赖的时候一般是通过相对路径（除非预配置一些短命名id和路径的映射）
+ * 这个结构是以path路径作为key, 模块数组作为value
+ * @typedef {Object}
+ */
 var dependencyList = {};
 
 
-// If a module a fetching now means the corresponding script is loading now,
-// before it complete loaded, we should not fetch it twice, but only when
-// define the module it would record in the 'cache.path2uid', so here we just
-// record here to avoid fetch twice.
-// the hash will be path -> bool constructor.
+/**
+ * 如果某个模块处于fetching的状态则说明依赖的js模块文件正在下载, 在完成下载之前我们不希望同一个文件
+ * 发起两次下载请求. define时会缓存到cache.path2uid对象中, 我们这里用path作为key标识模块文件正在下载.
+ * @typedef {Object}
+ */
 var sendingList = {};
 
 
 /**
- * Dynamic config kernel.
- * property of obj can be:
- * [alias]: a collection of short names will be used to stand for
- *     a long name or long path module.
- * [paths]: a hash
- * [baseUrl]:
+ * 动态配置kerneljs对象. 目前配置对象的属性可以是:
+ * # alias: 短命名id和长路径的映射关系. (todo)
+ * # paths: 一个路径映射的hash结构, 详细看:
+ *          http://requirejs.org/docs/api.html#config-paths
+ * # baseUrl: 所有路经解析的基路径, 包括paths, 但模块内依赖的相对路径针对模块自身路径解析. (todo)
  */
 kerneljs.config = function(obj) {
-  if (typeOf(obj) !== "object") {
-    throw "config object must an object";
+  if (typeOf(obj) !== 'object') {
+    throw 'config object must an object';
   }
   var key, k;
   for (key in obj) {
@@ -85,11 +92,12 @@ kerneljs.config = function(obj) {
 };
 
 
-// Global cache.
+/**
+ * 全局缓存对象
+ * @typedef {Object}
+ */
 kerneljs.cache = {
-  // use a global cache to store uid-module pairs.
-  // each uid mapping to a unique module, so it's a
-  // one-to-one hash constructor.
+  // 全局缓存uid和对应模块. 是一对一的映射关系.
   mods: {},
   // and id2path record all module that have a user-defined id.
   // its a pairs; not all modules have user-defined id, so this object
@@ -101,18 +109,15 @@ kerneljs.cache = {
   // each file may have multiple modules. so it's a one-to-many hash
   // constructor.
   path2uid: {},
+  // kerneljs的订阅者缓存
   events: {}
 };
 
 
-// default built-in modules
-// map the short name and relative path?
+// 基础配置
 kerneljs.config({
-  baseUrl: "",
-  debug: true,
-  builtin: {
-
-  }
+  baseUrl: '',
+  debug: true
 });
 
 
@@ -142,7 +147,7 @@ kerneljs.on = function(eventName, handler, context) {
   this.cache.events[eventName].push({
     handler: handler,
     context: context
-  })
+  });
 };
 
 

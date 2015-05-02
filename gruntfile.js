@@ -15,7 +15,8 @@ module.exports = function(grunt) {
         'src/module.js',
         'src/define.js',
         'src/require.js',
-        'src/kernel.js'
+        'src/kernel.js',
+        'src/event.js'
       ],
       options: {
         curly: true,
@@ -44,6 +45,7 @@ module.exports = function(grunt) {
           'src/define.js',
           'src/require.js',
           'src/kernel.js',
+          'src/event.js',
           'src/outro.js'
         ],
         dest: 'dist/kernel.js'

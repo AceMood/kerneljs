@@ -27,15 +27,15 @@ function Module(obj) {
 
 /**
  * 模块的4种状态.
- * # init     模块刚被创建, 还没有获取自身依赖的模块.
- * # loading  正在获取自身依赖模块但还没导出自身模块.
- * # loaded   只在<IE11出现, 表示js模块已经下载完成.
+ * # init     模块刚被创建, 还没有获取自身的模块.
+ * # loaded   只在<IE11出现, 表示自身模块已经下载完成.
+ * # fetching 正在获取自身依赖模块但还没导出自身模块.
  * # complete 模块已被导出且缓存到模块池中.
  */
 Module.STATUS = {
   'init'      : 0,
-  'loading'   : 1,
-  'loaded'    : 2,
+  'loaded'    : 1,
+  'fetching'  : 2,
   'complete'  : 3
 };
 
