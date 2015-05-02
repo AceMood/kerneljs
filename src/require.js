@@ -13,7 +13,7 @@
 require = _req = function(deps, cb) {
   // pass-in a config object
   if (typeOf(deps) === "object" && !cb) {
-    kernel.config(deps);
+    kerneljs.config(deps);
     return null;
   }
   // no deps
@@ -35,7 +35,7 @@ require = _req = function(deps, cb) {
   if (cb) {
     // 'require' invoke can introduce an anonymous module,
     // it has the unique uid and id is null.
-    uid = kernel.uidprefix + kernel.uid++;
+    uid = kerneljs.uidprefix + kerneljs.uid++;
     var mod = new Module({
       uid: uid,
       id: null,
@@ -64,8 +64,8 @@ require = _req = function(deps, cb) {
     if (deps.length === 1 && _mod) {
       return _mod;
     } else {
-      uid = kernel.cache.path2uid[_dep][0];
-      return kernel.cache.mods[uid].exports || null;
+      uid = kerneljs.cache.path2uid[_dep][0];
+      return kerneljs.cache.mods[uid].exports || null;
     }
   }
 };
@@ -98,10 +98,10 @@ function notify(mod) {
   mod.status = Module.STATUS.complete;
 
   // Register module in global cache
-  kernel.cache.mods[mod.uid] = mod;
+  kerneljs.cache.mods[mod.uid] = mod;
   // two keys are the same thing
   if (mod.id) {
-    kernel.cache.mods[mod.id] = mod;
+    kerneljs.cache.mods[mod.id] = mod;
   }
 
   // Dispatch ready event.
@@ -136,17 +136,14 @@ function notify(mod) {
  */
 function resolve(name, mod) {
   // step 1: parse built-in and already existed modules
-  if (kernel.builtin[name]) {
-    return kernel.builtin[name];
-  }
-  if (kernel.cache.mods[name]) {
+  if (kerneljs.cache.mods[name]) {
     var currentPath = getCurrentPath(),
       path = resolveId(name, currentPath);
     // we check circular reference first, if it there, we return the
     // empty_mod immediately.
-    if (kernel.cache.mods[name].status === Module.STATUS.complete ||
+    if (kerneljs.cache.mods[name].status === Module.STATUS.complete ||
       checkCycle(path, mod)) {
-      return kernel.cache.mods[name].exports;
+      return kerneljs.cache.mods[name].exports;
     }
   }
 
@@ -185,9 +182,9 @@ function resolve(name, mod) {
  */
 function checkCycle(path, mod) {
   var ret = false;
-  var uid = kernel.cache.path2uid[path];
+  var uid = kerneljs.cache.path2uid[path];
   var m;
-  if (uid && (m = kernel.cache.mods[uid[0]])) {
+  if (uid && (m = kerneljs.cache.mods[uid[0]])) {
     if (indexOf(dependencyList[mod.url], m) >= 0) {
       ret = true;
     }

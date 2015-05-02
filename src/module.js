@@ -66,11 +66,8 @@ Module.prototype.ready = function(mod) {
 
 
 /**
- * 检查是否模块的依赖项都已complete的状态.
- * Here has a problem. if we do the type checking,
- * the string exports will be filtered, but it's possible
- * that module export an string as a module itself,
- * so we do the
+ * 检查是否模块的依赖项都已complete的状态. note: 由于模块导出值也可能是字符串, 尤其是模板相关的模块,
+ * 所以这里通过isNull函数检查.
  * @return {boolean}
  */
 Module.prototype.checkAllDepsOK = function() {

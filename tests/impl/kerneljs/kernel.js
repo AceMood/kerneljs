@@ -41,17 +41,7 @@ var OP = Object.prototype,
 var break_obj = {};
 
 
-// initialize a module
-var empty_mod = {
-  id: null,
-  uid: null,
-  url: null,
-  status: null,
-  exports: {}
-};
-
-
-// for no-op function, used for a default callback function
+/** 空函数作为默认回调函数 */
 function noop() {}
 
 
@@ -478,7 +468,7 @@ function isRelative(p) {
  * @return {!(string|object)} exports object or absolute file path from Internet
  */
 function resolveId(id, base) {
-  // var _mod = kernel.cache.mods[id];
+  // var _mod = kerneljs.cache.mods[id];
   if (id === "require" ||
     id === "module" ||
     id === "exports" /*|| (_mod &&  _mod != empty_mod)*/) {
@@ -536,15 +526,15 @@ function dirname(p) {
 
 /**
  * Alias will appear at first word of path.
- * So replace it if exists in kernel.alias.
+ * So replace it if exists in kerneljs.alias.
  * @param {string} p
  * @return {string} s
  */
 function parseMap(p) {
   var parts = p.split("/"),
     part = parts[0];
-  if (kernel.alias[part]) {
-    part = kernel.alias[part];
+  if (kerneljs.alias[part]) {
+    part = kerneljs.alias[part];
   }
   parts.shift();
   return [part].concat(parts).join("/");
@@ -553,20 +543,20 @@ function parseMap(p) {
 
 /**
  * Alias will appear at head part of path.
- * So replace it if exists in kernel.paths.
+ * So replace it if exists in kerneljs.paths.
  * @param {String} p
  * @return {String} s
  */
 function parsePaths(p) {
   var ret = [];
-  if (kernel.paths) {
+  if (kerneljs.paths) {
     var part = p;
     var parts = p.split("/");
-    while (!(part in kernel.paths) && parts.length) {
+    while (!(part in kerneljs.paths) && parts.length) {
       ret.unshift(parts.pop());
       part = parts.join("/");
     }
-    p = kernel.paths[part] ? kernel.paths[part] : part;
+    p = kerneljs.paths[part] ? kerneljs.paths[part] : part;
   }
   return p + ret.join("/");
 }
@@ -575,12 +565,12 @@ function parsePaths(p) {
 /**
  * pkg name can also impact on path resolving.
  * After paths, we should find it in pkg configuration.
- * So replace it if exists in kernel.packages.
+ * So replace it if exists in kerneljs.packages.
  * @param {String} p
  * @return {String} s
  */
 function parsePackages(p) {
-  var pkgs = kernel.packages,
+  var pkgs = kerneljs.packages,
     fpath = "";
   if (pkgs && pkgs.length > 0) {
     forEach(pkgs, function(pkg) {
@@ -665,11 +655,8 @@ Module.prototype.ready = function(mod) {
 
 
 /**
- * 检查是否模块的依赖项都已complete的状态.
- * Here has a problem. if we do the type checking,
- * the string exports will be filtered, but it's possible
- * that module export an string as a module itself,
- * so we do the
+ * 检查是否模块的依赖项都已complete的状态. note: 由于模块导出值也可能是字符串, 尤其是模板相关的模块,
+ * 所以这里通过isNull函数检查.
  * @return {boolean}
  */
 Module.prototype.checkAllDepsOK = function() {
@@ -692,33 +679,41 @@ var cjsRequireRegExp = /\brequire\s*\(\s*(["'])([^'"\s]+)\1\s*\)/g,
   commentRegExp = /(\/\*([\s\S]*?)\*\/|([^:]|^)\/\/(.*)$)/mg;
 
 
+// initialize a module
+var empty_mod = {
+  id: null,
+  uid: null,
+  url: null,
+  status: null,
+  exports: {}
+};
+
+
 /**
- * 全局define函数.
- * The specification defines a single function "define" that is available
- * as a free variable or a global variable. The signature of the function:
+ * 全局define函数. 函数签名:
  * define(id?, dependencies?, factory);
- *
+ * 见: https://github.com/amdjs/amdjs-api/blob/master/AMD.md#define-function-
  * @param {String|Array|Function|Object} id
  * @param {Array|Function|Object} deps
  * @param {(Function|Object)?} factory
  */
 define = _def = function(id, deps, factory) {
-  var mod,
-    cache = kernel.cache,
-    uid = kernel.uidprefix + kernel.uid++;
+  var mod, cache = kerneljs.cache,
+    uid = kerneljs.uidprefix + kerneljs.uid++;
 
   // document.currentScript stuned me in a callback and
   // event handler conditions.
   // but if define in a single file, this could be trusted.
   var base = getCurrentPath();
 
-  // deal with optional arguments
-  if (typeOf(id) !== "string") {
+  // 处理参数
+  if (typeOf(id) !== 'string') {
     factory = deps;
     deps = id;
     id = null;
   }
-  if (typeOf(deps) !== "array") {
+
+  if (typeOf(deps) !== 'array') {
     factory = deps;
     deps = null;
   }
@@ -732,14 +727,14 @@ define = _def = function(id, deps, factory) {
   // into package 2 and package 3 together, which means define with same
   // identifier will be called twice.
   if (id) {
-    if (cache.id2path[id] && kernel.debug) {
+    if (cache.id2path[id] && kerneljs.debug) {
       return exist_id_error(id);
     }
     cache.id2path[id] = base;
     cache.mods[id] = empty_mod;
   }
 
-  // record
+  // 缓存path2uid
   if (cache.path2uid[base]) {
     cache.path2uid[base].push(uid);
   } else {
@@ -753,7 +748,7 @@ define = _def = function(id, deps, factory) {
   // CommonJS thing with dependencies. I don't intend to support it.
   // But many projects used RequireJS may depend on this functional.
   // Code below in the if-else statements lent from RequireJS
-  if (!deps && typeOf(factory) === "function") {
+  if (!deps && typeOf(factory) === 'function') {
     deps = [];
     // Remove comments from the callback string,
     // look for require calls, and pull them into the dependencies,
@@ -776,7 +771,7 @@ define = _def = function(id, deps, factory) {
     }
   }
 
-  // init current module
+  // 创建模块
   mod = cache.mods[uid] = new Module({
     uid: uid,
     id: id,
@@ -819,9 +814,9 @@ define = _def = function(id, deps, factory) {
  */
 function load(mod) {
 
-  var cache = kernel.cache;
+  var cache = kerneljs.cache;
   var count = mod.deps.length;
-  var inPathConfig = kernel.paths && kernel.paths[mod.id] ? true : false;
+  var inPathConfig = kerneljs.paths && kerneljs.paths[mod.id] ? true : false;
   // todo I doubt about the uri in paths config and all its rel path
   // will be resolved relative to location.href, See
   // test case: config_path_relative for more information.
@@ -913,7 +908,7 @@ function load(mod) {
  * An example of how it may be defined for an implementation that allows
  * loading more than one version of a module in an environment:
  *
- * @type {Object}
+ * @typedef {Object}
  */
 define.amd = {
   creator: 'AceMood',
@@ -934,7 +929,7 @@ define.amd = {
 require = _req = function(deps, cb) {
   // pass-in a config object
   if (typeOf(deps) === "object" && !cb) {
-    kernel.config(deps);
+    kerneljs.config(deps);
     return null;
   }
   // no deps
@@ -956,7 +951,7 @@ require = _req = function(deps, cb) {
   if (cb) {
     // 'require' invoke can introduce an anonymous module,
     // it has the unique uid and id is null.
-    uid = kernel.uidprefix + kernel.uid++;
+    uid = kerneljs.uidprefix + kerneljs.uid++;
     var mod = new Module({
       uid: uid,
       id: null,
@@ -985,8 +980,8 @@ require = _req = function(deps, cb) {
     if (deps.length === 1 && _mod) {
       return _mod;
     } else {
-      uid = kernel.cache.path2uid[_dep][0];
-      return kernel.cache.mods[uid].exports || null;
+      uid = kerneljs.cache.path2uid[_dep][0];
+      return kerneljs.cache.mods[uid].exports || null;
     }
   }
 };
@@ -1019,10 +1014,10 @@ function notify(mod) {
   mod.status = Module.STATUS.complete;
 
   // Register module in global cache
-  kernel.cache.mods[mod.uid] = mod;
+  kerneljs.cache.mods[mod.uid] = mod;
   // two keys are the same thing
   if (mod.id) {
-    kernel.cache.mods[mod.id] = mod;
+    kerneljs.cache.mods[mod.id] = mod;
   }
 
   // Dispatch ready event.
@@ -1057,17 +1052,14 @@ function notify(mod) {
  */
 function resolve(name, mod) {
   // step 1: parse built-in and already existed modules
-  if (kernel.builtin[name]) {
-    return kernel.builtin[name];
-  }
-  if (kernel.cache.mods[name]) {
+  if (kerneljs.cache.mods[name]) {
     var currentPath = getCurrentPath(),
       path = resolveId(name, currentPath);
     // we check circular reference first, if it there, we return the
     // empty_mod immediately.
-    if (kernel.cache.mods[name].status === Module.STATUS.complete ||
+    if (kerneljs.cache.mods[name].status === Module.STATUS.complete ||
       checkCycle(path, mod)) {
-      return kernel.cache.mods[name].exports;
+      return kerneljs.cache.mods[name].exports;
     }
   }
 
@@ -1106,9 +1098,9 @@ function resolve(name, mod) {
  */
 function checkCycle(path, mod) {
   var ret = false;
-  var uid = kernel.cache.path2uid[path];
+  var uid = kerneljs.cache.path2uid[path];
   var m;
-  if (uid && (m = kernel.cache.mods[uid[0]])) {
+  if (uid && (m = kerneljs.cache.mods[uid[0]])) {
     if (indexOf(dependencyList[mod.url], m) >= 0) {
       ret = true;
     }

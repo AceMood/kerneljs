@@ -5,33 +5,41 @@ var cjsRequireRegExp = /\brequire\s*\(\s*(["'])([^'"\s]+)\1\s*\)/g,
   commentRegExp = /(\/\*([\s\S]*?)\*\/|([^:]|^)\/\/(.*)$)/mg;
 
 
+// initialize a module
+var empty_mod = {
+  id: null,
+  uid: null,
+  url: null,
+  status: null,
+  exports: {}
+};
+
+
 /**
- * 全局define函数.
- * The specification defines a single function "define" that is available
- * as a free variable or a global variable. The signature of the function:
+ * 全局define函数. 函数签名:
  * define(id?, dependencies?, factory);
- *
+ * 见: https://github.com/amdjs/amdjs-api/blob/master/AMD.md#define-function-
  * @param {String|Array|Function|Object} id
  * @param {Array|Function|Object} deps
  * @param {(Function|Object)?} factory
  */
 define = _def = function(id, deps, factory) {
-  var mod,
-    cache = kernel.cache,
-    uid = kernel.uidprefix + kernel.uid++;
+  var mod, cache = kerneljs.cache,
+    uid = kerneljs.uidprefix + kerneljs.uid++;
 
   // document.currentScript stuned me in a callback and
   // event handler conditions.
   // but if define in a single file, this could be trusted.
   var base = getCurrentPath();
 
-  // deal with optional arguments
-  if (typeOf(id) !== "string") {
+  // 处理参数
+  if (typeOf(id) !== 'string') {
     factory = deps;
     deps = id;
     id = null;
   }
-  if (typeOf(deps) !== "array") {
+
+  if (typeOf(deps) !== 'array') {
     factory = deps;
     deps = null;
   }
@@ -45,14 +53,14 @@ define = _def = function(id, deps, factory) {
   // into package 2 and package 3 together, which means define with same
   // identifier will be called twice.
   if (id) {
-    if (cache.id2path[id] && kernel.debug) {
+    if (cache.id2path[id] && kerneljs.debug) {
       return exist_id_error(id);
     }
     cache.id2path[id] = base;
     cache.mods[id] = empty_mod;
   }
 
-  // record
+  // 缓存path2uid
   if (cache.path2uid[base]) {
     cache.path2uid[base].push(uid);
   } else {
@@ -66,7 +74,7 @@ define = _def = function(id, deps, factory) {
   // CommonJS thing with dependencies. I don't intend to support it.
   // But many projects used RequireJS may depend on this functional.
   // Code below in the if-else statements lent from RequireJS
-  if (!deps && typeOf(factory) === "function") {
+  if (!deps && typeOf(factory) === 'function') {
     deps = [];
     // Remove comments from the callback string,
     // look for require calls, and pull them into the dependencies,
@@ -89,7 +97,7 @@ define = _def = function(id, deps, factory) {
     }
   }
 
-  // init current module
+  // 创建模块
   mod = cache.mods[uid] = new Module({
     uid: uid,
     id: id,
@@ -132,9 +140,9 @@ define = _def = function(id, deps, factory) {
  */
 function load(mod) {
 
-  var cache = kernel.cache;
+  var cache = kerneljs.cache;
   var count = mod.deps.length;
-  var inPathConfig = kernel.paths && kernel.paths[mod.id] ? true : false;
+  var inPathConfig = kerneljs.paths && kerneljs.paths[mod.id] ? true : false;
   // todo I doubt about the uri in paths config and all its rel path
   // will be resolved relative to location.href, See
   // test case: config_path_relative for more information.
@@ -226,7 +234,7 @@ function load(mod) {
  * An example of how it may be defined for an implementation that allows
  * loading more than one version of a module in an environment:
  *
- * @type {Object}
+ * @typedef {Object}
  */
 define.amd = {
   creator: 'AceMood',

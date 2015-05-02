@@ -11,17 +11,7 @@ var OP = Object.prototype,
 var break_obj = {};
 
 
-// initialize a module
-var empty_mod = {
-  id: null,
-  uid: null,
-  url: null,
-  status: null,
-  exports: {}
-};
-
-
-// for no-op function, used for a default callback function
+/** 空函数作为默认回调函数 */
 function noop() {}
 
 

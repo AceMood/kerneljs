@@ -122,7 +122,7 @@ function isRelative(p) {
  * @return {!(string|object)} exports object or absolute file path from Internet
  */
 function resolveId(id, base) {
-  // var _mod = kernel.cache.mods[id];
+  // var _mod = kerneljs.cache.mods[id];
   if (id === "require" ||
     id === "module" ||
     id === "exports" /*|| (_mod &&  _mod != empty_mod)*/) {
@@ -180,15 +180,15 @@ function dirname(p) {
 
 /**
  * Alias will appear at first word of path.
- * So replace it if exists in kernel.alias.
+ * So replace it if exists in kerneljs.alias.
  * @param {string} p
  * @return {string} s
  */
 function parseMap(p) {
   var parts = p.split("/"),
     part = parts[0];
-  if (kernel.alias[part]) {
-    part = kernel.alias[part];
+  if (kerneljs.alias[part]) {
+    part = kerneljs.alias[part];
   }
   parts.shift();
   return [part].concat(parts).join("/");
@@ -197,20 +197,20 @@ function parseMap(p) {
 
 /**
  * Alias will appear at head part of path.
- * So replace it if exists in kernel.paths.
+ * So replace it if exists in kerneljs.paths.
  * @param {String} p
  * @return {String} s
  */
 function parsePaths(p) {
   var ret = [];
-  if (kernel.paths) {
+  if (kerneljs.paths) {
     var part = p;
     var parts = p.split("/");
-    while (!(part in kernel.paths) && parts.length) {
+    while (!(part in kerneljs.paths) && parts.length) {
       ret.unshift(parts.pop());
       part = parts.join("/");
     }
-    p = kernel.paths[part] ? kernel.paths[part] : part;
+    p = kerneljs.paths[part] ? kerneljs.paths[part] : part;
   }
   return p + ret.join("/");
 }
@@ -219,12 +219,12 @@ function parsePaths(p) {
 /**
  * pkg name can also impact on path resolving.
  * After paths, we should find it in pkg configuration.
- * So replace it if exists in kernel.packages.
+ * So replace it if exists in kerneljs.packages.
  * @param {String} p
  * @return {String} s
  */
 function parsePackages(p) {
-  var pkgs = kernel.packages,
+  var pkgs = kerneljs.packages,
     fpath = "";
   if (pkgs && pkgs.length > 0) {
     forEach(pkgs, function(pkg) {
