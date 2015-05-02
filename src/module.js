@@ -1,20 +1,16 @@
 
 /**
- * Module Wrapper Class.
- * # uid is a self-generated global id to identify a unique module.
- * # id is a user-defined name for the module, it's optional but if we
- *   lost the id property, it will break down some of the test cases
- *   in AMDJS(see anon_circular case), so I change the AMDJS serveral
- *   cases to protect this.
- * # url is the file path where to fetch the module.
- * # deps is an array to store the dependency module in require or define
- *   form, also it will retrieve the requrie statements in function's
- *   string value in case that a CMD wrapper is used.
- * # status
- *   is a int value to know the current module state, came from Module.STATUS.
- * # factory and exports is the callback function to export the module's
- *   value and the real value of the module.
- *
+ * Module包装类.
+ * # uid    自生成的uid标识唯一模块.
+ * # id     用户自定义的模块名, 是可选的但如果我们不写id会使一些测试用例失败(see anon_circular case),
+ *          于是对一些不必要的测试用例作了修改.
+ * # url    模块对用的物理文件路径.
+ * # deps   依赖模块的字面亮表示, 也是require|define源码的写法中依赖数组的值.
+ *          (todo it also retrieve the requrie statements in function's
+ *          string value in case that a CMD wrapper is used. 考虑去掉对cmd的支持)
+ * # depMods依赖模块的表示对象数组.
+ * # status 当前模块状态, 见 Module.STATUS.
+ * # factory模块的导出函数, 通过工厂函数导出模块的表示值.
  * @constructor
  */
 function Module(obj) {
@@ -29,16 +25,19 @@ function Module(obj) {
 }
 
 
-// Four states of module.
-// 'uninit' module is only inited but without fetching its deps.
-// 'fetching' is fetching its deps now but not execute its factory yet.
-// 'loaded' is specificated in IE means a js file is loaded.
-// 'complete' is module finished resolve and has cached its exports object.
+/**
+ * 模块的5种状态.
+ * # uninit   module is only inited but without fetching its deps.
+ * # fetching is fetching its deps now but not execute its factory yet.
+ * # loaded is specificated in IE means a js file is loaded.
+ * # complete is module finished resolve and has cached its exports object.
+ */
 Module.STATUS = {
   "uninit"    : 0,
   "fetching"  : 1,
   "loaded"    : 2,
-  "complete"  : 3
+  'ready'     : 3,
+  "complete"  : 4
 };
 
 
