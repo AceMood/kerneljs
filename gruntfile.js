@@ -1,3 +1,9 @@
+/**
+ * @fileoverview 构建文件
+ * @author AceMood
+ * @email zmike86@gmail.com/zmike86@126.com
+ */
+
 module.exports = function(grunt) {
 
   grunt.initConfig({
@@ -97,6 +103,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-uglify');
 
+  // default task
   grunt.registerTask('default', [
     'clean',
     'jshint',

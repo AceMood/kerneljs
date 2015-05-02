@@ -1,6 +1,7 @@
 /**
- * author: AceMood
- * Email: zmike86@gmail.com
+ * Author:  AceMood
+ * Email:   zmike86@gmail.com
+ * Version: 0.9.2
  */
 
 /**
@@ -24,4 +25,4 @@
 
 (function (global, undefined) {
 
-"use strict";
+'use strict';

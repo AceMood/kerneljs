@@ -3,5 +3,6 @@
 *.javac
 *.rb
 *.py
+*.bak
 .idea/
 .DS_Store
