@@ -10,7 +10,7 @@
  * @param {!Array|String} deps
  * @param {Function?} cb
  */
-require = _req = function(deps, cb) {
+require = function(deps, cb) {
   // pass-in a config object
   if (typeOf(deps) === "object" && !cb) {
     kerneljs.config(deps);
@@ -42,7 +42,7 @@ require = _req = function(deps, cb) {
       url: _currentPath,
       deps: deps,
       factory: cb,
-      status: Module.STATUS.uninit
+      status: Module.STATUS.init
     });
 
     // convert dependency names to an object Array, of course,
@@ -149,13 +149,12 @@ function resolve(name, mod) {
 
 
   // step 2: cjs-wrapper form
-  if (name === "require") {
+  if (name === 'require') {
+    debugger;
     return require;
-  }
-  else if (name === "module") {
+  } else if (name === 'module') {
     return mod;
-  }
-  else if (name === "exports") {
+  } else if (name === 'exports') {
     return mod && mod.exports;
   }
 

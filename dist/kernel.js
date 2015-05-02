@@ -23,7 +23,7 @@
  *
  */
 
-var kerneljs, require, define, _req, _def;
+var kerneljs, require, define;
 
 (function (global, undefined) {
 
@@ -326,23 +326,23 @@ function getCurrentScript() {
 
 
 /**
- * Retrieve the absolute path of script node cross browser.
+ * 跨浏览器解决方案获得script节点的src绝对路径.
  * @param {HTMLScriptElement} script
- * @return {*}
+ * @return {String}
  */
 function getAbsPathOfScript(script) {
-  return script.hasAttribute ? script.src : script.getAttribute("src", 4);
+  return script.hasAttribute ? script.src : script.getAttribute('src', 4);
 }
 
 
 /**
  * Retrieve the current executing script node's
  * absolute path.
- * @return {String}
+ * @return {?String}
  */
 function getCurrentPath() {
   var node = getCurrentScript();
-  return node && getAbsPathOfScript(node);
+  return node ? null : getAbsPathOfScript(node);
 }
 
 // and a directory file path must be ends with a slash (back slash in window)
@@ -525,23 +525,6 @@ function dirname(p) {
 
 
 /**
- * Alias will appear at first word of path.
- * So replace it if exists in kerneljs.alias.
- * @param {string} p
- * @return {string} s
- */
-function parseMap(p) {
-  var parts = p.split("/"),
-    part = parts[0];
-  if (kerneljs.alias[part]) {
-    part = kerneljs.alias[part];
-  }
-  parts.shift();
-  return [part].concat(parts).join("/");
-}
-
-
-/**
  * Alias will appear at head part of path.
  * So replace it if exists in kerneljs.paths.
  * @param {String} p
@@ -697,7 +680,7 @@ var empty_mod = {
  * @param {Array|Function|Object} deps
  * @param {(Function|Object)?} factory
  */
-define = _def = function(id, deps, factory) {
+define = function(id, deps, factory) {
   var mod, cache = kerneljs.cache,
     uid = kerneljs.uidprefix + kerneljs.uid++;
 
@@ -926,7 +909,7 @@ define.amd = {
  * @param {!Array|String} deps
  * @param {Function?} cb
  */
-require = _req = function(deps, cb) {
+require = function(deps, cb) {
   // pass-in a config object
   if (typeOf(deps) === "object" && !cb) {
     kerneljs.config(deps);
@@ -958,7 +941,7 @@ require = _req = function(deps, cb) {
       url: _currentPath,
       deps: deps,
       factory: cb,
-      status: Module.STATUS.uninit
+      status: Module.STATUS.init
     });
 
     // convert dependency names to an object Array, of course,
@@ -1065,13 +1048,12 @@ function resolve(name, mod) {
 
 
   // step 2: cjs-wrapper form
-  if (name === "require") {
+  if (name === 'require') {
+    debugger;
     return require;
-  }
-  else if (name === "module") {
+  } else if (name === 'module') {
     return mod;
-  }
-  else if (name === "exports") {
+  } else if (name === 'exports') {
     return mod && mod.exports;
   }
 

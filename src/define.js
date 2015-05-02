@@ -23,7 +23,7 @@ var empty_mod = {
  * @param {Array|Function|Object} deps
  * @param {(Function|Object)?} factory
  */
-define = _def = function(id, deps, factory) {
+define = function(id, deps, factory) {
   var mod, cache = kerneljs.cache,
     uid = kerneljs.uidprefix + kerneljs.uid++;
 

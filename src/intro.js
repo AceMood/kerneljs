@@ -23,7 +23,7 @@
  *
  */
 
-var kerneljs, require, define, _req, _def;
+var kerneljs, require, define;
 
 (function (global, undefined) {
 

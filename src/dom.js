@@ -178,21 +178,21 @@ function getCurrentScript() {
 
 
 /**
- * Retrieve the absolute path of script node cross browser.
+ * 跨浏览器解决方案获得script节点的src绝对路径.
  * @param {HTMLScriptElement} script
- * @return {*}
+ * @return {String}
  */
 function getAbsPathOfScript(script) {
-  return script.hasAttribute ? script.src : script.getAttribute("src", 4);
+  return script.hasAttribute ? script.src : script.getAttribute('src', 4);
 }
 
 
 /**
  * Retrieve the current executing script node's
  * absolute path.
- * @return {String}
+ * @return {?String}
  */
 function getCurrentPath() {
   var node = getCurrentScript();
-  return node && getAbsPathOfScript(node);
+  return node ? null : getAbsPathOfScript(node);
 }

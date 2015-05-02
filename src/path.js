@@ -179,23 +179,6 @@ function dirname(p) {
 
 
 /**
- * Alias will appear at first word of path.
- * So replace it if exists in kerneljs.alias.
- * @param {string} p
- * @return {string} s
- */
-function parseMap(p) {
-  var parts = p.split("/"),
-    part = parts[0];
-  if (kerneljs.alias[part]) {
-    part = kerneljs.alias[part];
-  }
-  parts.shift();
-  return [part].concat(parts).join("/");
-}
-
-
-/**
  * Alias will appear at head part of path.
  * So replace it if exists in kerneljs.paths.
  * @param {String} p
