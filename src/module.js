@@ -48,6 +48,7 @@ Module.prototype.setStatus = function(status) {
   if (status < 0 || status > 4) {
     throw 'Status ' + status + ' is now allowed.';
   } else {
+    this.status = status;
     switch (status) {
       case 2:
         kerneljs.trigger(kerneljs.events.startFetch, [this]);

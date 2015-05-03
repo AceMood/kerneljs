@@ -324,13 +324,12 @@ function getAbsPathOfScript(script) {
 
 
 /**
- * Retrieve the current executing script node's
- * absolute path.
+ * 获取当前执行js代码块的绝对路径. node为空则返回null
  * @return {?String}
  */
 function getCurrentPath() {
   var node = getCurrentScript();
-  return node ? null : getAbsPathOfScript(node);
+  return node ? getAbsPathOfScript(node) : null;
 }
 
 // and a directory file path must be ends with a slash (back slash in window)
@@ -608,6 +607,7 @@ Module.prototype.setStatus = function(status) {
   if (status < 0 || status > 4) {
     throw 'Status ' + status + ' is now allowed.';
   } else {
+    this.status = status;
     switch (status) {
       case 2:
         kerneljs.trigger(kerneljs.events.startFetch, [this]);
@@ -1324,14 +1324,23 @@ kerneljs.trigger = function(eventName, args) {
  * @fileoverview 源码调试用
  */
 
-kerneljs.on('create', function(mod) {
-  console.log('Create on:    ' + mod.url);
-});
+(function(){
 
-kerneljs.on('start:fetch', function(mod) {
-  console.log('Fetch for:    ' + mod.url);
-});
+  'use strict';
 
-kerneljs.on('complete', function(mod) {
-  console.log('Complete on:  ' + mod.url);
-});
+  var log = console.log ? console.log : noop;
+  var format = typeof JSON === 'object' ? JSON.stringify : noop;
+
+  kerneljs.on('create', function(mod) {
+    log('Create on:    ' + format(mod));
+  });
+
+  kerneljs.on('start:fetch', function(mod) {
+    log('Fetch for:    ' + format(mod));
+  });
+
+  kerneljs.on('complete', function(mod) {
+    log('Complete on:  ' + format(mod));
+  });
+
+})();

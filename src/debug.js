@@ -3,14 +3,23 @@
  * @fileoverview 源码调试用
  */
 
-kerneljs.on('create', function(mod) {
-  console.log('Create on:    ' + mod.url);
-});
+(function(){
 
-kerneljs.on('start:fetch', function(mod) {
-  console.log('Fetch for:    ' + mod.url);
-});
+  'use strict';
 
-kerneljs.on('complete', function(mod) {
-  console.log('Complete on:  ' + mod.url);
-});
+  var log = console.log ? console.log : noop;
+  var format = typeof JSON === 'object' ? JSON.stringify : noop;
+
+  kerneljs.on('create', function(mod) {
+    log('Create on:    ' + format(mod));
+  });
+
+  kerneljs.on('start:fetch', function(mod) {
+    log('Fetch for:    ' + format(mod));
+  });
+
+  kerneljs.on('complete', function(mod) {
+    log('Complete on:  ' + format(mod));
+  });
+
+})();

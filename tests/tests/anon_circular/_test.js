@@ -1,5 +1,5 @@
 go(["_reporter", "require", "two", "funcTwo", "funcThree"],
-function (amdJS, require, two, funcTwo, funcThree) {
+  function (amdJS, require, two, funcTwo, funcThree) {
     var args = two.doSomething();
     var twoInst = new funcTwo("TWO");
     var oneMod = two.getOneModule();
@@ -11,4 +11,4 @@ function (amdJS, require, two, funcTwo, funcThree) {
     amdJS.assert('ONE-NESTED' === twoInst.oneName(), 'anon_circular: nested objects');
     amdJS.assert('THREE-THREE_SUFFIX' === funcThree('THREE'), 'anon_circular: resolved circular references');
     amdJS.print('DONE', 'done');
-});
+  });

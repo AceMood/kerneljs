@@ -5,5 +5,5 @@
 // ===============================================
 
 // export
-require('./dist/kernel');
-module.exports = kernel;
+require('./dist/kernel.src.js');
+module.exports = kerneljs;
