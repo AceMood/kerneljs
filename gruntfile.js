@@ -17,7 +17,8 @@ module.exports = function(grunt) {
         'src/define.js',
         'src/require.js',
         'src/kernel.js',
-        'src/event.js'
+        'src/event.js',
+        'src/debug.js'
       ],
       options: {
         curly: true,
@@ -37,7 +38,23 @@ module.exports = function(grunt) {
         stripBanners: false,
         nonull: true
       },
-      main: {
+      dev: {
+        src: [
+          'src/intro.js',
+          'src/utils.js',
+          'src/dom.js',
+          'src/path.js',
+          'src/module.js',
+          'src/define.js',
+          'src/require.js',
+          'src/kernel.js',
+          'src/event.js',
+          'src/outro.js',
+          'src/debug.js'
+        ],
+        dest: 'dist/kernel.debug.js'
+      },
+      pro: {
         src: [
           'src/intro.js',
           'src/utils.js',
@@ -50,14 +67,13 @@ module.exports = function(grunt) {
           'src/event.js',
           'src/outro.js'
         ],
-        dest: 'dist/kernel.js'
+        dest: 'dist/kernel.src.js'
       }
     },
     uglify: {
       options: {
         report: 'gzip',
         sourceMap: true,
-        sourceMapName: 'dist/kernel.map',
         banner: '/** kernel.js by AceMood@Saber-Team */',
         compress: {
           "sequences"     : true,  // join consecutive statemets with the “comma operator”
@@ -83,20 +99,31 @@ module.exports = function(grunt) {
           }
         }
       },
-      main: {
+      pro: {
         files: {
-          'dist/kernel.min.js': ['dist/kernel.js']
+          'dist/kernel.min.js': ['dist/kernel.src.js']
+        },
+        options: {
+          sourceMapName: 'dist/kernel.min.map'
         }
       }
     },
     copy: {
-      main: {
-        nonull: true,
-        expand: true,
-        src: 'dist/kernel.js',
+      dev: {
+        src: 'dist/kernel.debug.js',
         dest: 'tests/impl/kerneljs/',
         filter: 'isFile',
-        flatten: true
+        flatten: true,
+        nonull: true,
+        expand: true
+      },
+      pro: {
+        src: 'dist/kernel.src.js',
+        dest: 'tests/impl/kerneljs/',
+        filter: 'isFile',
+        flatten: true,
+        nonull: true,
+        expand: true
       }
     }
   });

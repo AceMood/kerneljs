@@ -164,23 +164,23 @@ var currentAddingScript,
 
 
 /**
- * Load a module use dynamic script insertion.
+ * 动态script插入获取模块.
  * once confirm the module loaded and executed, then update
  * cache's info and exec module's factory function.
- * @param {String} url File path to fetch.
+ * @param {String} url 文件路径.
  * @param {String} name Original name to require this module.
  *   maybe a top-level name, relative name or absolute name.
  */
 function fetch(url, name) {
-  var script = doc.createElement("script");
-  script.charset = "utf-8";
+  var script = doc.createElement('script');
+  script.charset = 'utf-8';
   script.async = true;
   // custom attribute to remember the original required name
   // which written in dependant module.
   script.kernel_name = name;
 
   // Event binding
-  script.onreadystatechange = script.onload = script.onerror = function () {
+  script.onreadystatechange = script.onload = script.onerror = function() {
     script.onreadystatschange = script.onload = script.onerror = null;
     interactiveScript = null;
     if (!script.readyState || /complete/.test(script.readyState)) {
@@ -203,11 +203,11 @@ function fetch(url, name) {
 
 
 /**
- * get all script nodes in document at present
+ * 获取当前页面中所有script节点
  * @return {NodeList}
  */
 function scripts() {
-  return doc.getElementsByTagName("script");
+  return doc.getElementsByTagName('script');
 }
 
 
@@ -1267,10 +1267,12 @@ kerneljs.reset = function() {
   this.cache.path2uid = {};
 };
 
+
 /** 全局导出 APIs */
 global.require = global._req = require;
 global.define = global._def = define;
 global.kerneljs = kerneljs;
+
 /**
  * kerneljs内部分发的事件名称
  * @typedef {Object}
@@ -1317,3 +1319,19 @@ kerneljs.trigger = function(eventName, args) {
 };
 
 }(this));
+
+/**
+ * @fileoverview 源码调试用
+ */
+
+kerneljs.on('create', function(mod) {
+  console.log('Create on:    ' + mod.url);
+});
+
+kerneljs.on('start:fetch', function(mod) {
+  console.log('Fetch for:    ' + mod.url);
+});
+
+kerneljs.on('complete', function(mod) {
+  console.log('Complete on:  ' + mod.url);
+});

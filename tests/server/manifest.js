@@ -34,6 +34,6 @@ exports.manifest.zazl = {
 
 exports.manifest.kerneljs = {
     name:   'kerneljs @ 0.2.2',
-    impl:   'kerneljs/kernel.js',
+    impl:   'kerneljs/kernel.debug.js',
     config: 'kerneljs/config.js'
 };
