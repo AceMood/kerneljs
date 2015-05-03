@@ -1,6 +1,7 @@
 define('c', ['require'], function (require) {
-    return {
-        name: 'c',
-        url: require.toUrl('./c/templates/first.txt')
-    };
+  //alert(require.toUrl('./c/templates/first.txt'));
+  return {
+    name: 'c',
+    url: require.toUrl('./c/templates/first.txt')
+  };
 });

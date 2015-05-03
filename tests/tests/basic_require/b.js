@@ -1,5 +1,5 @@
 define('b', [], function () {
-    return {
-        name: 'b'
-    };
+  return {
+    name: 'b'
+  };
 });
