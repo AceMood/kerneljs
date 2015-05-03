@@ -43,7 +43,7 @@ function exist_id_error(id) {
  * @param {Array|Function|Object} deps
  * @param {(Function|Object)?} factory
  */
-define = function(id, deps, factory) {
+function define(id, deps, factory) {
   var mod, cache = kerneljs.cache,
     uid = kerneljs.uidprefix + kerneljs.uid++;
 
@@ -151,7 +151,7 @@ define = function(id, deps, factory) {
 
   // 加载依赖模块
   load(mod);
-};
+}
 
 
 /**

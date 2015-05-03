@@ -3,7 +3,7 @@
  * 全局kerneljs对象
  * @typedef {Object}
  */
-kerneljs = {};
+var kerneljs = {};
 
 
 kerneljs.uid = 0;
@@ -118,3 +118,8 @@ kerneljs.reset = function() {
   this.cache.id2path = {};
   this.cache.path2uid = {};
 };
+
+/** 全局导出 APIs */
+global.require = global._req = require;
+global.define = global._def = define;
+global.kerneljs = kerneljs;

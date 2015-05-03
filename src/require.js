@@ -10,7 +10,7 @@
  * @param {!Array|String} deps
  * @param {Function?} cb
  */
-require = function(deps, cb) {
+function require(deps, cb) {
   // pass-in a config object
   if (typeOf(deps) === 'object' && !cb) {
     kerneljs.config(deps);
@@ -69,7 +69,7 @@ require = function(deps, cb) {
       return kerneljs.cache.mods[uid].exports || null;
     }
   }
-};
+}
 
 
 /**
@@ -150,7 +150,6 @@ function resolve(name, mod) {
 
   // step 2: cjs-wrapper form
   if (name === 'require') {
-    debugger;
     return require;
   } else if (name === 'module') {
     return mod;

@@ -23,8 +23,6 @@
  *
  */
 
-var kerneljs, require, define;
-
 (function (global, undefined) {
 
 'use strict';
@@ -43,15 +41,6 @@ var break_obj = {};
 
 /** 空函数作为默认回调函数 */
 function noop() {}
-
-
-/**
- * if a module with in the same id exists, then define with the id
- * will fail. we throw an error with useful message.
- */
-function exist_id_error(id) {
-  throw "more then one module defined with the same id: " + id;
-}
 
 
 /**
@@ -146,7 +135,6 @@ function typeOf(obj) {
 function isNull(obj) {
   return obj === void 0 || obj === null;
 }
-
 
 var doc = document,
   head = doc.head || doc.getElementsByTagName('head')[0],
@@ -613,6 +601,26 @@ Module.STATUS = {
 
 
 /**
+ * 设置模块状态
+ * @param {Number} status
+ */
+Module.prototype.setStatus = function(status) {
+  if (status < 0 || status > 4) {
+    throw 'Status ' + status + ' is now allowed.';
+  } else {
+    switch (status) {
+      case 2:
+        kerneljs.trigger(kerneljs.events.startFetch, [this]);
+        break;
+      case 3:
+        kerneljs.trigger(kerneljs.events.complete, [this]);
+        break;
+    }
+  }
+};
+
+
+/**
  * 当模块已被缓存<code>mod.status = Module.STATUS.complete</code>,
  * 则需要通知所有依赖于它的模块, 需要调用depandant.ready(mod);
  * @param {Module|Object} mod
@@ -656,6 +664,13 @@ Module.prototype.checkAllDepsOK = function() {
   return ok;
 };
 
+/**
+ * TODO: 考虑去掉对CJSWrapper的支持, 很容易和CMD的做法混淆. 其实有使用差异, 毕竟AMD
+ * TODO: 提倡的是预加载, 采用的方式是预执行, 而且浏览器端AMD更适合. 用CMD的方式就必须使用正则
+ * TODO: 或者做一些语法分析解析出函数内部的require模块, 个人感觉这么做必要性不大.
+ */
+
+
 // A regexp to filter `require('xxx')`
 var cjsRequireRegExp = /\brequire\s*\(\s*(["'])([^'"\s]+)\1\s*\)/g,
 // A regexp to drop comments in source code
@@ -672,6 +687,19 @@ var empty_mod = {
 };
 
 
+// ID相同的错误消息
+var SAME_ID_MSG = 'more then one module defined with the same id: %s';
+
+
+/**
+ * if a module with in the same id exists, then define with the id
+ * will fail. we throw an error with useful message.
+ */
+function exist_id_error(id) {
+  throw SAME_ID_MSG.replace('%s', id);
+}
+
+
 /**
  * 全局define函数. 函数签名:
  * define(id?, dependencies?, factory);
@@ -680,13 +708,12 @@ var empty_mod = {
  * @param {Array|Function|Object} deps
  * @param {(Function|Object)?} factory
  */
-define = function(id, deps, factory) {
+function define(id, deps, factory) {
   var mod, cache = kerneljs.cache,
     uid = kerneljs.uidprefix + kerneljs.uid++;
 
-  // document.currentScript stuned me in a callback and
-  // event handler conditions.
-  // but if define in a single file, this could be trusted.
+  // doc.currentScript在异步情况下比如事件处理器或者setTimeout返回错误结果.
+  // 但如果不是这种情况且遵循每个文件一个define模块的话这个属性就能正常工作.
   var base = getCurrentPath();
 
   // 处理参数
@@ -701,16 +728,17 @@ define = function(id, deps, factory) {
     deps = null;
   }
 
-  // Only when user-defined id presents, we record it in id2path cache.
-  // First check module with the same id.
-  //
-  // Note: after build, in require.async conditions, we could not
-  // know which module will be loaded first if more than two modules
-  // need a non-registered 3rd module. So the 3rd will be compiled
-  // into package 2 and package 3 together, which means define with same
-  // identifier will be called twice.
+  // 只有当用户自定义的id存在时才会被缓存到id2path.
   if (id) {
+    // 只在开发时报同一id错误
+    // 打包时由于require.async的使用造成层级依赖模块的重复是有可能存在的, 并且S.O.I
+    // 也没有很好解决. 当非首屏首页的多个模块又各自依赖或含有第三个非注册过的模块时, 这个
+    // 模块会被打包进第二个和第三个package, 这样就有可能在运行时造成同一id多次注册的现象.
     if (cache.id2path[id] && kerneljs.debug) {
+      kerneljs.trigger(kerneljs.events.ERROR, [
+        SAME_ID_MSG.replace('%s', id),
+        base
+      ]);
       return exist_id_error(id);
     }
     cache.id2path[id] = base;
@@ -724,7 +752,7 @@ define = function(id, deps, factory) {
     cache.path2uid[base] = [uid];
   }
 
-  // register module in global cache
+  // 注册模块
   mod = cache.mods[uid] = empty_mod;
 
   // If no name, and factory is a function, then figure out if it a
@@ -739,7 +767,7 @@ define = function(id, deps, factory) {
     if (factory.length) {
       factory
         .toString()
-        .replace(commentRegExp, "")
+        .replace(commentRegExp, '')
         .replace(cjsRequireRegExp, function(match, quote, dep) {
           deps.push(dep);
         });
@@ -750,7 +778,7 @@ define = function(id, deps, factory) {
       // REQUIRES the function to expect the CommonJS variables in the
       // order listed below.
       deps = (factory.length === 1 ?
-        ["require"] : ["require", "exports", "module"]).concat(deps);
+        ['require'] : ['require', 'exports', 'module']).concat(deps);
     }
   }
 
@@ -761,11 +789,11 @@ define = function(id, deps, factory) {
     url: base,
     deps: deps,
     factory: factory,
-    status: Module.STATUS.uninit
+    status: Module.STATUS.init
   });
+  kerneljs.trigger(kerneljs.events.create, [mod]);
 
-  // if in a concatenate file define will occur first,
-  // there would be no kernel_name here.
+  // 打包过后define会先发生, 这种情况script标签不会带有kernel_name字段.
   var name = getCurrentScript().kernel_name;
   if (name && isTopLevel(name) && !mod.id) {
     mod.id = name;
@@ -774,7 +802,7 @@ define = function(id, deps, factory) {
   // fill exports list to depMods
   if (mod.deps && mod.deps.length > 0) {
     mod.deps = map(mod.deps, function(dep, index) {
-      if (dep === "exports" || dep === "module") {
+      if (dep === 'exports' || dep === 'module') {
         mod.cjsWrapper = true;
       }
 
@@ -786,37 +814,35 @@ define = function(id, deps, factory) {
     });
   }
 
-  // load dependencies.
+  // 加载依赖模块
   load(mod);
-};
+}
 
 
 /**
- * Load all dependencies of a specific module.
- * @param {Object|Module} mod Whose deps to be fetched.
+ * 加载依赖模块文件.
+ * @param {Object|Module} mod 宿主模块.
  */
 function load(mod) {
 
   var cache = kerneljs.cache;
   var count = mod.deps.length;
   var inPathConfig = kerneljs.paths && kerneljs.paths[mod.id] ? true : false;
-  // todo I doubt about the uri in paths config and all its rel path
-  // will be resolved relative to location.href, See
-  // test case: config_path_relative for more information.
+  // 若mod.id在paths中已经配置则相对路径是location.href,
+  // 详见: config_path_relative test case.
   var currentPath = inPathConfig ? loc.href : getCurrentPath();
 
-  // Record in fetchingList to represent the module is now
-  // fetching its dependencies.
+  // 更新fetchingList.
   fetchingList.add(mod);
-
-  // Update mod's status
-  mod.status = Module.STATUS.fetching;
 
   // Register module in global cache with an empty.
   // export for later checking if its status is available.
   if (!cache.mods[mod.uid]) {
     cache.mods[mod.uid] = empty_mod;
   }
+
+  // 更新模块状态
+  mod.setStatus(Module.STATUS.fetching);
 
   forEach(mod.deps, function(name, index) {
     // After resolving, built-in module and existed modules are
@@ -899,25 +925,25 @@ define.amd = {
 };
 
 /**
- * set up page logic or manually request a module asynchronously.
- * two forms usage:
- * var mod = require("module");
+ * 一般作为页面逻辑的入口, 提倡js初始化只调用一次require, 函数内部的异步加载用require.async.
+ * 两种使用方式:
+ * var mod = require('widget/a');
  * or
- * require(["module"], function(module){
- *
+ * require(['widget/a'], function(wid_a){
+ *   wid_a.init();
  * });
  * @param {!Array|String} deps
  * @param {Function?} cb
  */
-require = function(deps, cb) {
+function require(deps, cb) {
   // pass-in a config object
-  if (typeOf(deps) === "object" && !cb) {
+  if (typeOf(deps) === 'object' && !cb) {
     kerneljs.config(deps);
     return null;
   }
   // no deps
-  if (typeOf(deps) === "array" && deps.length === 0) {
-    if (typeOf(cb) === "function") {
+  if (typeOf(deps) === 'array' && deps.length === 0) {
+    if (typeOf(cb) === 'function') {
       return cb();
     } else {
       return cb;
@@ -926,11 +952,12 @@ require = function(deps, cb) {
 
   // Type conversion
   // it's a single module dependency and with no callback
-  if (typeOf(deps) === "string") {
+  if (typeOf(deps) === 'string') {
     deps = [deps];
   }
 
-  var uid, _currentPath = getCurrentPath();
+  var uid,
+    _currentPath = getCurrentPath();
   if (cb) {
     // 'require' invoke can introduce an anonymous module,
     // it has the unique uid and id is null.
@@ -967,7 +994,7 @@ require = function(deps, cb) {
       return kerneljs.cache.mods[uid].exports || null;
     }
   }
-};
+}
 
 
 /**
@@ -982,7 +1009,7 @@ function notify(mod) {
 
   // amd
   if (!mod.cjsWrapper) {
-    mod.exports = typeOf(mod.factory) === "function" ?
+    mod.exports = typeOf(mod.factory) === 'function' ?
       mod.factory.apply(null, mod.depMods) : mod.factory;
   }
   // cmd
@@ -994,7 +1021,7 @@ function notify(mod) {
     mod.exports = {};
   }
 
-  mod.status = Module.STATUS.complete;
+  mod.setStatus(Module.STATUS.complete);
 
   // Register module in global cache
   kerneljs.cache.mods[mod.uid] = mod;
@@ -1046,10 +1073,8 @@ function resolve(name, mod) {
     }
   }
 
-
   // step 2: cjs-wrapper form
   if (name === 'require') {
-    debugger;
     return require;
   } else if (name === 'module') {
     return mod;
@@ -1126,7 +1151,7 @@ require.url = function(url) {
  * 全局kerneljs对象
  * @typedef {Object}
  */
-kerneljs = {};
+var kerneljs = {};
 
 
 kerneljs.uid = 0;
@@ -1142,13 +1167,10 @@ var fetchingList = {
   mods: {},
   add: function(mod) {
     if (this.mods[mod.uid]) {
-      kerneljs.trigger('error', [[
-        'current mod with uid: ',
-        mod.uid,
-        ' and file path: ',
-        mod.url,
-        ' is fetching now'
-      ].join('')]);
+      kerneljs.trigger(kerneljs.events.error, [
+        'current mod with uid: ' + mod.uid + ' and file path: ' +
+        mod.url + ' is fetching now'
+      ]);
     }
     this.mods[mod.uid] = mod;
   },
@@ -1245,13 +1267,20 @@ kerneljs.reset = function() {
   this.cache.path2uid = {};
 };
 
+/** 全局导出 APIs */
+global.require = global._req = require;
+global.define = global._def = define;
+global.kerneljs = kerneljs;
 /**
  * kerneljs内部分发的事件名称
  * @typedef {Object}
  */
 kerneljs.events = {
-  LOADED: 'loaded',
-  ERROR: 'error'
+  create: 'create',
+  startFetch: 'start:fetch',
+  endFetch: 'end:fetch',
+  complete: 'complete',
+  error: 'error'
 };
 
 

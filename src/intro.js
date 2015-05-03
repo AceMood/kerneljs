@@ -23,8 +23,6 @@
  *
  */
 
-var kerneljs, require, define;
-
 (function (global, undefined) {
 
 'use strict';
