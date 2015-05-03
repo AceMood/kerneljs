@@ -119,6 +119,7 @@ kerneljs.reset = function() {
   this.cache.path2uid = {};
 };
 
+
 /** 全局导出 APIs */
 global.require = global._req = require;
 global.define = global._def = define;
