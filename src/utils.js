@@ -16,15 +16,6 @@ function noop() {}
 
 
 /**
- * if a module with in the same id exists, then define with the id
- * will fail. we throw an error with useful message.
- */
-function exist_id_error(id) {
-  throw "more then one module defined with the same id: " + id;
-}
-
-
-/**
  * iterate the array and map the value to a delegation
  * function, use the return value replace original item.
  * @param {Array} arr array to be iterated.

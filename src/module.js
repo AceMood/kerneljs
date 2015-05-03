@@ -41,6 +41,23 @@ Module.STATUS = {
 
 
 /**
+ * 设置模块状态
+ * @param {String} status
+ */
+Module.prototype.setStatus = function(status) {
+  if (status < 0 || status > 4) {
+
+  } else {
+    switch (status) {
+      case 2:
+        kerneljs.trigger(kerneljs.events.FETCHING, [this]);
+        break;
+    }
+  }
+};
+
+
+/**
  * 当模块已被缓存<code>mod.status = Module.STATUS.complete</code>,
  * 则需要通知所有依赖于它的模块, 需要调用depandant.ready(mod);
  * @param {Module|Object} mod

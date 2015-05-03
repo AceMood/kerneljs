@@ -1,4 +1,11 @@
 
+/**
+ * TODO: 考虑去掉对CJSWrapper的支持, 很容易和CMD的做法混淆. 其实有使用差异, 毕竟AMD
+ * TODO: 提倡的是预加载, 采用的方式是预执行, 而且浏览器端AMD更适合. 用CMD的方式就必须使用正则
+ * TODO: 或者做一些语法分析解析出函数内部的require模块, 个人感觉这么做必要性不大.
+ */
+
+
 // A regexp to filter `require('xxx')`
 var cjsRequireRegExp = /\brequire\s*\(\s*(["'])([^'"\s]+)\1\s*\)/g,
 // A regexp to drop comments in source code
@@ -15,6 +22,19 @@ var empty_mod = {
 };
 
 
+// ID相同的错误消息
+var SAME_ID_MSG = 'more then one module defined with the same id: %s';
+
+
+/**
+ * if a module with in the same id exists, then define with the id
+ * will fail. we throw an error with useful message.
+ */
+function exist_id_error(id) {
+  throw SAME_ID_MSG.replace('%s', id);
+}
+
+
 /**
  * 全局define函数. 函数签名:
  * define(id?, dependencies?, factory);
@@ -27,9 +47,8 @@ define = function(id, deps, factory) {
   var mod, cache = kerneljs.cache,
     uid = kerneljs.uidprefix + kerneljs.uid++;
 
-  // document.currentScript stuned me in a callback and
-  // event handler conditions.
-  // but if define in a single file, this could be trusted.
+  // doc.currentScript在异步情况下比如事件处理器或者setTimeout返回错误结果.
+  // 但如果不是这种情况且遵循每个文件一个define模块的话这个属性就能正常工作.
   var base = getCurrentPath();
 
   // 处理参数
@@ -44,16 +63,17 @@ define = function(id, deps, factory) {
     deps = null;
   }
 
-  // Only when user-defined id presents, we record it in id2path cache.
-  // First check module with the same id.
-  //
-  // Note: after build, in require.async conditions, we could not
-  // know which module will be loaded first if more than two modules
-  // need a non-registered 3rd module. So the 3rd will be compiled
-  // into package 2 and package 3 together, which means define with same
-  // identifier will be called twice.
+  // 只有当用户自定义的id存在时才会被缓存到id2path.
   if (id) {
+    // 只在开发时报同一id错误
+    // 打包时由于require.async的使用造成层级依赖模块的重复是有可能存在的, 并且S.O.I
+    // 也没有很好解决. 当非首屏首页的多个模块又各自依赖或含有第三个非注册过的模块时, 这个
+    // 模块会被打包进第二个和第三个package, 这样就有可能在运行时造成同一id多次注册的现象.
     if (cache.id2path[id] && kerneljs.debug) {
+      kerneljs.trigger(kerneljs.events.ERROR, [
+        SAME_ID_MSG.replace('%s', id),
+        base
+      ]);
       return exist_id_error(id);
     }
     cache.id2path[id] = base;
@@ -67,7 +87,7 @@ define = function(id, deps, factory) {
     cache.path2uid[base] = [uid];
   }
 
-  // register module in global cache
+  // 注册模块
   mod = cache.mods[uid] = empty_mod;
 
   // If no name, and factory is a function, then figure out if it a
@@ -82,7 +102,7 @@ define = function(id, deps, factory) {
     if (factory.length) {
       factory
         .toString()
-        .replace(commentRegExp, "")
+        .replace(commentRegExp, '')
         .replace(cjsRequireRegExp, function(match, quote, dep) {
           deps.push(dep);
         });
@@ -106,9 +126,9 @@ define = function(id, deps, factory) {
     factory: factory,
     status: Module.STATUS.uninit
   });
+  kerneljs.trigger(kerneljs.events.CREATE, [mod]);
 
-  // if in a concatenate file define will occur first,
-  // there would be no kernel_name here.
+  // 打包过后define会先发生, 这种情况script标签不会带有kernel_name字段.
   var name = getCurrentScript().kernel_name;
   if (name && isTopLevel(name) && !mod.id) {
     mod.id = name;
@@ -117,7 +137,7 @@ define = function(id, deps, factory) {
   // fill exports list to depMods
   if (mod.deps && mod.deps.length > 0) {
     mod.deps = map(mod.deps, function(dep, index) {
-      if (dep === "exports" || dep === "module") {
+      if (dep === 'exports' || dep === 'module') {
         mod.cjsWrapper = true;
       }
 
@@ -135,25 +155,23 @@ define = function(id, deps, factory) {
 
 
 /**
- * Load all dependencies of a specific module.
- * @param {Object|Module} mod Whose deps to be fetched.
+ * 加载依赖模块文件.
+ * @param {Object|Module} mod 宿主模块.
  */
 function load(mod) {
 
   var cache = kerneljs.cache;
   var count = mod.deps.length;
   var inPathConfig = kerneljs.paths && kerneljs.paths[mod.id] ? true : false;
-  // todo I doubt about the uri in paths config and all its rel path
-  // will be resolved relative to location.href, See
-  // test case: config_path_relative for more information.
+  // 若mod.id在paths中已经配置则相对路径是location.href,
+  // 详见: config_path_relative test case.
   var currentPath = inPathConfig ? loc.href : getCurrentPath();
 
-  // Record in fetchingList to represent the module is now
-  // fetching its dependencies.
+  // 更新fetchingList.
   fetchingList.add(mod);
 
-  // Update mod's status
-  mod.status = Module.STATUS.fetching;
+  // 更新模块状态
+  mod.setStatus(Module.STATUS.fetching);
 
   // Register module in global cache with an empty.
   // export for later checking if its status is available.
