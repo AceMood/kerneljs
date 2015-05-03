@@ -7,7 +7,7 @@ kerneljs.events = {
   create: 'create',
   startFetch: 'start:fetch',
   endFetch: 'end:fetch',
-  loaded: 'loaded',
+  complete: 'complete',
   error: 'error'
 };
 

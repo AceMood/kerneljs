@@ -1,24 +1,24 @@
 
 /**
- * set up page logic or manually request a module asynchronously.
- * two forms usage:
- * var mod = require("module");
+ * 一般作为页面逻辑的入口, 提倡js初始化只调用一次require, 函数内部的异步加载用require.async.
+ * 两种使用方式:
+ * var mod = require('widget/a');
  * or
- * require(["module"], function(module){
- *
+ * require(['widget/a'], function(wid_a){
+ *   wid_a.init();
  * });
  * @param {!Array|String} deps
  * @param {Function?} cb
  */
 require = function(deps, cb) {
   // pass-in a config object
-  if (typeOf(deps) === "object" && !cb) {
+  if (typeOf(deps) === 'object' && !cb) {
     kerneljs.config(deps);
     return null;
   }
   // no deps
-  if (typeOf(deps) === "array" && deps.length === 0) {
-    if (typeOf(cb) === "function") {
+  if (typeOf(deps) === 'array' && deps.length === 0) {
+    if (typeOf(cb) === 'function') {
       return cb();
     } else {
       return cb;
@@ -27,11 +27,12 @@ require = function(deps, cb) {
 
   // Type conversion
   // it's a single module dependency and with no callback
-  if (typeOf(deps) === "string") {
+  if (typeOf(deps) === 'string') {
     deps = [deps];
   }
 
-  var uid, _currentPath = getCurrentPath();
+  var uid,
+    _currentPath = getCurrentPath();
   if (cb) {
     // 'require' invoke can introduce an anonymous module,
     // it has the unique uid and id is null.
@@ -83,7 +84,7 @@ function notify(mod) {
 
   // amd
   if (!mod.cjsWrapper) {
-    mod.exports = typeOf(mod.factory) === "function" ?
+    mod.exports = typeOf(mod.factory) === 'function' ?
       mod.factory.apply(null, mod.depMods) : mod.factory;
   }
   // cmd
@@ -95,7 +96,7 @@ function notify(mod) {
     mod.exports = {};
   }
 
-  mod.status = Module.STATUS.complete;
+  mod.setStatus(Module.STATUS.complete);
 
   // Register module in global cache
   kerneljs.cache.mods[mod.uid] = mod;
@@ -146,7 +147,6 @@ function resolve(name, mod) {
       return kerneljs.cache.mods[name].exports;
     }
   }
-
 
   // step 2: cjs-wrapper form
   if (name === 'require') {
