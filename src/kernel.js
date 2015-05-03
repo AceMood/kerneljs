@@ -19,13 +19,10 @@ var fetchingList = {
   mods: {},
   add: function(mod) {
     if (this.mods[mod.uid]) {
-      kerneljs.trigger('error', [[
-        'current mod with uid: ',
-        mod.uid,
-        ' and file path: ',
-        mod.url,
-        ' is fetching now'
-      ].join('')]);
+      kerneljs.trigger(kerneljs.events.error, [
+        'current mod with uid: ' + mod.uid + ' and file path: ' +
+        mod.url + ' is fetching now'
+      ]);
     }
     this.mods[mod.uid] = mod;
   },

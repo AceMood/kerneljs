@@ -1,5 +1,4 @@
 
-
 var doc = document,
   head = doc.head || doc.getElementsByTagName('head')[0],
 // It's a classical bug in IE6 found in jQuery.

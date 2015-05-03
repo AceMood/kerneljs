@@ -4,10 +4,11 @@
  * @typedef {Object}
  */
 kerneljs.events = {
-  CREATE: 'create',
-  FETCHING: 'fetching',
-  LOADED: 'loaded',
-  ERROR: 'error'
+  create: 'create',
+  startFetch: 'start:fetch',
+  endFetch: 'end:fetch',
+  loaded: 'loaded',
+  error: 'error'
 };
 
 

@@ -42,15 +42,15 @@ Module.STATUS = {
 
 /**
  * 设置模块状态
- * @param {String} status
+ * @param {Number} status
  */
 Module.prototype.setStatus = function(status) {
   if (status < 0 || status > 4) {
-
+    throw 'Status ' + status + ' is now allowed.';
   } else {
     switch (status) {
       case 2:
-        kerneljs.trigger(kerneljs.events.FETCHING, [this]);
+        kerneljs.trigger(kerneljs.events.startFetch, [this]);
         break;
     }
   }

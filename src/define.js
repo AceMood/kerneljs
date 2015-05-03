@@ -113,7 +113,7 @@ define = function(id, deps, factory) {
       // REQUIRES the function to expect the CommonJS variables in the
       // order listed below.
       deps = (factory.length === 1 ?
-        ["require"] : ["require", "exports", "module"]).concat(deps);
+        ['require'] : ['require', 'exports', 'module']).concat(deps);
     }
   }
 
@@ -124,9 +124,9 @@ define = function(id, deps, factory) {
     url: base,
     deps: deps,
     factory: factory,
-    status: Module.STATUS.uninit
+    status: Module.STATUS.init
   });
-  kerneljs.trigger(kerneljs.events.CREATE, [mod]);
+  kerneljs.trigger(kerneljs.events.create, [mod]);
 
   // 打包过后define会先发生, 这种情况script标签不会带有kernel_name字段.
   var name = getCurrentScript().kernel_name;
@@ -149,7 +149,7 @@ define = function(id, deps, factory) {
     });
   }
 
-  // load dependencies.
+  // 加载依赖模块
   load(mod);
 };
 
@@ -170,14 +170,14 @@ function load(mod) {
   // 更新fetchingList.
   fetchingList.add(mod);
 
-  // 更新模块状态
-  mod.setStatus(Module.STATUS.fetching);
-
   // Register module in global cache with an empty.
   // export for later checking if its status is available.
   if (!cache.mods[mod.uid]) {
     cache.mods[mod.uid] = empty_mod;
   }
+
+  // 更新模块状态
+  mod.setStatus(Module.STATUS.fetching);
 
   forEach(mod.deps, function(name, index) {
     // After resolving, built-in module and existed modules are
