@@ -7,19 +7,16 @@
 
   'use strict';
 
-  var log = console.log ? console.log : noop;
-  var format = typeof JSON === 'object' ? JSON.stringify : noop;
-
   kerneljs.on('create', function(mod) {
-    log('Create on:    ' + format(mod));
+    console.log('Create on:    ' + mod.url);
   });
 
   kerneljs.on('start:fetch', function(mod) {
-    log('Fetch for:    ' + format(mod));
+    console.log('Fetch for:    ' + mod.url);
   });
 
   kerneljs.on('complete', function(mod) {
-    log('Complete on:  ' + format(mod));
+    console.log('Complete on:  ' + mod.url);
   });
 
 })();
