@@ -50,6 +50,8 @@ Module.prototype.setStatus = function(status) {
   } else {
     this.status = status;
     switch (status) {
+      case 0:
+        break;
       case 2:
         kerneljs.trigger(kerneljs.events.startFetch, [this]);
         break;
