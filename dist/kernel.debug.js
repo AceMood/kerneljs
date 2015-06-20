@@ -138,8 +138,8 @@ function isNull(obj) {
 
 var doc = document,
   head = doc.head || doc.getElementsByTagName('head')[0],
-// It's a classical bug in IE6 found in jQuery.
-// see more: 'http://dev.jquery.com/ticket/2709'
+  // IE6下的经典bug, 有base元素的情况下head.appendChild容易出错in jQuery.
+  // 详见: 'http://dev.jquery.com/ticket/2709'
   $base = doc.getElementsByTagName('base')[0];
 
 if ($base) {
@@ -148,7 +148,7 @@ if ($base) {
 
 // current adding script node
 var currentAddingScript,
-// In older FF, do not support script.readyState, so we only use this prop
+// 老版本Firefox不支持script.readyState, so we only use this prop
 // in IEs. Although 'onload' in IE9 & IE10 have problems, but I do not
 // care the issure, and whatever async is true or false. We just
 // remove node in document as the callback of javascript loaded.
@@ -157,7 +157,7 @@ var currentAddingScript,
 // + 'ie10-dynamic-script-element-fires-loaded-readystate-prematurely'
 // 'https://connect.microsoft.com/IE/feedback/details/648057/'
 // + 'script-onload-event-is-not-fired-immediately-after-script-execution'
-  useInteractive = ('readyState' in doc.createElement("script")),
+  useInteractive = ('readyState' in doc.createElement('script')),
 // loop all script nodes in doc, if one's readyState is 'interactive'
 // means it's now executing;
   interactiveScript;
@@ -165,8 +165,6 @@ var currentAddingScript,
 
 /**
  * 动态script插入获取模块.
- * once confirm the module loaded and executed, then update
- * cache's info and exec module's factory function.
  * @param {String} url 文件路径.
  * @param {String} name Original name to require this module.
  *   maybe a top-level name, relative name or absolute name.
@@ -609,6 +607,8 @@ Module.prototype.setStatus = function(status) {
   } else {
     this.status = status;
     switch (status) {
+      case 0:
+        break;
       case 2:
         kerneljs.trigger(kerneljs.events.startFetch, [this]);
         break;
@@ -929,7 +929,7 @@ define.amd = {
  * 两种使用方式:
  * var mod = require('widget/a');
  * or
- * require(['widget/a'], function(wid_a){
+ * require(['widget/a'], function(wid_a) {
  *   wid_a.init();
  * });
  * @param {!Array|String} deps
@@ -1136,17 +1136,6 @@ require.async = function(id, callback) {
   require([id], callback);
 };
 
-
-/**
- * For build tool to compile it.
- * Without checking the type of arguments.
- * @param {!String} url
- * @returns {!String}
- */
-require.url = function(url) {
-  return url;
-};
-
 /**
  * 全局kerneljs对象
  * @typedef {Object}
@@ -1265,6 +1254,27 @@ kerneljs.reset = function() {
   this.cache.mods = {};
   this.cache.id2path = {};
   this.cache.path2uid = {};
+};
+
+
+/**
+ * 用于区分开发环境和部署环境的接口地址. 便于构建时分析.
+ * 在源码中可以调用ajax接口, kerneljs.replace('/ajax/endpoint').
+ * 构建时会根据配置将所有调用 kerneljs.replace的地方替换为线上地址.
+ * @param {String} endpoint
+ */
+kerneljs.replace = function(endpoint) {
+  return endpoint;
+};
+
+
+/**
+ * 区分开发环境和部署环境资源地址定位，便于构建时分析。
+ * @param {!String} url 相对于本次js模块的地址
+ * @returns {!String} 返回线上绝对路径的地址
+ */
+kerneljs.url = function(url) {
+  return url;
 };
 
 

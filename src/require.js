@@ -4,7 +4,7 @@
  * 两种使用方式:
  * var mod = require('widget/a');
  * or
- * require(['widget/a'], function(wid_a){
+ * require(['widget/a'], function(wid_a) {
  *   wid_a.init();
  * });
  * @param {!Array|String} deps
@@ -209,15 +209,4 @@ require.toUrl = function(id) {
  */
 require.async = function(id, callback) {
   require([id], callback);
-};
-
-
-/**
- * For build tool to compile it.
- * Without checking the type of arguments.
- * @param {!String} url
- * @returns {!String}
- */
-require.url = function(url) {
-  return url;
 };

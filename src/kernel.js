@@ -120,6 +120,27 @@ kerneljs.reset = function() {
 };
 
 
+/**
+ * 用于区分开发环境和部署环境的接口地址. 便于构建时分析.
+ * 在源码中可以调用ajax接口, kerneljs.replace('/ajax/endpoint').
+ * 构建时会根据配置将所有调用 kerneljs.replace的地方替换为线上地址.
+ * @param {String} endpoint
+ */
+kerneljs.replace = function(endpoint) {
+  return endpoint;
+};
+
+
+/**
+ * 区分开发环境和部署环境资源地址定位，便于构建时分析。
+ * @param {!String} url 相对于本次js模块的地址
+ * @returns {!String} 返回线上绝对路径的地址
+ */
+kerneljs.url = function(url) {
+  return url;
+};
+
+
 /** 全局导出 APIs */
 global.require = global._req = require;
 global.define = global._def = define;
