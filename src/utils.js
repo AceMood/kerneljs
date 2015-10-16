@@ -20,7 +20,7 @@ function noop() {}
  * function, use the return value replace original item.
  * @param {Array} arr array to be iterated.
  * @param {Function} fn callback to execute on each item
- * @param {Object?} opt_context fn's context
+ * @param {?Object} opt_context fn's context
  * @return {!Array}
  */
 function map(arr, fn, opt_context) {

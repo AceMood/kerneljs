@@ -1,11 +1,4 @@
 
-/**
- * TODO: 考虑去掉对CJSWrapper的支持, 很容易和CMD的做法混淆. 其实有使用差异, 毕竟AMD
- * TODO: 提倡的是预加载, 采用的方式是预执行, 而且浏览器端AMD更适合. 用CMD的方式就必须使用正则
- * TODO: 或者做一些语法分析解析出函数内部的require模块, 个人感觉这么做必要性不大.
- */
-
-
 // A regexp to filter `require('xxx')`
 var cjsRequireRegExp = /\brequire\s*\(\s*(["'])([^'"\s]+)\1\s*\)/g,
 // A regexp to drop comments in source code
@@ -39,13 +32,13 @@ function exist_id_error(id) {
  * 全局define函数. 函数签名:
  * define(id?, dependencies?, factory);
  * 见: https://github.com/amdjs/amdjs-api/blob/master/AMD.md#define-function-
- * @param {String|Array|Function|Object} id
- * @param {Array|Function|Object} deps
- * @param {(Function|Object)?} factory
+ * @param {String|Array|Function|Object} id 模块id
+ * @param {Array|Function|Object} deps      依赖模块
+ * @param {(Function|Object)?} factory      回调函数
  */
 function define(id, deps, factory) {
   var mod, cache = kerneljs.cache,
-    uid = kerneljs.uidprefix + kerneljs.uid++;
+      uid = kerneljs.uidprefix + kerneljs.uid++;
 
   // doc.currentScript在异步情况下比如事件处理器或者setTimeout返回错误结果.
   // 但如果不是这种情况且遵循每个文件一个define模块的话这个属性就能正常工作.
@@ -159,7 +152,6 @@ function define(id, deps, factory) {
  * @param {Object|Module} mod 宿主模块.
  */
 function load(mod) {
-
   var cache = kerneljs.cache;
   var count = mod.deps.length;
   var inPathConfig = kerneljs.paths && kerneljs.paths[mod.id] ? true : false;
