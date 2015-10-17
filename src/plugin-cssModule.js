@@ -111,7 +111,7 @@ var linkLoad = function(url, callback) {
   var link = document.createElement('link');
   link.type = 'text/css';
   link.rel = 'stylesheet';
-  if (useOnload) {
+  if (CSS.useOnload) {
     link.onload = function() {
       link.onload = function() {};
       // for style dimensions queries, a short delay can still be necessary
