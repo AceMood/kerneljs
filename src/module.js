@@ -75,7 +75,7 @@ Module.prototype.ready = function(mod) {
       inPathConfig = true;
     }
     for(var i = 0; i < this.deps.length; ++i) {
-      var path = resolveId(this.deps[i], inPathConfig ? loc.href : this.url);
+      var path = resolvePath(this.deps[i], inPathConfig ? loc.href : this.url);
       if (path === mod.url) {
         this.depMods[i] = mod.exports;
         break;

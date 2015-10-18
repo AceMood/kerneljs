@@ -2,14 +2,12 @@
 // and a directory file path must be ends with a slash (back slash in window)
 var dirRegExp = /\/$/g,
 // whether a path to a file with extension
-  fileExtRegExp = /\.(js|css|tpl|txt)$/g;
-
+    fileExtRegExp = /\.(js|css|tpl|txt)$/g;
 
 // retrieve current doc's absolute path
 // It may be a file system path, http path
 // or other protocol path
 var loc = global.location;
-
 
 /**
  * Normalize a string path, taking care of '..' and '.' parts.
@@ -57,7 +55,6 @@ function resolveDot(p) {
   return p.join("/");
 }
 
-
 /**
  * To get current doc's directory
  * @return {string}
@@ -65,7 +62,6 @@ function resolveDot(p) {
 function getPageDir() {
   return dirname(loc.href);
 }
-
 
 /**
  * Judge if a path is top-level, such as 'core/class.js'
@@ -81,7 +77,6 @@ function isTopLevel(p) {
   return isRelative(p) && p.charAt(0) !== ".";
 }
 
-
 /**
  * Return if a path is absolute.
  * In most web environment, absolute url starts with a 'http://' or 'https://';
@@ -94,7 +89,6 @@ function isTopLevel(p) {
 function isAbsolute(p) {
   return /:\/\//.test(p) || /^\//.test(p);
 }
-
 
 /**
  * Return if a path is relative.
@@ -110,18 +104,16 @@ function isRelative(p) {
   return !isAbsolute(p) && (/^(\.){1,2}\//.test(p) || p.charAt(0) !== "/");
 }
 
-
 /**
  * Map the identifier for a module to a Internet file
  * path. SCRIPT insertion will set path with it, except
  * build-in names.
  *
- * @param {string} id Always the module's name or identifier.
- * @param {string?} base A relative baseuri for resolve the
- *   module's absolute file path.
+ * @param {string} id 依赖模块的name或者id。
+ * @param {string?} base 作为baseUri，解析依赖模块的绝对路径。
  * @return {!(string|object)} exports object or absolute file path from Internet
  */
-function resolveId(id, base) {
+function resolvePath(id, base) {
   // var _mod = kerneljs.cache.mods[id];
   if (id === "require" ||
     id === "module" ||
@@ -153,7 +145,6 @@ function resolveId(id, base) {
   return url;
 }
 
-
 /**
  * Return the directory name of a path. Similar to the
  * UNIX dirname command.
@@ -177,7 +168,6 @@ function dirname(p) {
   return p.join("/");
 }
 
-
 /**
  * Alias will appear at head part of path.
  * So replace it if exists in kerneljs.paths.
@@ -197,7 +187,6 @@ function parsePaths(p) {
   }
   return p + ret.join("/");
 }
-
 
 /**
  * pkg name can also impact on path resolving.

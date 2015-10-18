@@ -177,7 +177,7 @@ function load(mod) {
     }
 
     // else it's a real file path. get its responding uid
-    var path = resolveId(name, currentPath);
+    var path = resolvePath(name, currentPath);
     var uid = cache.path2uid[path];
 
     // File has been fetched, but its deps may not being fetched yet,

@@ -50,7 +50,7 @@ function require(deps, cb) {
     // if any rely module's export haven't resolved, use the
     // default name replace it.
     mod.depMods = map(deps, function(dep) {
-      var path = resolveId(dep, _currentPath);
+      var path = resolvePath(dep, _currentPath);
       return resolve(dep) || resolve(path);
     });
 
@@ -58,7 +58,7 @@ function require(deps, cb) {
     return null;
 
   } else {
-    var _dep = resolveId(deps[0], _currentPath);
+    var _dep = resolvePath(deps[0], _currentPath);
     // a simple require statements always be resolved preload.
     // so if length == 1 then return its exports object.
     var _mod = resolve(deps[0]);
@@ -126,7 +126,6 @@ function notify(mod) {
   }
 }
 
-
 /**
  * Used in the CommonJS wrapper form of define a module.
  * @param {String} name
@@ -139,7 +138,7 @@ function resolve(name, mod) {
   // step 1: parse built-in and already existed modules
   if (kerneljs.cache.mods[name]) {
     var currentScriptPath = getCurrentPath(),
-        path = resolveId(name, currentScriptPath);
+        path = resolvePath(name, currentScriptPath);
     // we check circular reference first, if it there, we return the
     // empty_mod immediately.
     if (kerneljs.cache.mods[name].status === Module.STATUS.complete ||
@@ -159,7 +158,6 @@ function resolve(name, mod) {
 
   return null;
 }
-
 
 /**
  * A mechanism to check cycle reference.
@@ -191,16 +189,14 @@ function checkCycle(path, mod) {
   return ret;
 }
 
-
 /**
  * Resolve path of the given id.
  * @param {String} id
  * @return {!(String|Object)}
  */
 require.toUrl = function(id) {
-  return resolveId(id);
+  return resolvePath(id);
 };
-
 
 /**
  * Used to Load module after page loaded.
