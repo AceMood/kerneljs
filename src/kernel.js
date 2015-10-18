@@ -5,10 +5,8 @@
  */
 var kerneljs = {};
 
-
 kerneljs.uid = 0;
 kerneljs.uidprefix = 'AceMood@kernel_';
-
 
 /**
  * 保存所有正在获取依赖模块的模块信息.
@@ -37,17 +35,15 @@ var fetchingList = {
   }
 };
 
-
 // Due to add module dependency when resolve id->path, we can not use
 // module's uid as the key of dependencyList, so we use url here.
 /**
- * 记录模块的依赖关系. 如果模块状态置为complete, 则用此对象同志所有依赖他的模块项.
+ * 记录模块的依赖关系. 如果模块状态置为complete, 则用此对象通知所有依赖他的模块项.
  * 因为解析依赖的时候一般是通过相对路径（除非预配置一些短命名id和路径的映射）
  * 这个结构是以path路径作为key, 模块数组作为value
  * @typedef {Object}
  */
 var dependencyList = {};
-
 
 /**
  * 如果某个模块处于fetching的状态则说明依赖的js模块文件正在下载, 在完成下载之前我们不希望同一个文件
@@ -55,7 +51,6 @@ var dependencyList = {};
  * @typedef {Object}
  */
 var sendingList = {};
-
 
 /**
  * 动态配置kerneljs对象. 目前配置对象的属性可以是:
@@ -82,7 +77,6 @@ kerneljs.config = function(obj) {
   }
 };
 
-
 /**
  * 全局缓存对象
  * @typedef {Object}
@@ -101,14 +95,12 @@ kerneljs.cache = {
   events: {}
 };
 
-
 // 基础配置
 kerneljs.config({
   baseUrl: '',
   debug: true,
   paths: {}
 });
-
 
 /**
  * 重置全局缓存
@@ -119,18 +111,6 @@ kerneljs.reset = function() {
   this.cache.path2uid = {};
 };
 
-
-/**
- * 用于区分开发环境和部署环境的接口地址. 便于构建时分析.
- * 在源码中可以调用ajax接口, kerneljs.replace('/ajax/endpoint').
- * 构建时会根据配置将所有调用 kerneljs.replace的地方替换为线上地址.
- * @param {String} endpoint
- */
-kerneljs.replace = function(endpoint) {
-  return endpoint;
-};
-
-
 /**
  * 区分开发环境和部署环境资源地址定位，便于构建时分析。
  * @param {!String} url 相对于本次js模块的地址
@@ -140,8 +120,7 @@ kerneljs.url = function(url) {
   return url;
 };
 
-
 /** 全局导出 APIs */
-global.require = global._req = require;
-global.define = global._def = define;
+global.require = global.__r = require;
+global.define = global.__d = define;
 global.kerneljs = kerneljs;

@@ -2,8 +2,7 @@
 // A regexp to filter `require('xxx')`
 var cjsRequireRegExp = /\brequire\s*\(\s*(["'])([^'"\s]+)\1\s*\)/g,
 // A regexp to drop comments in source code
-  commentRegExp = /(\/\*([\s\S]*?)\*\/|([^:]|^)\/\/(.*)$)/mg;
-
+    commentRegExp = /(\/\*([\s\S]*?)\*\/|([^:]|^)\/\/(.*)$)/mg;
 
 // initialize a module
 var empty_mod = {
@@ -14,10 +13,8 @@ var empty_mod = {
   exports: {}
 };
 
-
 // ID相同的错误消息
 var SAME_ID_MSG = 'more then one module defined with the same id: %s';
-
 
 /**
  * if a module with in the same id exists, then define with the id
@@ -26,7 +23,6 @@ var SAME_ID_MSG = 'more then one module defined with the same id: %s';
 function exist_id_error(id) {
   throw SAME_ID_MSG.replace('%s', id);
 }
-
 
 /**
  * 全局define函数. 函数签名:
