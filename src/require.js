@@ -138,8 +138,8 @@ function notify(mod) {
 function resolve(name, mod) {
   // step 1: parse built-in and already existed modules
   if (kerneljs.cache.mods[name]) {
-    var currentPath = getCurrentPath(),
-      path = resolveId(name, currentPath);
+    var currentScriptPath = getCurrentPath(),
+        path = resolveId(name, currentScriptPath);
     // we check circular reference first, if it there, we return the
     // empty_mod immediately.
     if (kerneljs.cache.mods[name].status === Module.STATUS.complete ||

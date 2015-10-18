@@ -80,8 +80,7 @@ function define(id, deps, factory) {
   mod = cache.mods[uid] = empty_mod;
 
   // If no name, and factory is a function, then figure out if it a
-  // CommonJS thing with dependencies. I don't intend to support it.
-  // But many projects used RequireJS may depend on this functional.
+  // CommonJS thing with dependencies.
   // Code below in the if-else statements lent from RequireJS
   if (!deps && typeOf(factory) === 'function') {
     deps = [];

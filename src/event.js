@@ -11,7 +11,6 @@ kerneljs.events = {
   error: 'error'
 };
 
-
 /**
  * 订阅事件
  * @param {String} eventName 事件名称定义在event.js
@@ -27,7 +26,6 @@ kerneljs.on = function(eventName, handler, context) {
     context: context
   });
 };
-
 
 /**
  * 触发订阅事件
