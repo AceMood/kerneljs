@@ -203,7 +203,7 @@ function load(mod) {
 
       if (!sendingList[path]) {
         sendingList[path] = true;
-        // script insertion
+        // script or link insertion
         fetch(path, name);
       }
     }

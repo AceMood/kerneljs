@@ -25,14 +25,14 @@ var currentAddingScript,
     // means it's now executing;
     interactiveScript;
 
+function fetchCss() {
+
+}
 
 /**
- * 动态script插入获取模块.
- * @param {String} url 文件路径.
- * @param {String} name Original name to require this module.
- *   maybe a top-level name, relative name or absolute name.
+ *
  */
-function fetch(url, name) {
+function fetchScript(url, name) {
   var script = doc.createElement('script');
   script.charset = 'utf-8';
   script.async = true;
@@ -62,6 +62,19 @@ function fetch(url, name) {
   currentAddingScript = null;
 }
 
+/**
+ * 动态获取模块
+ * @param {String} url 文件路径
+ * @param {String} name Original name to require this module.
+ *   maybe a top-level name, relative name or absolute name.
+ */
+function fetch(url, name) {
+  if (url.indexOf('.css') === url.length - 4) {
+    fetchCss(url, name);
+  } else {
+    fetchScript(url, name);
+  }
+}
 
 /**
  * 获取当前页面中所有script节点
@@ -70,7 +83,6 @@ function fetch(url, name) {
 function scripts() {
   return doc.getElementsByTagName('script');
 }
-
 
 /**
  * get current executing script
@@ -173,7 +185,6 @@ function getCurrentScript() {
   })();
 }
 
-
 /**
  * 跨浏览器解决方案获得script节点的src绝对路径.
  * @param {HTMLScriptElement} script
@@ -182,7 +193,6 @@ function getCurrentScript() {
 function getAbsPathOfScript(script) {
   return script.hasAttribute ? script.src : script.getAttribute('src', 4);
 }
-
 
 /**
  * 获取当前执行js代码块的绝对路径. node为空则返回null
