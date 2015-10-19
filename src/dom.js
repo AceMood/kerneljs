@@ -342,7 +342,7 @@ function getCurrentScript() {
      * FireFox: e.g.
      * getCurrentScript/<@file:///D:/Develop/SOI/lib/kernel.js:261:15
      * getCurrentScript@file:///D:/Develop/SOI/lib/kernel.js:257:1
-     * getCurrentPath@file:///D:/Develop/SOI/lib/kernel.js:314:16
+     * getCurrentScriptPath@file:///D:/Develop/SOI/lib/kernel.js:314:16
      * require@file:///D:/Develop/SOI/lib/kernel.js:563:29
      * require.async@file:///D:/Develop/SOI/lib/kernel.js:1178:5
      * bind/<@file:///D:/Develop/SOI/demo/assets/js/app.js:25:9
@@ -353,7 +353,7 @@ function getCurrentScript() {
      * chrome 39.0 e.g.
      * at file:///D:/lib/kernel.js:261:15
      * at getCurrentScript (file:///D:/lib/kernel.js:294:7)
-     * at getCurrentPath (file:///D:/lib/kernel.js:314:16)
+     * at getCurrentScriptPath (file:///D:/lib/kernel.js:314:16)
      * at require (file:///D:/lib/kernel.js:563:29)
      * at Function.require.async (file:///D:/lib/kernel.js:1178:5)
      * at HTMLButtonElement.<anonymous> (file:///D:/assets/js/app.js:25:17)
@@ -363,7 +363,7 @@ function getCurrentScript() {
      *
      * IE11 e.g.
      * at Anonymous function (file:///D:/Develop/SOI/lib/kernel.js:294:7)
-     * at getCurrentPath (file:///D:/Develop/SOI/lib/kernel.js:314:16)
+     * at getCurrentScriptPath (file:///D:/Develop/SOI/lib/kernel.js:314:16)
      * at Global code (file:///D:/Develop/SOI/lib/kernel.js:563:29)
      */
     var e = stack.indexOf(' at ') !== -1 ? ' at ' : '@';
@@ -406,7 +406,7 @@ function getAbsPathOfScript(script) {
  * 获取当前执行js代码块的绝对路径. node为空则返回null
  * @return {?String}
  */
-function getCurrentPath() {
+function getCurrentScriptPath() {
   var node = getCurrentScript();
   return node ? getAbsPathOfScript(node) : null;
 }

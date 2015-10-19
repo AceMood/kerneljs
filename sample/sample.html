@@ -5,12 +5,15 @@
     <title></title>
 </head>
 <body>
-    <div id="sample">Hello World!</div>
+    <div id="moduleA">Hello World!</div>
+    <div id="moduleB">Hello World!</div>
+    <div id="moduleC">Hello World!</div>
+
     <script src="../dist/kernel.debug.js"></script>
     <script>
-        require(['./sample.css'], function() {
+        require(['moduleA', 'moduleB'], function(moduleA, moduleB) {
 
-            alert();
+            alert(moduleA.name + '  ' + moduleB.name);
 
         });
     </script>

@@ -37,7 +37,7 @@ function define(id, deps, factory) {
 
   // doc.currentScript在异步情况下比如事件处理器或者setTimeout返回错误结果.
   // 但如果不是这种情况且遵循每个文件一个define模块的话这个属性就能正常工作.
-  var base = getCurrentPath();
+  var base = getCurrentScriptPath();
 
   // 处理参数
   if (typeOf(id) !== 'string') {
@@ -150,7 +150,7 @@ function load(mod) {
   var inPathConfig = kerneljs.paths && kerneljs.paths[mod.id] ? true : false;
   // 若mod.id在paths中已经配置则相对路径是location.href,
   // 详见: config_path_relative test case.
-  var currentPath = inPathConfig ? loc.href : getCurrentPath();
+  var currentPath = inPathConfig ? loc.href : getCurrentScriptPath();
 
   // 更新fetchingList.
   fetchingList.add(mod);
@@ -215,14 +215,7 @@ function load(mod) {
 }
 
 /**
- * define.amd property
- *
- * To allow a clear indicator that a global define function
- * (as needed for script src browser loading) conforms to the AMD API,
- * any global define function SHOULD have a property called "amd" whose
- * value is an object. This helps avoid conflict with any other existing
- * JavaScript code that could have defined a define() function that
- * does not conform to the AMD API.
+ * define.amd property, conforms to the AMD API.
  *
  * The properties inside the define.amd object are not specified at this time.
  * It can be used by implementers who want to inform of other capabilities

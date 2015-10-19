@@ -31,7 +31,7 @@ function require(deps, cb) {
   }
 
   var uid,
-      _currentPath = getCurrentPath();
+      _currentPath = getCurrentScriptPath();
   if (cb) {
     // 'require' invoke can introduce an anonymous module,
     // it has the unique uid and id is null.
@@ -135,7 +135,7 @@ function notify(mod) {
 function resolve(name, mod) {
   // step 1: parse built-in and already existed modules
   if (kerneljs.cache.mods[name]) {
-    var currentScriptPath = getCurrentPath(),
+    var currentScriptPath = getCurrentScriptPath(),
         path = resolvePath(name, currentScriptPath);
     // we check circular reference first, if it there, we return the
     // empty_mod immediately.
