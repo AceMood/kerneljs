@@ -543,7 +543,7 @@ function getCurrentPath() {
 // and a directory file path must be ends with a slash (back slash in window)
 var dirRegExp = /\/$/g,
 // whether a path to a file with extension
-    fileExtRegExp = /\.(js|css|tpl|txt)$/g;
+    fileExtRegExp = /\.(js|css|tpl)$/;
 
 // retrieve current doc's absolute path
 // It may be a file system path, http path

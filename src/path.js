@@ -1,8 +1,10 @@
 
 // and a directory file path must be ends with a slash (back slash in window)
 var dirRegExp = /\/$/g,
-// whether a path to a file with extension
-    fileExtRegExp = /\.(js|css|tpl|txt)$/g;
+    fileExtRegExp = /\.(js|css|tpl)$/,
+    dot = '.',
+    slash = '/',
+    dot2 = '..';
 
 // retrieve current doc's absolute path
 // It may be a file system path, http path
@@ -25,7 +27,7 @@ var loc = global.location;
  */
 function normalize(p) {
   // step1: combine multi slashes
-  p = p.replace(/(\/)+/g, "/");
+  p = p.replace(/(\/)+/g, slash);
 
   // step2: resolve '.' and '..'
   p = resolveDot(p);
@@ -35,24 +37,24 @@ function normalize(p) {
 
 /**
  * resolve a path with a '.' or '..' part in it.
- * @param {string} p
- * @return {string}
+ * @param {String} p
+ * @return {String}
  */
 function resolveDot(p) {
   // Here I used to use /\//ig to split string, but unfortunately
   // it has serious bug in IE<9. See for more:
   // 'http://blog.stevenlevithan.com/archives/cross-browser-split'.
-  p = p.split("/");
+  p = p.split(slash);
   for (var i = 0; i < p.length; ++i) {
-    if (p[i] === ".") {
+    if (p[i] === dot) {
       p.splice(i, 1);
       --i;
-    } else if (p[i] === ".." && i > 0 && p[i - 1] !== "..") {
+    } else if (p[i] === dot2 && i > 0 && p[i - 1] !== dot2) {
       p.splice(i - 1, 2);
       i -= 2;
     }
   }
-  return p.join("/");
+  return p.join(slash);
 }
 
 /**
@@ -74,7 +76,7 @@ function isTopLevel(p) {
   // see more:
   // 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/
   // +Global_Objects/String#section_5'
-  return isRelative(p) && p.charAt(0) !== ".";
+  return isRelative(p) && p.charAt(0) !== dot;
 }
 
 /**
@@ -101,7 +103,7 @@ function isAbsolute(p) {
  * @return {boolean} b
  */
 function isRelative(p) {
-  return !isAbsolute(p) && (/^(\.){1,2}\//.test(p) || p.charAt(0) !== "/");
+  return !isAbsolute(p) && (/^(\.){1,2}\//.test(p) || p.charAt(0) !== slash);
 }
 
 /**
@@ -109,9 +111,9 @@ function isRelative(p) {
  * path. SCRIPT insertion will set path with it, except
  * build-in names.
  *
- * @param {string} id 依赖模块的name或者id。
- * @param {string?} base 作为baseUri，解析依赖模块的绝对路径。
- * @return {!(string|object)} exports object or absolute file path from Internet
+ * @param {String} id 依赖模块的name或者id。
+ * @param {String=} base 作为baseUri，解析依赖模块的绝对路径。
+ * @return {!(String|Object)} exports object or absolute file path from Internet
  */
 function resolvePath(id, base) {
   // var _mod = kerneljs.cache.mods[id];
@@ -133,11 +135,11 @@ function resolvePath(id, base) {
 
   // step 3: add file extension if necessary
   id = normalize(id);
-  var conjuction = id.charAt(0) === "/" ? "" : "/";
+  var conjuction = id.charAt(0) === slash ? '' : slash;
   var url = (base ? dirname(base) : getPageDir()) + conjuction + id;
 
   if (!fileExtRegExp.test(url)) {
-    url += ".js";
+    url += '.js';
   }
 
   url = resolveDot(url);
@@ -153,8 +155,8 @@ function resolvePath(id, base) {
  * path.dirname('/foo/bar/baz/asdf/quux')
  * returns '/foo/bar/baz/asdf'
  *
- * @param {string} p
- * @return {string}
+ * @param {String} p
+ * @return {String}
  */
 function dirname(p) {
   if (dirRegExp.test(p)) {
@@ -163,9 +165,9 @@ function dirname(p) {
   // Here I used to use /\//ig to split string, but unfortunately
   // it has serious bug in IE<9. See for more:
   // 'http://blog.stevenlevithan.com/archives/cross-browser-split'.
-  p = p.split("/");
+  p = p.split(slash);
   p.pop();
-  return p.join("/");
+  return p.join(slash);
 }
 
 /**
@@ -178,14 +180,14 @@ function parsePaths(p) {
   var ret = [];
   if (kerneljs.paths) {
     var part = p;
-    var parts = p.split("/");
+    var parts = p.split(slash);
     while (!(part in kerneljs.paths) && parts.length) {
       ret.unshift(parts.pop());
-      part = parts.join("/");
+      part = parts.join(slash);
     }
     p = kerneljs.paths[part] ? kerneljs.paths[part] : part;
   }
-  return p + ret.join("/");
+  return p + ret.join(slash);
 }
 
 /**
@@ -197,14 +199,14 @@ function parsePaths(p) {
  */
 function parsePackages(p) {
   var pkgs = kerneljs.packages,
-    fpath = "";
+      fpath = '';
   if (pkgs && pkgs.length > 0) {
     forEach(pkgs, function(pkg) {
       // starts with a package name
       if (p.indexOf(pkg.name) === 0) {
         // absolutely equal
         if (p.length === pkg.name.length) {
-          fpath = "/" + (pkg.main ? pkg.main : "main");
+          fpath = slash + (pkg.main ? pkg.main : 'main');
         }
         p = p.replace(pkg.name, pkg.location || pkg.name) + fpath;
         return break_obj;

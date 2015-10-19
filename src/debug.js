@@ -3,7 +3,7 @@
  * @fileoverview 源码调试用
  */
 
-(function(){
+(function() {
 
   'use strict';
 
