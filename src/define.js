@@ -58,7 +58,7 @@ function define(id, deps, factory) {
     // 也没有很好解决. 当非首屏首页的多个模块又各自依赖或含有第三个非注册过的模块时, 这个
     // 模块会被打包进第二个和第三个package, 这样就有可能在运行时造成同一id多次注册的现象.
     if (cache.id2path[id] && kerneljs.debug) {
-      kerneljs.trigger(kerneljs.events.ERROR, [
+      kerneljs.trigger(kerneljs.events.error, [
         SAME_ID_MSG.replace('%s', id),
         base
       ]);
@@ -140,7 +140,6 @@ function define(id, deps, factory) {
   load(mod);
 }
 
-
 /**
  * 加载依赖模块文件.
  * @param {Object|Module} mod 宿主模块.
@@ -214,7 +213,6 @@ function load(mod) {
     notify(mod);
   }
 }
-
 
 /**
  * define.amd property

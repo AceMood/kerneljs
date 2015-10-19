@@ -21,33 +21,24 @@ if (engine[1] || engine[7]) {
   useImportLoad = parseInt(engine[4]) < 18;
 }
 
-/**
- * 创建style元素
- */
-function createStyle() {
-  curStyle = document.createElement('style');
-  head.appendChild(curStyle);
-  curSheet = curStyle.styleSheet || curStyle.sheet;
-}
-
 var ieCnt = 0;
 var ieLoads = [];
 var ieCurCallback;
 
-var createIeLoad = function(url) {
+function createIeLoad(url) {
   curSheet.addImport(url);
   curStyle.onload = function() {
     processIeLoad()
   };
 
   ieCnt++;
-  if (ieCnt == 31) {
+  if (ieCnt === 31) {
     createStyle();
     ieCnt = 0;
   }
-};
+}
 
-var processIeLoad = function() {
+function processIeLoad() {
   ieCurCallback();
 
   var nextLoad = ieLoads.shift();
@@ -59,9 +50,14 @@ var processIeLoad = function() {
 
   ieCurCallback = nextLoad[1];
   createIeLoad(nextLoad[0]);
-};
+}
 
-var importLoad = function(url, callback) {
+/**
+ * 创建style元素加载模块
+ * @param {String} url css地址
+ * @param {Function} callback 回调函数
+ */
+function importLoad(url, callback) {
   if (!curSheet || !curSheet.addImport)
     createStyle();
 
@@ -87,14 +83,14 @@ var importLoad = function(url, callback) {
       } catch(e) {}
     }, 10);
   }
-};
+}
 
 /**
  * 创建link元素监听onload事件
  * @param {String} url css地址
  * @param {Function} callback 回调函数
  */
-var linkLoad = function(url, callback) {
+function linkLoad(url, callback) {
   // 轮询
   var loop = function() {
     for (var i = 0; i < document.styleSheets.length; i++) {
@@ -120,19 +116,27 @@ var linkLoad = function(url, callback) {
     var loadInterval = setTimeout(loop, 10);
   }
   link.href = url;
-  head.appendChild(link);
-};
+  $head.appendChild(link);
+}
+
+/**
+ * 创建style元素
+ */
+function createStyle() {
+  curStyle = document.createElement('style');
+  $head.appendChild(curStyle);
+  curSheet = curStyle.styleSheet || curStyle.sheet;
+}
 
 
-
-var doc = document,
-    head = doc.head || doc.getElementsByTagName('head')[0],
+var $doc = document,
+    $head = $doc.head || $doc.getElementsByTagName('head')[0],
     // IE6下的经典bug, 有base元素的情况下head.appendChild容易出错in jQuery.
     // 详见: 'http://dev.jquery.com/ticket/2709'
-    $base = doc.getElementsByTagName('base')[0];
+    $base = $doc.getElementsByTagName('base')[0];
 
 if ($base) {
-  head = $base.parentNode;
+  $head = $base.parentNode;
 }
 
 // current adding script node
@@ -146,7 +150,7 @@ var currentAddingScript,
     // + 'ie10-dynamic-script-element-fires-loaded-readystate-prematurely'
     // 'https://connect.microsoft.com/IE/feedback/details/648057/'
     // + 'script-onload-event-is-not-fired-immediately-after-script-execution'
-    useInteractive = ('readyState' in doc.createElement('script')),
+    useInteractive = ('readyState' in $doc.createElement('script')),
     // loop all script nodes in doc, if one's readyState is 'interactive'
     // means it's now executing;
     interactiveScript;
@@ -157,8 +161,43 @@ var currentAddingScript,
  *   maybe a top-level name, relative name or absolute name.
  */
 function fetchCss(url, name) {
+  function onCssLoad() {
+    var mod, cache = kerneljs.cache,
+        uid = kerneljs.uidprefix + kerneljs.uid++,
+        deps = [];
+
+    // doc.currentScript在异步情况下比如事件处理器或者setTimeout返回错误结果.
+    // 但如果不是这种情况且遵循每个文件一个define模块的话这个属性就能正常工作.
+    var base = url;
+
+    // 缓存path2uid
+    if (cache.path2uid[base]) {
+      cache.path2uid[base].push(uid);
+    } else {
+      cache.path2uid[base] = [uid];
+    }
+
+    // 创建模块
+    mod = cache.mods[uid] = new Module({
+      uid: uid,
+      id: null,
+      url: base,
+      deps: deps,
+      factory: null,
+      status: Module.STATUS.init
+    });
+    kerneljs.trigger(kerneljs.events.create, [mod]);
+
+    // 打包过后define会先发生, 这种情况script标签不会带有kernel_name字段.
+    if (name && isTopLevel(name) && !mod.id) {
+      mod.id = name;
+    }
+
+    notify(mod);
+  }
+
   var method = (useImportLoad ? importLoad : linkLoad);
-  method(url, CSS.load);
+  method(url, onCssLoad);
 }
 
 /**
@@ -167,19 +206,22 @@ function fetchCss(url, name) {
  *   maybe a top-level name, relative name or absolute name.
  */
 function fetchScript(url, name) {
-  var script = doc.createElement('script');
+  function onScriptLoad() {}
+
+  var script = $doc.createElement('script');
   script.charset = 'utf-8';
   script.async = true;
   // custom attribute to remember the original required name
   // which written in dependant module.
   script.kernel_name = name;
 
-  // Event binding
+  // 监听
   script.onreadystatechange = script.onload = script.onerror = function() {
-    script.onreadystatschange = script.onload = script.onerror = null;
-    interactiveScript = null;
     if (!script.readyState || /complete/.test(script.readyState)) {
-      head.removeChild(script);
+      interactiveScript = null;
+      script.onreadystatschange = script.onload = script.onerror = null;
+      $head.removeChild(script);
+      onScriptLoad();
     }
   };
 
@@ -189,9 +231,9 @@ function fetchScript(url, name) {
   script.src = url;
   currentAddingScript = script;
   if ($base) {
-    head.insertBefore(script, $base);
+    $head.insertBefore(script, $base);
   } else {
-    head.appendChild(script);
+    $head.appendChild(script);
   }
   currentAddingScript = null;
 }
@@ -215,7 +257,7 @@ function fetch(url, name) {
  * @return {NodeList}
  */
 function scripts() {
-  return doc.getElementsByTagName('script');
+  return $doc.getElementsByTagName('script');
 }
 
 /**
@@ -229,7 +271,7 @@ function scripts() {
  * @return {*}
  */
 function getCurrentScript() {
-  return doc.currentScript || currentAddingScript || (function() {
+  return $doc.currentScript || currentAddingScript || (function() {
     var _scripts;
     if (useInteractive) {
       if (interactiveScript &&
@@ -247,7 +289,6 @@ function getCurrentScript() {
       return interactiveScript;
     }
     // todo in FF early version
-    // return null;
   })() || (function() {
     var ret = null;
     var stack;
@@ -307,8 +348,7 @@ function getCurrentScript() {
     // for ie11
     stack = stack.replace(/^([^\(]*\()/, '');
 
-    var _scripts = scripts();
-    forEach(_scripts, function(script) {
+    forEach(scripts(), function(script) {
       var path = getAbsPathOfScript(script);
       if (path === stack) {
         ret = script;

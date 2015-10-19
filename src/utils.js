@@ -6,14 +6,11 @@ var OP = Object.prototype,
   hasOwn = OP.hasOwnProperty,
   toString = OP.toString;
 
-
 // use such an object to determine cut down a forEach loop;
 var break_obj = {};
 
-
 /** 空函数作为默认回调函数 */
 function noop() {}
-
 
 /**
  * iterate the array and map the value to a delegation
@@ -35,7 +32,6 @@ function map(arr, fn, opt_context) {
   return ret;
 }
 
-
 /**
  * NOTE:
  * The forEach function is intentionally generic;
@@ -44,7 +40,7 @@ function map(arr, fn, opt_context) {
  * for use as a method. Whether the forEach function can be applied
  * successfully to a host object is implementation-dependent.
  *
- * @param {Array} arr array to be iterated.
+ * @param {Array|NodeList} arr array to be iterated.
  * @param {Function} fn callback to execute on each item
  * @param {Object?} opt_context fn's context
  */
@@ -59,7 +55,6 @@ function forEach(arr, fn, opt_context) {
     }
   }
 }
-
 
 /**
  * 正向寻找指定项在数组的位置;
@@ -76,7 +71,6 @@ function indexOf(arr, tar) {
   return -1;
 }
 
-
 /**
  * 类型映射
  * @type {Object}
@@ -90,14 +84,12 @@ var typeMap = {
   '[object Number]'   : 'number'
 };
 
-
 /**
  * 判断对象类型, 见typeMap
  */
 function typeOf(obj) {
   return typeMap[toString.call(obj)];
 }
-
 
 /**
  * 判断是否为undefined或者null
