@@ -163,8 +163,7 @@ var currentAddingScript,
 function fetchCss(url, name) {
   function onCssLoad() {
     var mod, cache = kerneljs.cache,
-        uid = kerneljs.uidprefix + kerneljs.uid++,
-        deps = [];
+        uid = kerneljs.uidprefix + kerneljs.uid++;
 
     // doc.currentScript在异步情况下比如事件处理器或者setTimeout返回错误结果.
     // 但如果不是这种情况且遵循每个文件一个define模块的话这个属性就能正常工作.
@@ -178,14 +177,14 @@ function fetchCss(url, name) {
     }
 
     // 创建模块
-    mod = cache.mods[uid] = new Module({
+    mod = cache.mods[uid] = {
       uid: uid,
       id: null,
-      url: base,
-      deps: deps,
+      url: url,
+      deps: [],
       factory: null,
-      status: Module.STATUS.init
-    });
+      status: Module.STATUS.complete
+    };
     kerneljs.trigger(kerneljs.events.create, [mod]);
 
     // 打包过后define会先发生, 这种情况script标签不会带有kernel_name字段.
@@ -193,7 +192,35 @@ function fetchCss(url, name) {
       mod.id = name;
     }
 
-    notify(mod);
+    fetchingList.remove(mod);
+    mod.exports = {};
+
+    // Register module in global cache
+    kerneljs.cache.mods[mod.uid] = mod;
+    // two keys are the same thing
+    if (mod.id) {
+      kerneljs.cache.mods[mod.id] = mod;
+    }
+
+    // Dispatch ready event.
+    // All other modules recorded in dependencyList depend on this mod
+    // will execute their factories by order.
+    var depandants = dependencyList[mod.url];
+    if (depandants) {
+      // Here I first delete it because a complex condition:
+      // if a define occurs in a factory function, and the module whose
+      // factory function is current executing, it's a callback executing.
+      // which means the currentScript would be mod just been fetched
+      // successfully. The url would be the previous one, and we store the
+      // record in global cache dependencyList.
+      // So we must delete it first to avoid the factory function execute twice.
+      delete dependencyList[mod.url];
+      forEach(depandants, function(dependant) {
+        if (dependant.ready && dependant.status === Module.STATUS.fetching) {
+          dependant.ready(mod);
+        }
+      });
+    }
   }
 
   var method = (useImportLoad ? importLoad : linkLoad);

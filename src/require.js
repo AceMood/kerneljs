@@ -2,11 +2,10 @@
 /**
  * 一般作为页面逻辑的入口, 提倡js初始化只调用一次require, 函数内部的异步加载用require.async.
  * 两种使用方式:
- * var mod = require('widget/a');
- * or
- * require(['widget/a'], function(wid_a) {
- *   wid_a.init();
- * });
+ * a. var mod = require('widget/a');
+ * b. require(['widget/a'], function(wid_a) {
+ *      wid_a.init();
+ *    });
  * @param {!Array|String} deps
  * @param {Function?} cb
  */
@@ -32,7 +31,7 @@ function require(deps, cb) {
   }
 
   var uid,
-    _currentPath = getCurrentPath();
+      _currentPath = getCurrentPath();
   if (cb) {
     // 'require' invoke can introduce an anonymous module,
     // it has the unique uid and id is null.
@@ -70,7 +69,6 @@ function require(deps, cb) {
     }
   }
 }
-
 
 /**
  * Whenever a module is prepared, means all its dependencies have already
