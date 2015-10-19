@@ -30,13 +30,14 @@ function require(deps, cb) {
     deps = [deps];
   }
 
-  var uid,
+  var uid, mod,
       uri = getCurrentScriptPath();
+
   if (cb) {
     // 'require' invoke can introduce an anonymous module,
     // it has the unique uid and id is null.
     uid = kerneljs.uidprefix + kerneljs.uid++;
-    var mod = new Module({
+    mod = new Module({
       uid: uid,
       id: null,
       url: uri,
@@ -58,14 +59,14 @@ function require(deps, cb) {
     return null;
 
   } else {
-    var _dep = resolvePath(deps[0], uri);
+    var need = resolvePath(deps[0], uri);
     // a simple require statements always be resolved preload.
     // so if length == 1 then return its exports object.
     var _mod = resolve(deps[0]);
     if (deps.length === 1 && _mod) {
       return _mod;
     } else {
-      uid = kerneljs.cache.path2uid[_dep][0];
+      uid = kerneljs.cache.path2uid[need][0];
       return kerneljs.cache.mods[uid].exports || null;
     }
   }

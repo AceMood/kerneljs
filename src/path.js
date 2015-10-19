@@ -1,5 +1,5 @@
 
-// and a directory file path must be ends with a slash (back slash in window)
+// A directory file path must be ends with a slash (back slash in window)
 var dirRegExp = /\/$/g,
     fileExtRegExp = /\.(js|css|tpl)$/,
     dot = '.',
@@ -23,7 +23,7 @@ var loc = global.location;
  * path.normalize('/foo/bar//baz/asdf/quux/..')
  * returns '/foo/bar/baz/asdf'
  *
- * @param {string} p
+ * @param {String} p
  */
 function normalize(p) {
   // step1: combine multi slashes
@@ -33,7 +33,6 @@ function normalize(p) {
   p = resolveDot(p);
   return p;
 }
-
 
 /**
  * resolve a path with a '.' or '..' part in it.
@@ -171,10 +170,10 @@ function dirname(p) {
 }
 
 /**
- * Alias will appear at head part of path.
- * So replace it if exists in kerneljs.paths.
- * @param {String} p
- * @return {String} s
+ * paths设置的别名会出现在路径的头部。
+ * 根据kerneljs.paths替换
+ * @param {String} p 依赖模块路径
+ * @return {String} s 替换后的路径
  */
 function parsePaths(p) {
   var ret = [];
