@@ -1,6 +1,14 @@
 
 // 解析ua
-var engineRe = /Trident\/([^ ;]*)|AppleWebKit\/([^ ;]*)|Opera\/([^ ;]*)|rv:([^ ;]*)(.*?)Gecko\/([^ ;]*)|MSIE\s([^ ;]*)|AndroidWebKit\/([^ ;]*)/,
+var resArr = [
+    'Trident\/([^ ;]*)',
+    'AppleWebKit\/([^ ;]*)',
+    'Opera\/([^ ;]*)',
+    'rv:([^ ;]*)(.*?)Gecko\/([^ ;]*)',
+    'MSIE\s([^ ;]*)',
+    'AndroidWebKit\/([^ ;]*)'
+];
+var engineRe = new RegExp(resArr.join('|')),
     engine = window.navigator.userAgent.match(engineRe) || 0,
     curStyle, curSheet;
 
@@ -12,13 +20,13 @@ var useImportLoad = false,
 
 // trident / msie
 if (engine[1] || engine[7]) {
-  useImportLoad = parseInt(engine[1]) < 6 || parseInt(engine[7]) <= 9;
+  useImportLoad = (engine[1] - 0) < 6 || (engine[7] - 0) <= 9;
   // webkit
 } else if (engine[2] || engine[8]) {
   useOnload = false;
   // gecko
 } else if (engine[4]) {
-  useImportLoad = parseInt(engine[4]) < 18;
+  useImportLoad = (engine[4] - 0) < 18;
 }
 
 var ieCnt = 0;
@@ -27,9 +35,7 @@ var ieCurCallback;
 
 function createIeLoad(url) {
   curSheet.addImport(url);
-  curStyle.onload = function() {
-    processIeLoad()
-  };
+  curStyle.onload = processIeLoad;
 
   ieCnt++;
   if (ieCnt === 31) {
@@ -58,8 +64,9 @@ function processIeLoad() {
  * @param {Function} callback 回调函数
  */
 function importLoad(url, callback) {
-  if (!curSheet || !curSheet.addImport)
+  if (!curSheet || !curSheet.addImport) {
     createStyle();
+  }
 
   if (curSheet && curSheet.addImport) {
     // old IE
@@ -77,7 +84,7 @@ function importLoad(url, callback) {
 
     var loadInterval = setInterval(function() {
       try {
-        curStyle.sheet.cssRules;
+        var tmp = curStyle.sheet.cssRules;
         clearInterval(loadInterval);
         callback();
       } catch(e) {}
@@ -123,7 +130,7 @@ function linkLoad(url, callback) {
  * 创建style元素
  */
 function createStyle() {
-  curStyle = document.createElement('style');
+  curStyle = $doc.createElement('style');
   $head.appendChild(curStyle);
   curSheet = curStyle.styleSheet || curStyle.sheet;
 }

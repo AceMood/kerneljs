@@ -24,7 +24,7 @@ module.exports = function(grunt) {
         curly: true,
         eqeqeq: true,
         es3: true,
-        maxlen: 80,
+        maxlen: 120,
         nonew: true,
         freeze: true,
         globals: {

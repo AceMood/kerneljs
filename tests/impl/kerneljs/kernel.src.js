@@ -34,21 +34,18 @@ var OP = Object.prototype,
   hasOwn = OP.hasOwnProperty,
   toString = OP.toString;
 
-
 // use such an object to determine cut down a forEach loop;
 var break_obj = {};
 
-
 /** 空函数作为默认回调函数 */
 function noop() {}
-
 
 /**
  * iterate the array and map the value to a delegation
  * function, use the return value replace original item.
  * @param {Array} arr array to be iterated.
  * @param {Function} fn callback to execute on each item
- * @param {Object?} opt_context fn's context
+ * @param {?Object} opt_context fn's context
  * @return {!Array}
  */
 function map(arr, fn, opt_context) {
@@ -63,7 +60,6 @@ function map(arr, fn, opt_context) {
   return ret;
 }
 
-
 /**
  * NOTE:
  * The forEach function is intentionally generic;
@@ -72,7 +68,7 @@ function map(arr, fn, opt_context) {
  * for use as a method. Whether the forEach function can be applied
  * successfully to a host object is implementation-dependent.
  *
- * @param {Array} arr array to be iterated.
+ * @param {Array|NodeList} arr array to be iterated.
  * @param {Function} fn callback to execute on each item
  * @param {Object?} opt_context fn's context
  */
@@ -87,7 +83,6 @@ function forEach(arr, fn, opt_context) {
     }
   }
 }
-
 
 /**
  * 正向寻找指定项在数组的位置;
@@ -104,7 +99,6 @@ function indexOf(arr, tar) {
   return -1;
 }
 
-
 /**
  * 类型映射
  * @type {Object}
@@ -118,14 +112,12 @@ var typeMap = {
   '[object Number]'   : 'number'
 };
 
-
 /**
  * 判断对象类型, 见typeMap
  */
 function typeOf(obj) {
   return typeMap[toString.call(obj)];
 }
-
 
 /**
  * 判断是否为undefined或者null
@@ -136,53 +128,263 @@ function isNull(obj) {
   return obj === void 0 || obj === null;
 }
 
-var doc = document,
-  head = doc.head || doc.getElementsByTagName('head')[0],
-  // IE6下的经典bug, 有base元素的情况下head.appendChild容易出错in jQuery.
-  // 详见: 'http://dev.jquery.com/ticket/2709'
-  $base = doc.getElementsByTagName('base')[0];
+// 解析ua
+var resArr = [
+    'Trident\/([^ ;]*)',
+    'AppleWebKit\/([^ ;]*)',
+    'Opera\/([^ ;]*)',
+    'rv:([^ ;]*)(.*?)Gecko\/([^ ;]*)',
+    'MSIE\s([^ ;]*)',
+    'AndroidWebKit\/([^ ;]*)'
+];
+var engineRe = new RegExp(resArr.join('|')),
+    engine = window.navigator.userAgent.match(engineRe) || 0,
+    curStyle, curSheet;
+
+// 用style元素中的@import加载css模块
+// IE < 9, Firefox < 18
+var useImportLoad = false,
+// 采用onload事件在webkit下会有问题，此时设成false
+    useOnload = true;
+
+// trident / msie
+if (engine[1] || engine[7]) {
+  useImportLoad = (engine[1] - 0) < 6 || (engine[7] - 0) <= 9;
+  // webkit
+} else if (engine[2] || engine[8]) {
+  useOnload = false;
+  // gecko
+} else if (engine[4]) {
+  useImportLoad = (engine[4] - 0) < 18;
+}
+
+var ieCnt = 0;
+var ieLoads = [];
+var ieCurCallback;
+
+function createIeLoad(url) {
+  curSheet.addImport(url);
+  curStyle.onload = processIeLoad;
+
+  ieCnt++;
+  if (ieCnt === 31) {
+    createStyle();
+    ieCnt = 0;
+  }
+}
+
+function processIeLoad() {
+  ieCurCallback();
+
+  var nextLoad = ieLoads.shift();
+
+  if (!nextLoad) {
+    ieCurCallback = null;
+    return;
+  }
+
+  ieCurCallback = nextLoad[1];
+  createIeLoad(nextLoad[0]);
+}
+
+/**
+ * 创建style元素加载模块
+ * @param {String} url css地址
+ * @param {Function} callback 回调函数
+ */
+function importLoad(url, callback) {
+  if (!curSheet || !curSheet.addImport) {
+    createStyle();
+  }
+
+  if (curSheet && curSheet.addImport) {
+    // old IE
+    if (ieCurCallback) {
+      ieLoads.push([url, callback]);
+    }
+    else {
+      createIeLoad(url);
+      ieCurCallback = callback;
+    }
+  }
+  else {
+    // old Firefox
+    curStyle.textContent = '@import "' + url + '";';
+
+    var loadInterval = setInterval(function() {
+      try {
+        var tmp = curStyle.sheet.cssRules;
+        clearInterval(loadInterval);
+        callback();
+      } catch(e) {}
+    }, 10);
+  }
+}
+
+/**
+ * 创建link元素监听onload事件
+ * @param {String} url css地址
+ * @param {Function} callback 回调函数
+ */
+function linkLoad(url, callback) {
+  // 轮询
+  var loop = function() {
+    for (var i = 0; i < document.styleSheets.length; i++) {
+      var sheet = document.styleSheets[i];
+      if (sheet.href === link.href) {
+        clearTimeout(loadInterval);
+        return callback();
+      }
+    }
+    loadInterval = setTimeout(loop, 10);
+  };
+  // link
+  var link = document.createElement('link');
+  link.type = 'text/css';
+  link.rel = 'stylesheet';
+  if (useOnload) {
+    link.onload = function() {
+      link.onload = function() {};
+      // for style dimensions queries, a short delay can still be necessary
+      setTimeout(callback, 7);
+    };
+  } else {
+    var loadInterval = setTimeout(loop, 10);
+  }
+  link.href = url;
+  $head.appendChild(link);
+}
+
+/**
+ * 创建style元素
+ */
+function createStyle() {
+  curStyle = $doc.createElement('style');
+  $head.appendChild(curStyle);
+  curSheet = curStyle.styleSheet || curStyle.sheet;
+}
+
+
+var $doc = document,
+    $head = $doc.head || $doc.getElementsByTagName('head')[0],
+    // IE6下的经典bug, 有base元素的情况下head.appendChild容易出错in jQuery.
+    // 详见: 'http://dev.jquery.com/ticket/2709'
+    $base = $doc.getElementsByTagName('base')[0];
 
 if ($base) {
-  head = $base.parentNode;
+  $head = $base.parentNode;
 }
 
 // current adding script node
 var currentAddingScript,
-// 老版本Firefox不支持script.readyState, so we only use this prop
-// in IEs. Although 'onload' in IE9 & IE10 have problems, but I do not
-// care the issure, and whatever async is true or false. We just
-// remove node in document as the callback of javascript loaded.
-// Read more about the bug:
-// 'https://connect.microsoft.com/IE/feedback/details/729164/'
-// + 'ie10-dynamic-script-element-fires-loaded-readystate-prematurely'
-// 'https://connect.microsoft.com/IE/feedback/details/648057/'
-// + 'script-onload-event-is-not-fired-immediately-after-script-execution'
-  useInteractive = ('readyState' in doc.createElement('script')),
-// loop all script nodes in doc, if one's readyState is 'interactive'
-// means it's now executing;
-  interactiveScript;
-
+    // 老版本Firefox不支持script.readyState, so we only use this prop
+    // in IEs. Although 'onload' in IE9 & IE10 have problems, but I do not
+    // care the issure, and whatever async is true or false. We just
+    // remove node in document as the callback of javascript loaded.
+    // Read more about the bug:
+    // 'https://connect.microsoft.com/IE/feedback/details/729164/'
+    // + 'ie10-dynamic-script-element-fires-loaded-readystate-prematurely'
+    // 'https://connect.microsoft.com/IE/feedback/details/648057/'
+    // + 'script-onload-event-is-not-fired-immediately-after-script-execution'
+    useInteractive = ('readyState' in $doc.createElement('script')),
+    // loop all script nodes in doc, if one's readyState is 'interactive'
+    // means it's now executing;
+    interactiveScript;
 
 /**
- * 动态script插入获取模块.
- * @param {String} url 文件路径.
+ * @param {String} url 当前需要资源的网络路径
  * @param {String} name Original name to require this module.
  *   maybe a top-level name, relative name or absolute name.
  */
-function fetch(url, name) {
-  var script = doc.createElement('script');
+function fetchCss(url, name) {
+  function onCssLoad() {
+    var mod, cache = kerneljs.cache,
+        uid = kerneljs.uidprefix + kerneljs.uid++;
+
+    // doc.currentScript在异步情况下比如事件处理器或者setTimeout返回错误结果.
+    // 但如果不是这种情况且遵循每个文件一个define模块的话这个属性就能正常工作.
+    var base = url;
+
+    // 缓存path2uid
+    if (cache.path2uid[base]) {
+      cache.path2uid[base].push(uid);
+    } else {
+      cache.path2uid[base] = [uid];
+    }
+
+    // 创建模块
+    mod = cache.mods[uid] = {
+      uid: uid,
+      id: null,
+      url: url,
+      deps: [],
+      factory: null,
+      status: Module.STATUS.complete
+    };
+    kerneljs.trigger(kerneljs.events.create, [mod]);
+
+    // 打包过后define会先发生, 这种情况script标签不会带有kernel_name字段.
+    if (name && isTopLevel(name) && !mod.id) {
+      mod.id = name;
+    }
+
+    fetchingList.remove(mod);
+    mod.exports = {};
+
+    // Register module in global cache
+    kerneljs.cache.mods[mod.uid] = mod;
+    // two keys are the same thing
+    if (mod.id) {
+      kerneljs.cache.mods[mod.id] = mod;
+    }
+
+    // Dispatch ready event.
+    // All other modules recorded in dependencyList depend on this mod
+    // will execute their factories by order.
+    var depandants = dependencyList[mod.url];
+    if (depandants) {
+      // Here I first delete it because a complex condition:
+      // if a define occurs in a factory function, and the module whose
+      // factory function is current executing, it's a callback executing.
+      // which means the currentScript would be mod just been fetched
+      // successfully. The url would be the previous one, and we store the
+      // record in global cache dependencyList.
+      // So we must delete it first to avoid the factory function execute twice.
+      delete dependencyList[mod.url];
+      forEach(depandants, function(dependant) {
+        if (dependant.ready && dependant.status === Module.STATUS.fetching) {
+          dependant.ready(mod);
+        }
+      });
+    }
+  }
+
+  var method = (useImportLoad ? importLoad : linkLoad);
+  method(url, onCssLoad);
+}
+
+/**
+ * @param {String} url 文件路径
+ * @param {String} name Original name to require this module.
+ *   maybe a top-level name, relative name or absolute name.
+ */
+function fetchScript(url, name) {
+  function onScriptLoad() {}
+
+  var script = $doc.createElement('script');
   script.charset = 'utf-8';
   script.async = true;
   // custom attribute to remember the original required name
   // which written in dependant module.
   script.kernel_name = name;
 
-  // Event binding
+  // 监听
   script.onreadystatechange = script.onload = script.onerror = function() {
-    script.onreadystatschange = script.onload = script.onerror = null;
-    interactiveScript = null;
     if (!script.readyState || /complete/.test(script.readyState)) {
-      head.removeChild(script);
+      interactiveScript = null;
+      script.onreadystatschange = script.onload = script.onerror = null;
+      $head.removeChild(script);
+      onScriptLoad();
     }
   };
 
@@ -192,45 +394,57 @@ function fetch(url, name) {
   script.src = url;
   currentAddingScript = script;
   if ($base) {
-    head.insertBefore(script, $base);
+    $head.insertBefore(script, $base);
   } else {
-    head.appendChild(script);
+    $head.appendChild(script);
   }
   currentAddingScript = null;
 }
 
+/**
+ * 动态获取模块
+ * @param {String} url 文件路径
+ * @param {String} name Original name to require this module.
+ *   maybe a top-level name, relative name or absolute name.
+ */
+function fetch(url, name) {
+  if (url.indexOf('.css') === url.length - 4) {
+    fetchCss(url, name);
+  } else {
+    fetchScript(url, name);
+  }
+}
 
 /**
  * 获取当前页面中所有script节点
  * @return {NodeList}
  */
 function scripts() {
-  return doc.getElementsByTagName('script');
+  return $doc.getElementsByTagName('script');
 }
 
-
 /**
- * get current executing script
+ * 获取当前正在执行的script元素。
+ * In chrome and FF and Opera, use Error.prototype.stack
+ * It's important to note that this will not reference the <script> element
+ * if the code in the script is being called as a callback or event handler;
+ * it will only reference the element while it's initially being processed.
+ * Read more:
+ *   'https://developer.mozilla.org/en-US/docs/Web/API/document.currentScript'
  * @return {*}
  */
 function getCurrentScript() {
-  // In chrome and FF and Opera, use Error.prototype.stack
-  // It's important to note that this will not reference the <script> element
-  // if the code in the script is being called as a callback or event handler;
-  // it will only reference the element while it's initially being processed.
-  // Read more:
-  //   'https://developer.mozilla.org/en-US/docs/Web/API/document.currentScript'
-  return doc.currentScript || currentAddingScript || (function() {
+  return $doc.currentScript || currentAddingScript || (function() {
     var _scripts;
     if (useInteractive) {
       if (interactiveScript &&
-        interactiveScript.readyState === "interactive") {
+        interactiveScript.readyState === 'interactive') {
         return interactiveScript;
       }
 
       _scripts = scripts();
       forEach(_scripts, function(script) {
-        if (script.readyState === "interactive") {
+        if (script.readyState === 'interactive') {
           interactiveScript = script;
           return break_obj;
         }
@@ -238,7 +452,6 @@ function getCurrentScript() {
       return interactiveScript;
     }
     // todo in FF early version
-    // return null;
   })() || (function() {
     var ret = null;
     var stack;
@@ -282,8 +495,8 @@ function getCurrentScript() {
      * at getCurrentPath (file:///D:/Develop/SOI/lib/kernel.js:314:16)
      * at Global code (file:///D:/Develop/SOI/lib/kernel.js:563:29)
      */
-    var e = stack.indexOf(" at ") !== -1 ? " at " : "@";
-    var index = stack.indexOf(".async");
+    var e = stack.indexOf(' at ') !== -1 ? ' at ' : '@';
+    var index = stack.indexOf('.async');
     if (index > -1) {
       stack = stack.substring(index + 7);
       stack = stack.split(e)[1];
@@ -294,12 +507,11 @@ function getCurrentScript() {
       }
     }
 
-    stack = stack.substring(0, stack.indexOf(".js") + 3);
+    stack = stack.substring(0, stack.indexOf('.js') + 3);
     // for ie11
-    stack = stack.replace(/^([^\(]*\()/, "");
+    stack = stack.replace(/^([^\(]*\()/, '');
 
-    var _scripts = scripts();
-    forEach(_scripts, function(script) {
+    forEach(scripts(), function(script) {
       var path = getAbsPathOfScript(script);
       if (path === stack) {
         ret = script;
@@ -310,7 +522,6 @@ function getCurrentScript() {
   })();
 }
 
-
 /**
  * 跨浏览器解决方案获得script节点的src绝对路径.
  * @param {HTMLScriptElement} script
@@ -319,7 +530,6 @@ function getCurrentScript() {
 function getAbsPathOfScript(script) {
   return script.hasAttribute ? script.src : script.getAttribute('src', 4);
 }
-
 
 /**
  * 获取当前执行js代码块的绝对路径. node为空则返回null
@@ -333,14 +543,12 @@ function getCurrentPath() {
 // and a directory file path must be ends with a slash (back slash in window)
 var dirRegExp = /\/$/g,
 // whether a path to a file with extension
-  fileExtRegExp = /\.(js|css|tpl|txt)$/g;
-
+    fileExtRegExp = /\.(js|css|tpl|txt)$/g;
 
 // retrieve current doc's absolute path
 // It may be a file system path, http path
 // or other protocol path
 var loc = global.location;
-
 
 /**
  * Normalize a string path, taking care of '..' and '.' parts.
@@ -388,7 +596,6 @@ function resolveDot(p) {
   return p.join("/");
 }
 
-
 /**
  * To get current doc's directory
  * @return {string}
@@ -396,7 +603,6 @@ function resolveDot(p) {
 function getPageDir() {
   return dirname(loc.href);
 }
-
 
 /**
  * Judge if a path is top-level, such as 'core/class.js'
@@ -412,7 +618,6 @@ function isTopLevel(p) {
   return isRelative(p) && p.charAt(0) !== ".";
 }
 
-
 /**
  * Return if a path is absolute.
  * In most web environment, absolute url starts with a 'http://' or 'https://';
@@ -425,7 +630,6 @@ function isTopLevel(p) {
 function isAbsolute(p) {
   return /:\/\//.test(p) || /^\//.test(p);
 }
-
 
 /**
  * Return if a path is relative.
@@ -441,18 +645,16 @@ function isRelative(p) {
   return !isAbsolute(p) && (/^(\.){1,2}\//.test(p) || p.charAt(0) !== "/");
 }
 
-
 /**
  * Map the identifier for a module to a Internet file
  * path. SCRIPT insertion will set path with it, except
  * build-in names.
  *
- * @param {string} id Always the module's name or identifier.
- * @param {string?} base A relative baseuri for resolve the
- *   module's absolute file path.
+ * @param {string} id 依赖模块的name或者id。
+ * @param {string?} base 作为baseUri，解析依赖模块的绝对路径。
  * @return {!(string|object)} exports object or absolute file path from Internet
  */
-function resolveId(id, base) {
+function resolvePath(id, base) {
   // var _mod = kerneljs.cache.mods[id];
   if (id === "require" ||
     id === "module" ||
@@ -484,7 +686,6 @@ function resolveId(id, base) {
   return url;
 }
 
-
 /**
  * Return the directory name of a path. Similar to the
  * UNIX dirname command.
@@ -508,7 +709,6 @@ function dirname(p) {
   return p.join("/");
 }
 
-
 /**
  * Alias will appear at head part of path.
  * So replace it if exists in kerneljs.paths.
@@ -528,7 +728,6 @@ function parsePaths(p) {
   }
   return p + ret.join("/");
 }
-
 
 /**
  * pkg name can also impact on path resolving.
@@ -559,7 +758,7 @@ function parsePackages(p) {
 /**
  * Module包装类.
  * # uid    自生成的uid标识唯一模块.
- * # id     用户自定义的模块名, 是可选的但如果我们不写id会使一些测试用例失败(see anon_circular case),
+ * # id     用户自定义的模块名, 是可选的. 但如果我们不写id会使一些测试用例失败(see anon_circular case),
  *          于是对一些不必要的测试用例作了修改.
  * # url    模块对用的物理文件路径.
  * # deps   依赖模块的字面亮表示, 也是require|define源码的写法中依赖数组的值.
@@ -568,7 +767,9 @@ function parsePackages(p) {
  * # depMods依赖模块的表示对象数组.
  * # status 当前模块状态, 见 Module.STATUS.
  * # factory模块的导出函数, 通过工厂函数导出模块的表示值.
+ *
  * @constructor
+ * @param {Object} obj 配置对象
  */
 function Module(obj) {
   this.uid = obj.uid;
@@ -580,22 +781,6 @@ function Module(obj) {
   this.factory = obj.factory || noop;
   this.exports = {}; // todo
 }
-
-
-/**
- * 模块的4种状态.
- * # init     模块刚被创建, 还没有获取自身的模块.
- * # loaded   只在<IE11出现, 表示自身模块已经下载完成.
- * # fetching 正在获取自身依赖模块但还没导出自身模块.
- * # complete 模块已被导出且缓存到模块池中.
- */
-Module.STATUS = {
-  'init'      : 0,
-  'loaded'    : 1,
-  'fetching'  : 2,
-  'complete'  : 3
-};
-
 
 /**
  * 设置模块状态
@@ -619,7 +804,6 @@ Module.prototype.setStatus = function(status) {
   }
 };
 
-
 /**
  * 当模块已被缓存<code>mod.status = Module.STATUS.complete</code>,
  * 则需要通知所有依赖于它的模块, 需要调用depandant.ready(mod);
@@ -632,7 +816,7 @@ Module.prototype.ready = function(mod) {
       inPathConfig = true;
     }
     for(var i = 0; i < this.deps.length; ++i) {
-      var path = resolveId(this.deps[i], inPathConfig ? loc.href : this.url);
+      var path = resolvePath(this.deps[i], inPathConfig ? loc.href : this.url);
       if (path === mod.url) {
         this.depMods[i] = mod.exports;
         break;
@@ -643,7 +827,6 @@ Module.prototype.ready = function(mod) {
     notify(this);
   }
 };
-
 
 /**
  * 检查是否模块的依赖项都已complete的状态. note: 由于模块导出值也可能是字符串, 尤其是模板相关的模块,
@@ -665,19 +848,25 @@ Module.prototype.checkAllDepsOK = function() {
 };
 
 /**
- * TODO: 考虑去掉对CJSWrapper的支持, 很容易和CMD的做法混淆. 其实有使用差异, 毕竟AMD
- * TODO: 提倡的是预加载, 采用的方式是预执行, 而且浏览器端AMD更适合. 用CMD的方式就必须使用正则
- * TODO: 或者做一些语法分析解析出函数内部的require模块, 个人感觉这么做必要性不大.
+ * 模块的4种状态.
+ *  init     模块刚被创建, 还没有获取自身的模块.
+ *  loaded   只在<IE11出现, 表示自身模块已经下载完成.
+ *  fetching 正在获取自身依赖模块但还没导出自身模块.
+ *  complete 模块已被导出且缓存到模块池中.
  */
+Module.STATUS = {
+  'init'      : 0,
+  'loaded'    : 1,
+  'fetching'  : 2,
+  'complete'  : 3
+};
 
-
-// A regexp to filter `require('xxx')`
+// 正则提取代码中的 `require('xxx')`
 var cjsRequireRegExp = /\brequire\s*\(\s*(["'])([^'"\s]+)\1\s*\)/g,
 // A regexp to drop comments in source code
-  commentRegExp = /(\/\*([\s\S]*?)\*\/|([^:]|^)\/\/(.*)$)/mg;
+    commentRegExp = /(\/\*([\s\S]*?)\*\/|([^:]|^)\/\/(.*)$)/mg;
 
-
-// initialize a module
+// 初始化的空模块
 var empty_mod = {
   id: null,
   uid: null,
@@ -686,31 +875,27 @@ var empty_mod = {
   exports: {}
 };
 
-
 // ID相同的错误消息
 var SAME_ID_MSG = 'more then one module defined with the same id: %s';
 
-
 /**
- * if a module with in the same id exists, then define with the id
- * will fail. we throw an error with useful message.
+ * 若两个模块id相同则报错
  */
 function exist_id_error(id) {
   throw SAME_ID_MSG.replace('%s', id);
 }
 
-
 /**
  * 全局define函数. 函数签名:
  * define(id?, dependencies?, factory);
  * 见: https://github.com/amdjs/amdjs-api/blob/master/AMD.md#define-function-
- * @param {String|Array|Function|Object} id
- * @param {Array|Function|Object} deps
- * @param {(Function|Object)?} factory
+ * @param {String|Array|Function|Object} id 模块id
+ * @param {Array|Function|Object} deps      依赖模块
+ * @param {(Function|Object)?} factory      回调函数
  */
 function define(id, deps, factory) {
   var mod, cache = kerneljs.cache,
-    uid = kerneljs.uidprefix + kerneljs.uid++;
+      uid = kerneljs.uidprefix + kerneljs.uid++;
 
   // doc.currentScript在异步情况下比如事件处理器或者setTimeout返回错误结果.
   // 但如果不是这种情况且遵循每个文件一个define模块的话这个属性就能正常工作.
@@ -735,7 +920,7 @@ function define(id, deps, factory) {
     // 也没有很好解决. 当非首屏首页的多个模块又各自依赖或含有第三个非注册过的模块时, 这个
     // 模块会被打包进第二个和第三个package, 这样就有可能在运行时造成同一id多次注册的现象.
     if (cache.id2path[id] && kerneljs.debug) {
-      kerneljs.trigger(kerneljs.events.ERROR, [
+      kerneljs.trigger(kerneljs.events.error, [
         SAME_ID_MSG.replace('%s', id),
         base
       ]);
@@ -756,8 +941,7 @@ function define(id, deps, factory) {
   mod = cache.mods[uid] = empty_mod;
 
   // If no name, and factory is a function, then figure out if it a
-  // CommonJS thing with dependencies. I don't intend to support it.
-  // But many projects used RequireJS may depend on this functional.
+  // CommonJS thing with dependencies.
   // Code below in the if-else statements lent from RequireJS
   if (!deps && typeOf(factory) === 'function') {
     deps = [];
@@ -818,13 +1002,11 @@ function define(id, deps, factory) {
   load(mod);
 }
 
-
 /**
  * 加载依赖模块文件.
  * @param {Object|Module} mod 宿主模块.
  */
 function load(mod) {
-
   var cache = kerneljs.cache;
   var count = mod.deps.length;
   var inPathConfig = kerneljs.paths && kerneljs.paths[mod.id] ? true : false;
@@ -855,7 +1037,7 @@ function load(mod) {
     }
 
     // else it's a real file path. get its responding uid
-    var path = resolveId(name, currentPath);
+    var path = resolvePath(name, currentPath);
     var uid = cache.path2uid[path];
 
     // File has been fetched, but its deps may not being fetched yet,
@@ -881,7 +1063,7 @@ function load(mod) {
 
       if (!sendingList[path]) {
         sendingList[path] = true;
-        // script insertion
+        // script or link insertion
         fetch(path, name);
       }
     }
@@ -893,7 +1075,6 @@ function load(mod) {
     notify(mod);
   }
 }
-
 
 /**
  * define.amd property
@@ -927,11 +1108,10 @@ define.amd = {
 /**
  * 一般作为页面逻辑的入口, 提倡js初始化只调用一次require, 函数内部的异步加载用require.async.
  * 两种使用方式:
- * var mod = require('widget/a');
- * or
- * require(['widget/a'], function(wid_a) {
- *   wid_a.init();
- * });
+ * a. var mod = require('widget/a');
+ * b. require(['widget/a'], function(wid_a) {
+ *      wid_a.init();
+ *    });
  * @param {!Array|String} deps
  * @param {Function?} cb
  */
@@ -957,7 +1137,7 @@ function require(deps, cb) {
   }
 
   var uid,
-    _currentPath = getCurrentPath();
+      _currentPath = getCurrentPath();
   if (cb) {
     // 'require' invoke can introduce an anonymous module,
     // it has the unique uid and id is null.
@@ -975,7 +1155,7 @@ function require(deps, cb) {
     // if any rely module's export haven't resolved, use the
     // default name replace it.
     mod.depMods = map(deps, function(dep) {
-      var path = resolveId(dep, _currentPath);
+      var path = resolvePath(dep, _currentPath);
       return resolve(dep) || resolve(path);
     });
 
@@ -983,7 +1163,7 @@ function require(deps, cb) {
     return null;
 
   } else {
-    var _dep = resolveId(deps[0], _currentPath);
+    var _dep = resolvePath(deps[0], _currentPath);
     // a simple require statements always be resolved preload.
     // so if length == 1 then return its exports object.
     var _mod = resolve(deps[0]);
@@ -995,7 +1175,6 @@ function require(deps, cb) {
     }
   }
 }
-
 
 /**
  * Whenever a module is prepared, means all its dependencies have already
@@ -1051,7 +1230,6 @@ function notify(mod) {
   }
 }
 
-
 /**
  * Used in the CommonJS wrapper form of define a module.
  * @param {String} name
@@ -1063,8 +1241,8 @@ function notify(mod) {
 function resolve(name, mod) {
   // step 1: parse built-in and already existed modules
   if (kerneljs.cache.mods[name]) {
-    var currentPath = getCurrentPath(),
-      path = resolveId(name, currentPath);
+    var currentScriptPath = getCurrentPath(),
+        path = resolvePath(name, currentScriptPath);
     // we check circular reference first, if it there, we return the
     // empty_mod immediately.
     if (kerneljs.cache.mods[name].status === Module.STATUS.complete ||
@@ -1084,7 +1262,6 @@ function resolve(name, mod) {
 
   return null;
 }
-
 
 /**
  * A mechanism to check cycle reference.
@@ -1116,16 +1293,14 @@ function checkCycle(path, mod) {
   return ret;
 }
 
-
 /**
  * Resolve path of the given id.
  * @param {String} id
  * @return {!(String|Object)}
  */
 require.toUrl = function(id) {
-  return resolveId(id);
+  return resolvePath(id);
 };
-
 
 /**
  * Used to Load module after page loaded.
@@ -1142,10 +1317,8 @@ require.async = function(id, callback) {
  */
 var kerneljs = {};
 
-
 kerneljs.uid = 0;
 kerneljs.uidprefix = 'AceMood@kernel_';
-
 
 /**
  * 保存所有正在获取依赖模块的模块信息.
@@ -1174,17 +1347,15 @@ var fetchingList = {
   }
 };
 
-
 // Due to add module dependency when resolve id->path, we can not use
 // module's uid as the key of dependencyList, so we use url here.
 /**
- * 记录模块的依赖关系. 如果模块状态置为complete, 则用此对象同志所有依赖他的模块项.
+ * 记录模块的依赖关系. 如果模块状态置为complete, 则用此对象通知所有依赖他的模块项.
  * 因为解析依赖的时候一般是通过相对路径（除非预配置一些短命名id和路径的映射）
  * 这个结构是以path路径作为key, 模块数组作为value
  * @typedef {Object}
  */
 var dependencyList = {};
-
 
 /**
  * 如果某个模块处于fetching的状态则说明依赖的js模块文件正在下载, 在完成下载之前我们不希望同一个文件
@@ -1192,7 +1363,6 @@ var dependencyList = {};
  * @typedef {Object}
  */
 var sendingList = {};
-
 
 /**
  * 动态配置kerneljs对象. 目前配置对象的属性可以是:
@@ -1219,7 +1389,6 @@ kerneljs.config = function(obj) {
   }
 };
 
-
 /**
  * 全局缓存对象
  * @typedef {Object}
@@ -1238,14 +1407,12 @@ kerneljs.cache = {
   events: {}
 };
 
-
 // 基础配置
 kerneljs.config({
   baseUrl: '',
   debug: true,
   paths: {}
 });
-
 
 /**
  * 重置全局缓存
@@ -1256,18 +1423,6 @@ kerneljs.reset = function() {
   this.cache.path2uid = {};
 };
 
-
-/**
- * 用于区分开发环境和部署环境的接口地址. 便于构建时分析.
- * 在源码中可以调用ajax接口, kerneljs.replace('/ajax/endpoint').
- * 构建时会根据配置将所有调用 kerneljs.replace的地方替换为线上地址.
- * @param {String} endpoint
- */
-kerneljs.replace = function(endpoint) {
-  return endpoint;
-};
-
-
 /**
  * 区分开发环境和部署环境资源地址定位，便于构建时分析。
  * @param {!String} url 相对于本次js模块的地址
@@ -1277,10 +1432,9 @@ kerneljs.url = function(url) {
   return url;
 };
 
-
 /** 全局导出 APIs */
-global.require = global._req = require;
-global.define = global._def = define;
+global.require = global.__r = require;
+global.define = global.__d = define;
 global.kerneljs = kerneljs;
 
 /**
@@ -1294,7 +1448,6 @@ kerneljs.events = {
   complete: 'complete',
   error: 'error'
 };
-
 
 /**
  * 订阅事件
@@ -1311,7 +1464,6 @@ kerneljs.on = function(eventName, handler, context) {
     context: context
   });
 };
-
 
 /**
  * 触发订阅事件
