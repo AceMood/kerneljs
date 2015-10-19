@@ -4,7 +4,7 @@ var cjsRequireRegExp = /\brequire\s*\(\s*(["'])([^'"\s]+)\1\s*\)/g,
 // A regexp to drop comments in source code
     commentRegExp = /(\/\*([\s\S]*?)\*\/|([^:]|^)\/\/(.*)$)/mg;
 
-// initialize a module
+// 初始化的空模块
 var empty_mod = {
   id: null,
   uid: null,
@@ -17,8 +17,7 @@ var empty_mod = {
 var SAME_ID_MSG = 'more then one module defined with the same id: %s';
 
 /**
- * if a module with in the same id exists, then define with the id
- * will fail. we throw an error with useful message.
+ * 若两个模块id相同则报错
  */
 function exist_id_error(id) {
   throw SAME_ID_MSG.replace('%s', id);

@@ -24,21 +24,7 @@ function Module(obj) {
   this.status = obj.status || Module.STATUS.init;
   this.factory = obj.factory || noop;
   this.exports = {}; // todo
-
-  if (this.deps.length) {
-    this._splitPath();
-  }
 }
-
-
-Module.prototype._splitPath = function() {
-  map(this.deps, function(dep) {
-    if (dep.indexOf('!') >= 0) {
-
-    }
-  }, this);
-};
-
 
 /**
  * 设置模块状态
@@ -61,7 +47,6 @@ Module.prototype.setStatus = function(status) {
     }
   }
 };
-
 
 /**
  * 当模块已被缓存<code>mod.status = Module.STATUS.complete</code>,
@@ -87,7 +72,6 @@ Module.prototype.ready = function(mod) {
   }
 };
 
-
 /**
  * 检查是否模块的依赖项都已complete的状态. note: 由于模块导出值也可能是字符串, 尤其是模板相关的模块,
  * 所以这里通过isNull函数检查.
@@ -106,7 +90,6 @@ Module.prototype.checkAllDepsOK = function() {
   }
   return ok;
 };
-
 
 /**
  * 模块的4种状态.

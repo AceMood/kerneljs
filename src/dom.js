@@ -1,35 +1,33 @@
 
-
-//main api object
-var CSS = {};
-CSS.engineRe = /Trident\/([^ ;]*)|AppleWebKit\/([^ ;]*)|Opera\/([^ ;]*)|rv\:([^ ;]*)(.*?)Gecko\/([^ ;]*)|MSIE\s([^ ;]*)|AndroidWebKit\/([^ ;]*)/;
-CSS.engine = window.navigator.userAgent.match(CSS.engineRe) || 0;
+// 解析ua
+var engineRe = /Trident\/([^ ;]*)|AppleWebKit\/([^ ;]*)|Opera\/([^ ;]*)|rv:([^ ;]*)(.*?)Gecko\/([^ ;]*)|MSIE\s([^ ;]*)|AndroidWebKit\/([^ ;]*)/,
+    engine = window.navigator.userAgent.match(engineRe) || 0,
+    curStyle, curSheet;
 
 // 用style元素中的@import加载css模块
 // IE < 9, Firefox < 18
-CSS.useImportLoad = false;
-
+var useImportLoad = false,
 // 采用onload事件在webkit下会有问题，此时设成false
-CSS.useOnload = true;
+    useOnload = true;
 
 // trident / msie
-if (CSS.engine[1] || CSS.engine[7]) {
-  CSS.useImportLoad = parseInt(CSS.engine[1]) < 6 || parseInt(CSS.engine[7]) <= 9;
+if (engine[1] || engine[7]) {
+  useImportLoad = parseInt(engine[1]) < 6 || parseInt(engine[7]) <= 9;
   // webkit
-} else if (CSS.engine[2] || CSS.engine[8]) {
-  CSS.useOnload = false;
+} else if (engine[2] || engine[8]) {
+  useOnload = false;
   // gecko
 } else if (engine[4]) {
-  CSS.useImportLoad = parseInt(engine[4]) < 18;
+  useImportLoad = parseInt(engine[4]) < 18;
 }
 
 /**
  * 创建style元素
  */
 function createStyle() {
-  CSS.curStyle = document.createElement('style');
-  head.appendChild(CSS.curStyle);
-  CSS.curSheet = CSS.curStyle.styleSheet || CSS.curStyle.sheet;
+  curStyle = document.createElement('style');
+  head.appendChild(curStyle);
+  curSheet = curStyle.styleSheet || curStyle.sheet;
 }
 
 var ieCnt = 0;
@@ -112,7 +110,7 @@ var linkLoad = function(url, callback) {
   var link = document.createElement('link');
   link.type = 'text/css';
   link.rel = 'stylesheet';
-  if (CSS.useOnload) {
+  if (useOnload) {
     link.onload = function() {
       link.onload = function() {};
       // for style dimensions queries, a short delay can still be necessary
@@ -125,19 +123,6 @@ var linkLoad = function(url, callback) {
   head.appendChild(link);
 };
 
-
-CSS.normalize = function(name, normalize) {
-  if (name.substr(name.length - 4, 4) == '.css')
-    name = name.substr(0, name.length - 4);
-
-  return normalize(name);
-};
-
-
-CSS.load = function(cssId, req, load, config) {
-  var method = (CSS.useImportLoad ? importLoad : linkLoad);
-  method(req.toUrl(cssId + '.css'), load);
-};
 
 
 var doc = document,
@@ -172,7 +157,8 @@ var currentAddingScript,
  *   maybe a top-level name, relative name or absolute name.
  */
 function fetchCss(url, name) {
-
+  var method = (useImportLoad ? importLoad : linkLoad);
+  method(url, CSS.load);
 }
 
 /**
@@ -247,13 +233,13 @@ function getCurrentScript() {
     var _scripts;
     if (useInteractive) {
       if (interactiveScript &&
-        interactiveScript.readyState === "interactive") {
+        interactiveScript.readyState === 'interactive') {
         return interactiveScript;
       }
 
       _scripts = scripts();
       forEach(_scripts, function(script) {
-        if (script.readyState === "interactive") {
+        if (script.readyState === 'interactive') {
           interactiveScript = script;
           return break_obj;
         }
@@ -305,8 +291,8 @@ function getCurrentScript() {
      * at getCurrentPath (file:///D:/Develop/SOI/lib/kernel.js:314:16)
      * at Global code (file:///D:/Develop/SOI/lib/kernel.js:563:29)
      */
-    var e = stack.indexOf(" at ") !== -1 ? " at " : "@";
-    var index = stack.indexOf(".async");
+    var e = stack.indexOf(' at ') !== -1 ? ' at ' : '@';
+    var index = stack.indexOf('.async');
     if (index > -1) {
       stack = stack.substring(index + 7);
       stack = stack.split(e)[1];
@@ -317,9 +303,9 @@ function getCurrentScript() {
       }
     }
 
-    stack = stack.substring(0, stack.indexOf(".js") + 3);
+    stack = stack.substring(0, stack.indexOf('.js') + 3);
     // for ie11
-    stack = stack.replace(/^([^\(]*\()/, "");
+    stack = stack.replace(/^([^\(]*\()/, '');
 
     var _scripts = scripts();
     forEach(_scripts, function(script) {
