@@ -1,7 +1,6 @@
 
 /**
  * 全局kerneljs对象
- * @typedef {Object}
  */
 var kerneljs = {};
 
@@ -46,15 +45,15 @@ var fetchingList = {
 var dependencyList = {};
 
 /**
- * 如果某个模块处于fetching的状态则说明依赖的js模块文件正在下载, 在完成下载之前我们不希望同一个文件
- * 发起两次下载请求. define时会缓存到cache.path2uid对象中, 我们这里用path作为key标识模块文件正在下载.
+ * 如果某个模块处于fetching的状态则说明依赖的js模块文件正在下载，在完成下载之前我们
+ * 不希望同一个文件发起两次下载请求。define时会缓存到cache.path2uid对象中，我们这里
+ * 用path作为key标识模块文件正在下载
  * @typedef {Object}
  */
 var sendingList = {};
 
 /**
  * 动态配置kerneljs对象. 目前配置对象的属性可以是:
- * # alias: 短命名id和长路径的映射关系. (todo)
  * # paths: 一个路径映射的hash结构, 详细看:
  *          http://requirejs.org/docs/api.html#config-paths
  * # baseUrl: 所有路经解析的基路径, 包括paths, 但模块内依赖的相对路径针对模块自身路径解析. (todo)
@@ -84,12 +83,13 @@ kerneljs.config = function(obj) {
 kerneljs.cache = {
   // 全局缓存uid和对应模块. 是一对一的映射关系.
   mods: {},
-  // id2path记录所有的用户自定义id的模块. 在开发时不提倡自己写id但实际也可以自己写, 没啥意义
-  // 因为请求还是以路径来做. 可以通过paths配置来require短id, 这个缓存对象在开发时会有不少缺失的模块,
-  // 但在打包后id已经自生成所以它会记录完全. 这个结构是一个一对一的结构.
+  // id2path记录所有的用户自定义id的模块。在开发时不提倡自己写id但实际也可以自己写，
+  // 没啥意义，因为请求还是以路径来做。可以通过paths配置来require短id，这个缓存对象
+  // 在开发时会有不少缺失的模块，但在打包后id已经自生成所以它会记录完全。
+  // 这个结构是一个一对一的结构.
   id2path: {},
-  // 理论上每个文件可能定义多个模块, 也就是define了多次. 这种情况应该在开发时严格避免,
-  // 但经过打包之后一定会出现这种状况. 所以我们必须要做一些处理, 也使得这个结构是一对多的.
+  // 理论上每个文件可能定义多个模块，也就是define了多次。这种情况应该在开发时严格避免，
+  // 但经过打包之后一定会出现这种状况。所以我们必须要做一些处理，也使得这个结构是一对多的.
   path2uid: {},
   // kerneljs的订阅者缓存
   events: {}
@@ -109,6 +109,7 @@ kerneljs.reset = function() {
   this.cache.mods = {};
   this.cache.id2path = {};
   this.cache.path2uid = {};
+  this.cache.events = {};
 };
 
 /**

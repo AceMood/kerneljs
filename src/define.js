@@ -37,7 +37,7 @@ function define(id, deps, factory) {
 
   // doc.currentScript在异步情况下比如事件处理器或者setTimeout返回错误结果.
   // 但如果不是这种情况且遵循每个文件一个define模块的话这个属性就能正常工作.
-  var base = getCurrentScriptPath();
+  var uri = getCurrentScriptPath();
 
   // 处理参数
   if (typeOf(id) !== 'string') {
@@ -53,34 +53,32 @@ function define(id, deps, factory) {
 
   // 只有当用户自定义的id存在时才会被缓存到id2path.
   if (id) {
-    // 只在开发时报同一id错误
+    // 只在开发时报同一id错误 todo 通过工程化工具解决
     // 打包时由于require.async的使用造成层级依赖模块的重复是有可能存在的, 并且S.O.I
     // 也没有很好解决. 当非首屏首页的多个模块又各自依赖或含有第三个非注册过的模块时, 这个
     // 模块会被打包进第二个和第三个package, 这样就有可能在运行时造成同一id多次注册的现象.
     if (cache.id2path[id] && kerneljs.debug) {
       kerneljs.trigger(kerneljs.events.error, [
         SAME_ID_MSG.replace('%s', id),
-        base
+        uri
       ]);
       return exist_id_error(id);
     }
-    cache.id2path[id] = base;
+    cache.id2path[id] = uri;
     cache.mods[id] = empty_mod;
   }
 
   // 缓存path2uid
-  if (cache.path2uid[base]) {
-    cache.path2uid[base].push(uid);
+  if (cache.path2uid[uri]) {
+    cache.path2uid[uri].push(uid);
   } else {
-    cache.path2uid[base] = [uid];
+    cache.path2uid[uri] = [uid];
   }
 
   // 注册模块
   mod = cache.mods[uid] = empty_mod;
 
-  // If no name, and factory is a function, then figure out if it a
-  // CommonJS thing with dependencies.
-  // Code below in the if-else statements lent from RequireJS
+  // CommonJS
   if (!deps && typeOf(factory) === 'function') {
     deps = [];
     // Remove comments from the callback string,
@@ -104,11 +102,11 @@ function define(id, deps, factory) {
     }
   }
 
-  // 创建模块
+  // 创建\注册模块
   mod = cache.mods[uid] = new Module({
     uid: uid,
     id: id,
-    url: base,
+    url: uri,
     deps: deps,
     factory: factory,
     status: Module.STATUS.init

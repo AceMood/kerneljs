@@ -1,7 +1,7 @@
 
 /**
- * 一般作为页面逻辑的入口, 提倡js初始化只调用一次require, 函数内部的异步加载用require.async.
- * 两种使用方式:
+ * 一般作为页面逻辑的入口，提倡js初始化只调用一次require。
+ * 函数内部的异步加载用require.async。两种使用方式:
  * a. var mod = require('widget/a');
  * b. require(['widget/a'], function(wid_a) {
  *      wid_a.init();
@@ -31,7 +31,7 @@ function require(deps, cb) {
   }
 
   var uid,
-      _currentPath = getCurrentScriptPath();
+      uri = getCurrentScriptPath();
   if (cb) {
     // 'require' invoke can introduce an anonymous module,
     // it has the unique uid and id is null.
@@ -39,7 +39,7 @@ function require(deps, cb) {
     var mod = new Module({
       uid: uid,
       id: null,
-      url: _currentPath,
+      url: uri,
       deps: deps,
       factory: cb,
       status: Module.STATUS.init
@@ -49,7 +49,8 @@ function require(deps, cb) {
     // if any rely module's export haven't resolved, use the
     // default name replace it.
     mod.depMods = map(deps, function(dep) {
-      var path = resolvePath(dep, _currentPath);
+      // 得到依赖的绝对路径
+      var path = resolvePath(dep, uri);
       return resolve(dep) || resolve(path);
     });
 
@@ -57,7 +58,7 @@ function require(deps, cb) {
     return null;
 
   } else {
-    var _dep = resolvePath(deps[0], _currentPath);
+    var _dep = resolvePath(deps[0], uri);
     // a simple require statements always be resolved preload.
     // so if length == 1 then return its exports object.
     var _mod = resolve(deps[0]);
