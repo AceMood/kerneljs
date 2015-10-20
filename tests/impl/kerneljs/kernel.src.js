@@ -371,8 +371,8 @@ function fetchCss(url, name) {
 function fetchScript(url, name) {
   var onScriptLoad = function() {
     var node = currentAddingScript || script;
-    // 打包过后define会先发生, 这种情况script标签不会带有kernel_name字段.
-    var name = node.kernel_name,
+    // 构建后define会先执行, 此时script不会带有kn_name属性.
+    var name = node.kn_name,
         uid = kerneljs.cache.path2uid[url][0],
         mod = kerneljs.cache.mods[uid];
 
@@ -380,10 +380,10 @@ function fetchScript(url, name) {
       mod.id = name;
     }
 
-    // fill exports list to depMods
+    // 更新mod.depMods
     if (mod.deps && mod.deps.length > 0) {
       mod.deps = map(mod.deps, function(dep, index) {
-        if (dep === 'exports' || dep === 'module') {
+        if (/^(exports|module)$/.test(dep)) {
           mod.cjsWrapper = true;
         }
 
@@ -395,16 +395,16 @@ function fetchScript(url, name) {
       });
     }
 
-    // 加载依赖模块
+    // 加载依赖
     load(mod);
   };
 
   var script = $doc.createElement('script');
   script.charset = 'utf-8';
-  script.async = true;
+  script.async = 1;
   // custom attribute to remember the original required name
   // which written in dependant module.
-  script.kernel_name = name;
+  script.kn_name = name;
 
   // 监听
   script.onreadystatechange = script.onload = script.onerror = function() {
@@ -468,7 +468,7 @@ function getCurrentScript() {
         var _scripts;
         if (useInteractive) {
           if (interactiveScript &&
-            interactiveScript.readyState === 'interactive') {
+              interactiveScript.readyState === 'interactive') {
             return interactiveScript;
           }
 
@@ -482,8 +482,7 @@ function getCurrentScript() {
           return interactiveScript;
         }
         // todo in FF early version
-      })() ||
-      (function() {
+
         var ret = null;
         var stack;
         try {
@@ -631,14 +630,6 @@ function resolveDot(p) {
 }
 
 /**
- * To get current doc's directory
- * @return {string}
- */
-function getPageDir() {
-  return dirname(loc.href);
-}
-
-/**
  * Judge if a path is top-level, such as 'core/class.js'
  * @param {string} p Path to check.
  * @return {boolean} b
@@ -709,7 +700,7 @@ function resolvePath(id, base) {
   // step 3: add file extension if necessary
   id = normalize(id);
   var conjuction = id.charAt(0) === slash ? '' : slash;
-  var url = (base ? dirname(base) : getPageDir()) + conjuction + id;
+  var url = (base ? dirname(base) : dirname(loc.href)) + conjuction + id;
 
   if (!fileExtRegExp.test(url)) {
     url += '.js';
@@ -1007,8 +998,8 @@ function define(id, deps, factory) {
   kerneljs.trigger(kerneljs.events.create, [mod]);
 
   /*
-  // 打包过后define会先发生, 这种情况script标签不会带有kernel_name字段.
-  var name = getCurrentScript().kernel_name;
+  // 打包过后define会先发生, 这种情况script标签不会带有kn_name字段.
+  var name = getCurrentScript().kn_name;
   if (name && isTopLevel(name) && !mod.id) {
     mod.id = name;
   }
@@ -1037,12 +1028,13 @@ function define(id, deps, factory) {
  * @param {Object|Module} mod 宿主模块.
  */
 function load(mod) {
-  var cache = kerneljs.cache;
-  var count = mod.deps.length;
-  var inPathConfig = kerneljs.paths && kerneljs.paths[mod.id] ? true : false;
+  var cache = kerneljs.cache,
+      count = mod.deps.length,
+      inPathConfig = kerneljs.paths && kerneljs.paths[mod.id] ? true : false;
+
   // 若mod.id在paths中已经配置则相对路径是location.href,
   // 详见: config_path_relative test case.
-  var currentPath = inPathConfig ? loc.href : getCurrentScriptPath();
+  var currentPath = inPathConfig ? loc.href : (mod.url || getCurrentScriptPath());
 
   // 更新fetchingList.
   fetchingList.add(mod);

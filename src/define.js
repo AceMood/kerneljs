@@ -133,7 +133,8 @@ function define(id, deps, factory) {
   }
 
   // 加载依赖模块
-  load(mod);*/
+  load(mod);
+  */
 }
 
 /**
@@ -147,7 +148,7 @@ function load(mod) {
 
   // 若mod.id在paths中已经配置则相对路径是location.href,
   // 详见: config_path_relative test case.
-  var currentPath = inPathConfig ? loc.href : getCurrentScriptPath();
+  var currentPath = inPathConfig ? loc.href : (mod.url || getCurrentScriptPath());
 
   // 更新fetchingList.
   fetchingList.add(mod);
