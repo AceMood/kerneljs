@@ -241,15 +241,41 @@ function fetchCss(url, name) {
  */
 function fetchScript(url, name) {
   var onScriptLoad = function() {
+    var node = currentAddingScript || script;
+    // 构建后define会先执行, 此时script不会带有kn_name属性.
+    var name = node.kn_name,
+        uid = kerneljs.cache.path2uid[url][0],
+        mod = kerneljs.cache.mods[uid];
 
+    if (name && isTopLevel(name) && !mod.id) {
+      mod.id = name;
+    }
+
+    // 更新mod.depMods
+    if (mod.deps && mod.deps.length > 0) {
+      mod.deps = map(mod.deps, function(dep, index) {
+        if (/^(exports|module)$/.test(dep)) {
+          mod.cjsWrapper = true;
+        }
+
+        var inject = resolve(dep, mod);
+        if (inject) {
+          mod.depMods[index] = inject;
+        }
+        return dep;
+      });
+    }
+
+    // 加载依赖
+    load(mod);
   };
 
   var script = $doc.createElement('script');
   script.charset = 'utf-8';
-  script.async = true;
+  script.async = 1;
   // custom attribute to remember the original required name
   // which written in dependant module.
-  script.kernel_name = name;
+  script.kn_name = name;
 
   // 监听
   script.onreadystatechange = script.onload = script.onerror = function() {
@@ -261,9 +287,9 @@ function fetchScript(url, name) {
     }
   };
 
-  // 老版本IE(<11)在设置了script.src之后会立刻请求js文件，
-  // 下载完成后触发readyState变更为`loaded`，
-  // but change to "complete" after the code executed.
+  // 老版本IE(<11)在设置了script.src之后会立刻请求js文件,
+  // 下载完成后触发readyState变更为`loaded`, 代码执行完毕
+  // readyState会变为`complete`. IE11去掉了这个特性.
   script.src = url;
   currentAddingScript = script;
   if ($base) {

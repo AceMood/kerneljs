@@ -110,8 +110,9 @@ function define(id, deps, factory) {
   });
   kerneljs.trigger(kerneljs.events.create, [mod]);
 
-  // 打包过后define会先发生, 这种情况script标签不会带有kernel_name字段.
-  var name = getCurrentScript().kernel_name;
+  /*
+  // 打包过后define会先发生, 这种情况script标签不会带有kn_name字段.
+  var name = getCurrentScript().kn_name;
   if (name && isTopLevel(name) && !mod.id) {
     mod.id = name;
   }
@@ -132,7 +133,7 @@ function define(id, deps, factory) {
   }
 
   // 加载依赖模块
-  load(mod);
+  load(mod);*/
 }
 
 /**
@@ -140,9 +141,10 @@ function define(id, deps, factory) {
  * @param {Object|Module} mod 宿主模块.
  */
 function load(mod) {
-  var cache = kerneljs.cache;
-  var count = mod.deps.length;
-  var inPathConfig = kerneljs.paths && kerneljs.paths[mod.id] ? true : false;
+  var cache = kerneljs.cache,
+      count = mod.deps.length,
+      inPathConfig = kerneljs.paths && kerneljs.paths[mod.id] ? true : false;
+
   // 若mod.id在paths中已经配置则相对路径是location.href,
   // 详见: config_path_relative test case.
   var currentPath = inPathConfig ? loc.href : getCurrentScriptPath();

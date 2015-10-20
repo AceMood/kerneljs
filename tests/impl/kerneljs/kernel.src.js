@@ -369,7 +369,35 @@ function fetchCss(url, name) {
  *   maybe a top-level name, relative name or absolute name.
  */
 function fetchScript(url, name) {
-  function onScriptLoad() {}
+  var onScriptLoad = function() {
+    var node = currentAddingScript || script;
+    // 打包过后define会先发生, 这种情况script标签不会带有kernel_name字段.
+    var name = node.kernel_name,
+        uid = kerneljs.cache.path2uid[url][0],
+        mod = kerneljs.cache.mods[uid];
+
+    if (name && isTopLevel(name) && !mod.id) {
+      mod.id = name;
+    }
+
+    // fill exports list to depMods
+    if (mod.deps && mod.deps.length > 0) {
+      mod.deps = map(mod.deps, function(dep, index) {
+        if (dep === 'exports' || dep === 'module') {
+          mod.cjsWrapper = true;
+        }
+
+        var inject = resolve(dep, mod);
+        if (inject) {
+          mod.depMods[index] = inject;
+        }
+        return dep;
+      });
+    }
+
+    // 加载依赖模块
+    load(mod);
+  };
 
   var script = $doc.createElement('script');
   script.charset = 'utf-8';
@@ -388,9 +416,9 @@ function fetchScript(url, name) {
     }
   };
 
-  // Older IEs will request the js file once src has been set,
-  // then readyState will be "loaded" if script complete loading,
-  // but change to "complete" after the code executed.
+  // 老版本IE(<11)在设置了script.src之后会立刻请求js文件,
+  // 下载完成后触发readyState变更为`loaded`, 代码执行完毕
+  // readyState会变为`complete`. IE11去掉了这个特性.
   script.src = url;
   currentAddingScript = script;
   if ($base) {
@@ -943,9 +971,6 @@ function define(id, deps, factory) {
     cache.path2uid[uri] = [uid];
   }
 
-  // 注册模块
-  mod = cache.mods[uid] = empty_mod;
-
   // CommonJS
   if (!deps && typeOf(factory) === 'function') {
     deps = [];
@@ -981,6 +1006,7 @@ function define(id, deps, factory) {
   });
   kerneljs.trigger(kerneljs.events.create, [mod]);
 
+  /*
   // 打包过后define会先发生, 这种情况script标签不会带有kernel_name字段.
   var name = getCurrentScript().kernel_name;
   if (name && isTopLevel(name) && !mod.id) {
@@ -1003,7 +1029,7 @@ function define(id, deps, factory) {
   }
 
   // 加载依赖模块
-  load(mod);
+  load(mod);*/
 }
 
 /**
