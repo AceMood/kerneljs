@@ -339,7 +339,7 @@ function getCurrentScript() {
         var _scripts;
         if (useInteractive) {
           if (interactiveScript &&
-            interactiveScript.readyState === 'interactive') {
+              interactiveScript.readyState === 'interactive') {
             return interactiveScript;
           }
 
@@ -353,8 +353,7 @@ function getCurrentScript() {
           return interactiveScript;
         }
         // todo in FF early version
-      })() ||
-      (function() {
+
         var ret = null;
         var stack;
         try {

@@ -57,14 +57,6 @@ function resolveDot(p) {
 }
 
 /**
- * To get current doc's directory
- * @return {string}
- */
-function getPageDir() {
-  return dirname(loc.href);
-}
-
-/**
  * Judge if a path is top-level, such as 'core/class.js'
  * @param {string} p Path to check.
  * @return {boolean} b
@@ -135,7 +127,7 @@ function resolvePath(id, base) {
   // step 3: add file extension if necessary
   id = normalize(id);
   var conjuction = id.charAt(0) === slash ? '' : slash;
-  var url = (base ? dirname(base) : getPageDir()) + conjuction + id;
+  var url = (base ? dirname(base) : dirname(loc.href)) + conjuction + id;
 
   if (!fileExtRegExp.test(url)) {
     url += '.js';
