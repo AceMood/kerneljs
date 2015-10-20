@@ -47,8 +47,8 @@ module.exports = function(grunt) {
           'src/core.js',
           'src/kernel.js',
           'src/event.js',
-          'src/outro.js',
-          'src/log.js'
+          'src/log.js',
+          'src/outro.js'
         ],
         dest: 'dist/kernel.debug.js'
       },

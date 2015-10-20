@@ -20,7 +20,6 @@
  *
  * See for more:
  * "https://github.com/amdjs/amdjs-api/wiki/AMD"
- *
  */
 
 (function (global, undefined) {

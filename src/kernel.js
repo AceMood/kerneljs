@@ -81,13 +81,11 @@ kerneljs.config = function(obj) {
  * @typedef {Object}
  */
 kerneljs.cache = {
+  // mods记录所有的模块. 在开发时不提倡自己写id但实际也可以自己写,
+  // 没啥意义因为请求还是以路径来做. 可以通过paths配置来require短id, 这个缓存对象
+  // 在开发时会有不少缺失的模块, 但在打包后id已经自生成所以它会记录完全.
   // 全局缓存uid和对应模块. 是一对一的映射关系.
   mods: {},
-  // id2path记录所有的用户自定义id的模块。在开发时不提倡自己写id但实际也可以自己写，
-  // 没啥意义，因为请求还是以路径来做。可以通过paths配置来require短id，这个缓存对象
-  // 在开发时会有不少缺失的模块，但在打包后id已经自生成所以它会记录完全。
-  // 这个结构是一个一对一的结构.
-  id2path: {},
   // 理论上每个文件可能定义多个模块，也就是define了多次。这种情况应该在开发时严格避免，
   // 但经过打包之后一定会出现这种状况。所以我们必须要做一些处理，也使得这个结构是一对多的.
   path2uid: {},
@@ -107,7 +105,6 @@ kerneljs.config({
  */
 kerneljs.reset = function() {
   this.cache.mods = {};
-  this.cache.id2path = {};
   this.cache.path2uid = {};
   this.cache.events = {};
 };

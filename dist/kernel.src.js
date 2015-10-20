@@ -20,7 +20,6 @@
  *
  * See for more:
  * "https://github.com/amdjs/amdjs-api/wiki/AMD"
- *
  */
 
 (function (global, undefined) {
@@ -297,7 +296,7 @@ var currentAddingScript,
  *   maybe a top-level name, relative name or absolute name.
  */
 function fetchCss(url, name) {
-  function onLoad() {
+  function onCssLoad() {
     var mod, cache = kerneljs.cache,
         uid = kerneljs.uidprefix + kerneljs.uid++;
 
@@ -360,7 +359,7 @@ function fetchCss(url, name) {
   }
 
   var method = (useImportLoad ? importLoad : linkLoad);
-  method(url, onLoad);
+  method(url, onCssLoad);
 }
 
 /**
@@ -369,35 +368,7 @@ function fetchCss(url, name) {
  *   maybe a top-level name, relative name or absolute name.
  */
 function fetchScript(url, name) {
-  var onScriptLoad = function() {
-    var node = currentAddingScript || script;
-    // 构建后define会先执行, 此时script不会带有kn_name属性.
-    var name = node.kn_name,
-        uid = kerneljs.cache.path2uid[url][0],
-        mod = kerneljs.cache.mods[uid];
-
-    if (name && isTopLevel(name) && !mod.id) {
-      mod.id = name;
-    }
-
-    // 更新mod.depMods
-    if (mod.deps && mod.deps.length > 0) {
-      mod.deps = map(mod.deps, function(dep, index) {
-        if (/^(exports|module)$/.test(dep)) {
-          mod.cjsWrapper = true;
-        }
-
-        var inject = resolve(dep, mod);
-        if (inject) {
-          mod.depMods[index] = inject;
-        }
-        return dep;
-      });
-    }
-
-    // 加载依赖
-    load(mod);
-  };
+  var onScriptLoad = function() {};
 
   var script = $doc.createElement('script');
   script.charset = 'utf-8';
@@ -481,13 +452,12 @@ function getCurrentScript() {
           });
           return interactiveScript;
         }
-        // todo in FF early version
 
         var ret = null;
         var stack;
         try {
           var err = new Error();
-          Error.stackTraceLimit = Infinity;
+          Error.stackTraceLimit = 100;
           throw err;
         } catch(e) {
           stack = e.stack;
@@ -883,7 +853,7 @@ Module.STATUS = {
 
 // 正则提取代码中的 `require('xxx')`
 var cjsRequireRegExp = /\brequire\s*\(\s*(["'])([^'"\s]+)\1\s*\)/g,
-// A regexp to drop comments in source code
+// 去掉源码中的注释
     commentRegExp = /(\/\*([\s\S]*?)\*\/|([^:]|^)\/\/(.*)$)/mg;
 
 // 初始化的空模块
@@ -933,23 +903,6 @@ function define(id, deps, factory) {
     deps = null;
   }
 
-  // 只有当用户自定义的id存在时才会被缓存到id2path.
-  if (id) {
-    // 只在开发时报同一id错误 todo 通过工程化工具解决
-    // 打包时由于require.async的使用造成层级依赖模块的重复是有可能存在的, 并且S.O.I
-    // 也没有很好解决. 当非首屏首页的多个模块又各自依赖或含有第三个非注册过的模块时, 这个
-    // 模块会被打包进第二个和第三个package, 这样就有可能在运行时造成同一id多次注册的现象.
-    if (cache.id2path[id] && kerneljs.debug) {
-      kerneljs.trigger(kerneljs.events.error, [
-        SAME_ID_MSG.replace('%s', id),
-        uri
-      ]);
-      return exist_id_error(id);
-    }
-    cache.id2path[id] = uri;
-    cache.mods[id] = empty_mod;
-  }
-
   // 缓存path2uid
   if (cache.path2uid[uri]) {
     cache.path2uid[uri].push(uid);
@@ -981,6 +934,22 @@ function define(id, deps, factory) {
     }
   }
 
+  // 只有当用户自定义的id存在时
+  if (id) {
+    // 只在开发时报同一id错误 todo 通过工程化工具解决
+    // 打包时由于require.async的使用造成层级依赖模块的重复是有可能存在的, 并且S.O.I
+    // 也没有很好解决. 当非首屏首页的多个模块又各自依赖或含有第三个非注册过的模块时, 这个
+    // 模块会被打包进第二个和第三个package, 这样就有可能在运行时造成同一id多次注册的现象.
+    if (cache.mods[id] && kerneljs.debug) {
+      kerneljs.trigger(kerneljs.events.error, [
+        SAME_ID_MSG.replace('%s', id),
+        uri
+      ]);
+      return exist_id_error(id);
+    }
+    cache.mods[id] = empty_mod;
+  }
+
   // 创建\注册模块
   mod = cache.mods[uid] = new Module({
     uid: uid,
@@ -992,17 +961,16 @@ function define(id, deps, factory) {
   });
   kerneljs.trigger(kerneljs.events.create, [mod]);
 
-  /*
   // 打包过后define会先发生, 这种情况script标签不会带有kn_name字段.
   var name = getCurrentScript().kn_name;
   if (name && isTopLevel(name) && !mod.id) {
     mod.id = name;
   }
 
-  // fill exports list to depMods
+  // 更新mod.depMods
   if (mod.deps && mod.deps.length > 0) {
     mod.deps = map(mod.deps, function(dep, index) {
-      if (dep === 'exports' || dep === 'module') {
+      if (/^(exports|module)$/.test(dep)) {
         mod.cjsWrapper = true;
       }
 
@@ -1016,7 +984,6 @@ function define(id, deps, factory) {
 
   // 加载依赖模块
   load(mod);
-  */
 }
 
 /**
@@ -1202,7 +1169,7 @@ function notify(mod) {
   // amd
   if (!mod.cjsWrapper) {
     mod.exports = typeOf(mod.factory) === 'function' ?
-      mod.factory.apply(null, mod.depMods) : mod.factory;
+        mod.factory.apply(null, mod.depMods) : mod.factory;
   }
   // cmd
   else {
@@ -1259,7 +1226,7 @@ function resolve(name, mod) {
     // we check circular reference first, if it there, we return the
     // empty_mod immediately.
     if (kerneljs.cache.mods[name].status === Module.STATUS.complete ||
-      checkCycle(path, mod)) {
+        checkCycle(path, mod)) {
       return kerneljs.cache.mods[name].exports;
     }
   }
@@ -1406,13 +1373,11 @@ kerneljs.config = function(obj) {
  * @typedef {Object}
  */
 kerneljs.cache = {
+  // mods记录所有的模块. 在开发时不提倡自己写id但实际也可以自己写,
+  // 没啥意义因为请求还是以路径来做. 可以通过paths配置来require短id, 这个缓存对象
+  // 在开发时会有不少缺失的模块, 但在打包后id已经自生成所以它会记录完全.
   // 全局缓存uid和对应模块. 是一对一的映射关系.
   mods: {},
-  // id2path记录所有的用户自定义id的模块。在开发时不提倡自己写id但实际也可以自己写，
-  // 没啥意义，因为请求还是以路径来做。可以通过paths配置来require短id，这个缓存对象
-  // 在开发时会有不少缺失的模块，但在打包后id已经自生成所以它会记录完全。
-  // 这个结构是一个一对一的结构.
-  id2path: {},
   // 理论上每个文件可能定义多个模块，也就是define了多次。这种情况应该在开发时严格避免，
   // 但经过打包之后一定会出现这种状况。所以我们必须要做一些处理，也使得这个结构是一对多的.
   path2uid: {},
@@ -1432,7 +1397,6 @@ kerneljs.config({
  */
 kerneljs.reset = function() {
   this.cache.mods = {};
-  this.cache.id2path = {};
   this.cache.path2uid = {};
   this.cache.events = {};
 };
