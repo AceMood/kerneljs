@@ -75,9 +75,6 @@ function define(id, deps, factory) {
     cache.path2uid[uri] = [uid];
   }
 
-  // 注册模块
-  mod = cache.mods[uid] = empty_mod;
-
   // CommonJS
   if (!deps && typeOf(factory) === 'function') {
     deps = [];

@@ -168,7 +168,7 @@ var currentAddingScript,
  *   maybe a top-level name, relative name or absolute name.
  */
 function fetchCss(url, name) {
-  function onCssLoad() {
+  function onLoad() {
     var mod, cache = kerneljs.cache,
         uid = kerneljs.uidprefix + kerneljs.uid++;
 
@@ -231,7 +231,7 @@ function fetchCss(url, name) {
   }
 
   var method = (useImportLoad ? importLoad : linkLoad);
-  method(url, onCssLoad);
+  method(url, onLoad);
 }
 
 /**
@@ -240,7 +240,9 @@ function fetchCss(url, name) {
  *   maybe a top-level name, relative name or absolute name.
  */
 function fetchScript(url, name) {
-  function onScriptLoad() {}
+  var onScriptLoad = function() {
+
+  };
 
   var script = $doc.createElement('script');
   script.charset = 'utf-8';
@@ -259,8 +261,8 @@ function fetchScript(url, name) {
     }
   };
 
-  // Older IEs will request the js file once src has been set,
-  // then readyState will be "loaded" if script complete loading,
+  // 老版本IE(<11)在设置了script.src之后会立刻请求js文件，
+  // 下载完成后触发readyState变更为`loaded`，
   // but change to "complete" after the code executed.
   script.src = url;
   currentAddingScript = script;
@@ -305,92 +307,97 @@ function scripts() {
  * @return {*}
  */
 function getCurrentScript() {
-  return $doc.currentScript || currentAddingScript || (function() {
-    var _scripts;
-    if (useInteractive) {
-      if (interactiveScript &&
-        interactiveScript.readyState === 'interactive') {
-        return interactiveScript;
-      }
+  return document.currentScript ||
+      currentAddingScript ||
+      (function() {
+        var _scripts;
+        if (useInteractive) {
+          if (interactiveScript &&
+            interactiveScript.readyState === 'interactive') {
+            return interactiveScript;
+          }
 
-      _scripts = scripts();
-      forEach(_scripts, function(script) {
-        if (script.readyState === 'interactive') {
-          interactiveScript = script;
-          return break_obj;
+          _scripts = scripts();
+          forEach(_scripts, function(script) {
+            if (script.readyState === 'interactive') {
+              interactiveScript = script;
+              return break_obj;
+            }
+          });
+          return interactiveScript;
         }
-      });
-      return interactiveScript;
-    }
-    // todo in FF early version
-  })() || (function() {
-    var ret = null;
-    var stack;
-    try {
-      throw new Error();
-    } catch(e) {
-      stack = e.stack;
-    }
+        // todo in FF early version
+      })() ||
+      (function() {
+        var ret = null;
+        var stack;
+        try {
+          var err = new Error();
+          Error.stackTraceLimit = Infinity;
+          throw err;
+        } catch(e) {
+          stack = e.stack;
+        }
 
-    if (!stack) {
-      return ret;
-    }
+        if (!stack) {
+          return ret;
+        }
 
-    /**
-     * chrome uses at, FF uses @
-     * Also consider IE 11.
-     * FireFox: e.g.
-     * getCurrentScript/<@file:///D:/Develop/SOI/lib/kernel.js:261:15
-     * getCurrentScript@file:///D:/Develop/SOI/lib/kernel.js:257:1
-     * getCurrentScriptPath@file:///D:/Develop/SOI/lib/kernel.js:314:16
-     * require@file:///D:/Develop/SOI/lib/kernel.js:563:29
-     * require.async@file:///D:/Develop/SOI/lib/kernel.js:1178:5
-     * bind/<@file:///D:/Develop/SOI/demo/assets/js/app.js:25:9
-     * F@file:///D:/Develop/SOI/demo/lib/events/util.js:2:4216
-     * q@file:///D:/Develop/SOI/demo/lib/events/util.js:2:1034
-     * y/a<@file:///D:/Develop/SOI/demo/lib/events/util.js:2:2610
-     *
-     * chrome 39.0 e.g.
-     * at file:///D:/lib/kernel.js:261:15
-     * at getCurrentScript (file:///D:/lib/kernel.js:294:7)
-     * at getCurrentScriptPath (file:///D:/lib/kernel.js:314:16)
-     * at require (file:///D:/lib/kernel.js:563:29)
-     * at Function.require.async (file:///D:/lib/kernel.js:1178:5)
-     * at HTMLButtonElement.<anonymous> (file:///D:/assets/js/app.js:25:17)
-     * at F (file:///D:/lib/events/util.js:2:4218)
-     * at q (file:///D:/lib/events/util.js:2:1034)
-     * at HTMLButtonElement.<anonymous> (file:///D:/lib/events/util.js:2:2610)"
-     *
-     * IE11 e.g.
-     * at Anonymous function (file:///D:/Develop/SOI/lib/kernel.js:294:7)
-     * at getCurrentScriptPath (file:///D:/Develop/SOI/lib/kernel.js:314:16)
-     * at Global code (file:///D:/Develop/SOI/lib/kernel.js:563:29)
-     */
-    var e = stack.indexOf(' at ') !== -1 ? ' at ' : '@';
-    var index = stack.indexOf('.async');
-    if (index > -1) {
-      stack = stack.substring(index + 7);
-      stack = stack.split(e)[1];
-      stack = stack.replace(/^([^\(]*\()/, '');
-    } else {
-      while (stack.indexOf(e) !== -1) {
-        stack = stack.substring(stack.indexOf(e) + e.length);
-      }
-    }
+        /**
+         * chrome uses ` at `, FF uses `@`
+         * Also consider IE 11.
+         * FireFox: e.g.
+         * getCurrentScript/<@file:///D:/Develop/SOI/lib/kernel.js:261:15
+         * getCurrentScript@file:///D:/Develop/SOI/lib/kernel.js:257:1
+         * getCurrentScriptPath@file:///D:/Develop/SOI/lib/kernel.js:314:16
+         * require@file:///D:/Develop/SOI/lib/kernel.js:563:29
+         * require.async@file:///D:/Develop/SOI/lib/kernel.js:1178:5
+         * bind/<@file:///D:/Develop/SOI/demo/assets/js/app.js:25:9
+         * F@file:///D:/Develop/SOI/demo/lib/events/util.js:2:4216
+         * q@file:///D:/Develop/SOI/demo/lib/events/util.js:2:1034
+         * y/a<@file:///D:/Develop/SOI/demo/lib/events/util.js:2:2610
+         *
+         * chrome 39.0 e.g.
+         * at file:///D:/lib/kernel.js:261:15
+         * at getCurrentScript (file:///D:/lib/kernel.js:294:7)
+         * at getCurrentScriptPath (file:///D:/lib/kernel.js:314:16)
+         * at require (file:///D:/lib/kernel.js:563:29)
+         * at Function.require.async (file:///D:/lib/kernel.js:1178:5)
+         * at HTMLButtonElement.<anonymous> (file:///D:/assets/js/app.js:25:17)
+         * at F (file:///D:/lib/events/util.js:2:4218)
+         * at q (file:///D:/lib/events/util.js:2:1034)
+         * at HTMLButtonElement.<anonymous> (file:///D:/lib/events/util.js:2:2610)"
+         *
+         * IE11 e.g.
+         * at Anonymous function (file:///D:/Develop/SOI/lib/kernel.js:294:7)
+         * at getCurrentScriptPath (file:///D:/Develop/SOI/lib/kernel.js:314:16)
+         * at Global code (file:///D:/Develop/SOI/lib/kernel.js:563:29)
+         */
+        var e = stack.indexOf(' at ') !== -1 ? ' at ' : '@';
+        var index = stack.indexOf('.async');
+        if (index > -1) {
+          stack = stack.substring(index + 7);
+          stack = stack.split(e)[1];
+          stack = stack.replace(/^([^\(]*\()/, '');
+        } else {
+          while (stack.indexOf(e) !== -1) {
+            stack = stack.substring(stack.indexOf(e) + e.length);
+          }
+        }
 
-    stack = stack.substring(0, stack.indexOf('.js') + 3);
-    // for ie11
-    stack = stack.replace(/^([^\(]*\()/, '');
+        stack = stack.substring(0, stack.indexOf('.js') + 3);
+        // for ie11
+        stack = stack.replace(/^([^\(]*\()/, '');
 
-    forEach(scripts(), function(script) {
-      var path = getAbsPathOfScript(script);
-      if (path === stack) {
-        ret = script;
-        return break_obj;
-      }
-    });
-    return ret;
-  })();
+        forEach(scripts(), function(script) {
+          var path = getAbsPathOfScript(script);
+          if (path === stack) {
+            ret = script;
+            return break_obj;
+          }
+        });
+        return ret;
+      })();
 }
 
 /**

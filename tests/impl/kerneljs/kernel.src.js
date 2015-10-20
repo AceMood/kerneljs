@@ -28,11 +28,11 @@
 'use strict';
 
 var OP = Object.prototype,
-  AP = Array.prototype,
-  native_forEach = AP.forEach,
-  native_map = AP.map,
-  hasOwn = OP.hasOwnProperty,
-  toString = OP.toString;
+    AP = Array.prototype,
+    native_forEach = AP.forEach,
+    native_map = AP.map,
+    hasOwn = OP.hasOwnProperty,
+    toString = OP.toString;
 
 // use such an object to determine cut down a forEach loop;
 var break_obj = {};
@@ -297,7 +297,7 @@ var currentAddingScript,
  *   maybe a top-level name, relative name or absolute name.
  */
 function fetchCss(url, name) {
-  function onCssLoad() {
+  function onLoad() {
     var mod, cache = kerneljs.cache,
         uid = kerneljs.uidprefix + kerneljs.uid++;
 
@@ -360,7 +360,7 @@ function fetchCss(url, name) {
   }
 
   var method = (useImportLoad ? importLoad : linkLoad);
-  method(url, onCssLoad);
+  method(url, onLoad);
 }
 
 /**
@@ -434,92 +434,97 @@ function scripts() {
  * @return {*}
  */
 function getCurrentScript() {
-  return $doc.currentScript || currentAddingScript || (function() {
-    var _scripts;
-    if (useInteractive) {
-      if (interactiveScript &&
-        interactiveScript.readyState === 'interactive') {
-        return interactiveScript;
-      }
+  return document.currentScript ||
+      currentAddingScript ||
+      (function() {
+        var _scripts;
+        if (useInteractive) {
+          if (interactiveScript &&
+            interactiveScript.readyState === 'interactive') {
+            return interactiveScript;
+          }
 
-      _scripts = scripts();
-      forEach(_scripts, function(script) {
-        if (script.readyState === 'interactive') {
-          interactiveScript = script;
-          return break_obj;
+          _scripts = scripts();
+          forEach(_scripts, function(script) {
+            if (script.readyState === 'interactive') {
+              interactiveScript = script;
+              return break_obj;
+            }
+          });
+          return interactiveScript;
         }
-      });
-      return interactiveScript;
-    }
-    // todo in FF early version
-  })() || (function() {
-    var ret = null;
-    var stack;
-    try {
-      throw new Error();
-    } catch(e) {
-      stack = e.stack;
-    }
+        // todo in FF early version
+      })() ||
+      (function() {
+        var ret = null;
+        var stack;
+        try {
+          var err = new Error();
+          Error.stackTraceLimit = Infinity;
+          throw err;
+        } catch(e) {
+          stack = e.stack;
+        }
 
-    if (!stack) {
-      return ret;
-    }
+        if (!stack) {
+          return ret;
+        }
 
-    /**
-     * chrome uses at, FF uses @
-     * Also consider IE 11.
-     * FireFox: e.g.
-     * getCurrentScript/<@file:///D:/Develop/SOI/lib/kernel.js:261:15
-     * getCurrentScript@file:///D:/Develop/SOI/lib/kernel.js:257:1
-     * getCurrentPath@file:///D:/Develop/SOI/lib/kernel.js:314:16
-     * require@file:///D:/Develop/SOI/lib/kernel.js:563:29
-     * require.async@file:///D:/Develop/SOI/lib/kernel.js:1178:5
-     * bind/<@file:///D:/Develop/SOI/demo/assets/js/app.js:25:9
-     * F@file:///D:/Develop/SOI/demo/lib/events/util.js:2:4216
-     * q@file:///D:/Develop/SOI/demo/lib/events/util.js:2:1034
-     * y/a<@file:///D:/Develop/SOI/demo/lib/events/util.js:2:2610
-     *
-     * chrome 39.0 e.g.
-     * at file:///D:/lib/kernel.js:261:15
-     * at getCurrentScript (file:///D:/lib/kernel.js:294:7)
-     * at getCurrentPath (file:///D:/lib/kernel.js:314:16)
-     * at require (file:///D:/lib/kernel.js:563:29)
-     * at Function.require.async (file:///D:/lib/kernel.js:1178:5)
-     * at HTMLButtonElement.<anonymous> (file:///D:/assets/js/app.js:25:17)
-     * at F (file:///D:/lib/events/util.js:2:4218)
-     * at q (file:///D:/lib/events/util.js:2:1034)
-     * at HTMLButtonElement.<anonymous> (file:///D:/lib/events/util.js:2:2610)"
-     *
-     * IE11 e.g.
-     * at Anonymous function (file:///D:/Develop/SOI/lib/kernel.js:294:7)
-     * at getCurrentPath (file:///D:/Develop/SOI/lib/kernel.js:314:16)
-     * at Global code (file:///D:/Develop/SOI/lib/kernel.js:563:29)
-     */
-    var e = stack.indexOf(' at ') !== -1 ? ' at ' : '@';
-    var index = stack.indexOf('.async');
-    if (index > -1) {
-      stack = stack.substring(index + 7);
-      stack = stack.split(e)[1];
-      stack = stack.replace(/^([^\(]*\()/, '');
-    } else {
-      while (stack.indexOf(e) !== -1) {
-        stack = stack.substring(stack.indexOf(e) + e.length);
-      }
-    }
+        /**
+         * chrome uses ` at `, FF uses `@`
+         * Also consider IE 11.
+         * FireFox: e.g.
+         * getCurrentScript/<@file:///D:/Develop/SOI/lib/kernel.js:261:15
+         * getCurrentScript@file:///D:/Develop/SOI/lib/kernel.js:257:1
+         * getCurrentScriptPath@file:///D:/Develop/SOI/lib/kernel.js:314:16
+         * require@file:///D:/Develop/SOI/lib/kernel.js:563:29
+         * require.async@file:///D:/Develop/SOI/lib/kernel.js:1178:5
+         * bind/<@file:///D:/Develop/SOI/demo/assets/js/app.js:25:9
+         * F@file:///D:/Develop/SOI/demo/lib/events/util.js:2:4216
+         * q@file:///D:/Develop/SOI/demo/lib/events/util.js:2:1034
+         * y/a<@file:///D:/Develop/SOI/demo/lib/events/util.js:2:2610
+         *
+         * chrome 39.0 e.g.
+         * at file:///D:/lib/kernel.js:261:15
+         * at getCurrentScript (file:///D:/lib/kernel.js:294:7)
+         * at getCurrentScriptPath (file:///D:/lib/kernel.js:314:16)
+         * at require (file:///D:/lib/kernel.js:563:29)
+         * at Function.require.async (file:///D:/lib/kernel.js:1178:5)
+         * at HTMLButtonElement.<anonymous> (file:///D:/assets/js/app.js:25:17)
+         * at F (file:///D:/lib/events/util.js:2:4218)
+         * at q (file:///D:/lib/events/util.js:2:1034)
+         * at HTMLButtonElement.<anonymous> (file:///D:/lib/events/util.js:2:2610)"
+         *
+         * IE11 e.g.
+         * at Anonymous function (file:///D:/Develop/SOI/lib/kernel.js:294:7)
+         * at getCurrentScriptPath (file:///D:/Develop/SOI/lib/kernel.js:314:16)
+         * at Global code (file:///D:/Develop/SOI/lib/kernel.js:563:29)
+         */
+        var e = stack.indexOf(' at ') !== -1 ? ' at ' : '@';
+        var index = stack.indexOf('.async');
+        if (index > -1) {
+          stack = stack.substring(index + 7);
+          stack = stack.split(e)[1];
+          stack = stack.replace(/^([^\(]*\()/, '');
+        } else {
+          while (stack.indexOf(e) !== -1) {
+            stack = stack.substring(stack.indexOf(e) + e.length);
+          }
+        }
 
-    stack = stack.substring(0, stack.indexOf('.js') + 3);
-    // for ie11
-    stack = stack.replace(/^([^\(]*\()/, '');
+        stack = stack.substring(0, stack.indexOf('.js') + 3);
+        // for ie11
+        stack = stack.replace(/^([^\(]*\()/, '');
 
-    forEach(scripts(), function(script) {
-      var path = getAbsPathOfScript(script);
-      if (path === stack) {
-        ret = script;
-        return break_obj;
-      }
-    });
-    return ret;
-  })();
+        forEach(scripts(), function(script) {
+          var path = getAbsPathOfScript(script);
+          if (path === stack) {
+            ret = script;
+            return break_obj;
+          }
+        });
+        return ret;
+      })();
 }
 
 /**
@@ -535,15 +540,17 @@ function getAbsPathOfScript(script) {
  * 获取当前执行js代码块的绝对路径. node为空则返回null
  * @return {?String}
  */
-function getCurrentPath() {
+function getCurrentScriptPath() {
   var node = getCurrentScript();
   return node ? getAbsPathOfScript(node) : null;
 }
 
-// and a directory file path must be ends with a slash (back slash in window)
+// A directory file path must be ends with a slash (back slash in window)
 var dirRegExp = /\/$/g,
-// whether a path to a file with extension
-    fileExtRegExp = /\.(js|css|tpl)$/;
+    fileExtRegExp = /\.(js|css|tpl)$/,
+    dot = '.',
+    slash = '/',
+    dot2 = '..';
 
 // retrieve current doc's absolute path
 // It may be a file system path, http path
@@ -562,38 +569,37 @@ var loc = global.location;
  * path.normalize('/foo/bar//baz/asdf/quux/..')
  * returns '/foo/bar/baz/asdf'
  *
- * @param {string} p
+ * @param {String} p
  */
 function normalize(p) {
   // step1: combine multi slashes
-  p = p.replace(/(\/)+/g, "/");
+  p = p.replace(/(\/)+/g, slash);
 
   // step2: resolve '.' and '..'
   p = resolveDot(p);
   return p;
 }
 
-
 /**
  * resolve a path with a '.' or '..' part in it.
- * @param {string} p
- * @return {string}
+ * @param {String} p
+ * @return {String}
  */
 function resolveDot(p) {
   // Here I used to use /\//ig to split string, but unfortunately
   // it has serious bug in IE<9. See for more:
   // 'http://blog.stevenlevithan.com/archives/cross-browser-split'.
-  p = p.split("/");
+  p = p.split(slash);
   for (var i = 0; i < p.length; ++i) {
-    if (p[i] === ".") {
+    if (p[i] === dot) {
       p.splice(i, 1);
       --i;
-    } else if (p[i] === ".." && i > 0 && p[i - 1] !== "..") {
+    } else if (p[i] === dot2 && i > 0 && p[i - 1] !== dot2) {
       p.splice(i - 1, 2);
       i -= 2;
     }
   }
-  return p.join("/");
+  return p.join(slash);
 }
 
 /**
@@ -615,7 +621,7 @@ function isTopLevel(p) {
   // see more:
   // 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/
   // +Global_Objects/String#section_5'
-  return isRelative(p) && p.charAt(0) !== ".";
+  return isRelative(p) && p.charAt(0) !== dot;
 }
 
 /**
@@ -642,7 +648,7 @@ function isAbsolute(p) {
  * @return {boolean} b
  */
 function isRelative(p) {
-  return !isAbsolute(p) && (/^(\.){1,2}\//.test(p) || p.charAt(0) !== "/");
+  return !isAbsolute(p) && (/^(\.){1,2}\//.test(p) || p.charAt(0) !== slash);
 }
 
 /**
@@ -650,9 +656,9 @@ function isRelative(p) {
  * path. SCRIPT insertion will set path with it, except
  * build-in names.
  *
- * @param {string} id 依赖模块的name或者id。
- * @param {string?} base 作为baseUri，解析依赖模块的绝对路径。
- * @return {!(string|object)} exports object or absolute file path from Internet
+ * @param {String} id 依赖模块的name或者id。
+ * @param {String=} base 作为baseUri，解析依赖模块的绝对路径。
+ * @return {!(String|Object)} exports object or absolute file path from Internet
  */
 function resolvePath(id, base) {
   // var _mod = kerneljs.cache.mods[id];
@@ -674,11 +680,11 @@ function resolvePath(id, base) {
 
   // step 3: add file extension if necessary
   id = normalize(id);
-  var conjuction = id.charAt(0) === "/" ? "" : "/";
+  var conjuction = id.charAt(0) === slash ? '' : slash;
   var url = (base ? dirname(base) : getPageDir()) + conjuction + id;
 
   if (!fileExtRegExp.test(url)) {
-    url += ".js";
+    url += '.js';
   }
 
   url = resolveDot(url);
@@ -694,8 +700,8 @@ function resolvePath(id, base) {
  * path.dirname('/foo/bar/baz/asdf/quux')
  * returns '/foo/bar/baz/asdf'
  *
- * @param {string} p
- * @return {string}
+ * @param {String} p
+ * @return {String}
  */
 function dirname(p) {
   if (dirRegExp.test(p)) {
@@ -704,29 +710,29 @@ function dirname(p) {
   // Here I used to use /\//ig to split string, but unfortunately
   // it has serious bug in IE<9. See for more:
   // 'http://blog.stevenlevithan.com/archives/cross-browser-split'.
-  p = p.split("/");
+  p = p.split(slash);
   p.pop();
-  return p.join("/");
+  return p.join(slash);
 }
 
 /**
- * Alias will appear at head part of path.
- * So replace it if exists in kerneljs.paths.
- * @param {String} p
- * @return {String} s
+ * paths设置的别名会出现在路径的头部。
+ * 根据kerneljs.paths替换
+ * @param {String} p 依赖模块路径
+ * @return {String} s 替换后的路径
  */
 function parsePaths(p) {
   var ret = [];
   if (kerneljs.paths) {
     var part = p;
-    var parts = p.split("/");
+    var parts = p.split(slash);
     while (!(part in kerneljs.paths) && parts.length) {
       ret.unshift(parts.pop());
-      part = parts.join("/");
+      part = parts.join(slash);
     }
     p = kerneljs.paths[part] ? kerneljs.paths[part] : part;
   }
-  return p + ret.join("/");
+  return p + ret.join(slash);
 }
 
 /**
@@ -738,14 +744,14 @@ function parsePaths(p) {
  */
 function parsePackages(p) {
   var pkgs = kerneljs.packages,
-    fpath = "";
+      fpath = '';
   if (pkgs && pkgs.length > 0) {
     forEach(pkgs, function(pkg) {
       // starts with a package name
       if (p.indexOf(pkg.name) === 0) {
         // absolutely equal
         if (p.length === pkg.name.length) {
-          fpath = "/" + (pkg.main ? pkg.main : "main");
+          fpath = slash + (pkg.main ? pkg.main : 'main');
         }
         p = p.replace(pkg.name, pkg.location || pkg.name) + fpath;
         return break_obj;
@@ -899,7 +905,7 @@ function define(id, deps, factory) {
 
   // doc.currentScript在异步情况下比如事件处理器或者setTimeout返回错误结果.
   // 但如果不是这种情况且遵循每个文件一个define模块的话这个属性就能正常工作.
-  var base = getCurrentPath();
+  var uri = getCurrentScriptPath();
 
   // 处理参数
   if (typeOf(id) !== 'string') {
@@ -915,34 +921,32 @@ function define(id, deps, factory) {
 
   // 只有当用户自定义的id存在时才会被缓存到id2path.
   if (id) {
-    // 只在开发时报同一id错误
+    // 只在开发时报同一id错误 todo 通过工程化工具解决
     // 打包时由于require.async的使用造成层级依赖模块的重复是有可能存在的, 并且S.O.I
     // 也没有很好解决. 当非首屏首页的多个模块又各自依赖或含有第三个非注册过的模块时, 这个
     // 模块会被打包进第二个和第三个package, 这样就有可能在运行时造成同一id多次注册的现象.
     if (cache.id2path[id] && kerneljs.debug) {
       kerneljs.trigger(kerneljs.events.error, [
         SAME_ID_MSG.replace('%s', id),
-        base
+        uri
       ]);
       return exist_id_error(id);
     }
-    cache.id2path[id] = base;
+    cache.id2path[id] = uri;
     cache.mods[id] = empty_mod;
   }
 
   // 缓存path2uid
-  if (cache.path2uid[base]) {
-    cache.path2uid[base].push(uid);
+  if (cache.path2uid[uri]) {
+    cache.path2uid[uri].push(uid);
   } else {
-    cache.path2uid[base] = [uid];
+    cache.path2uid[uri] = [uid];
   }
 
   // 注册模块
   mod = cache.mods[uid] = empty_mod;
 
-  // If no name, and factory is a function, then figure out if it a
-  // CommonJS thing with dependencies.
-  // Code below in the if-else statements lent from RequireJS
+  // CommonJS
   if (!deps && typeOf(factory) === 'function') {
     deps = [];
     // Remove comments from the callback string,
@@ -966,11 +970,11 @@ function define(id, deps, factory) {
     }
   }
 
-  // 创建模块
+  // 创建\注册模块
   mod = cache.mods[uid] = new Module({
     uid: uid,
     id: id,
-    url: base,
+    url: uri,
     deps: deps,
     factory: factory,
     status: Module.STATUS.init
@@ -1012,7 +1016,7 @@ function load(mod) {
   var inPathConfig = kerneljs.paths && kerneljs.paths[mod.id] ? true : false;
   // 若mod.id在paths中已经配置则相对路径是location.href,
   // 详见: config_path_relative test case.
-  var currentPath = inPathConfig ? loc.href : getCurrentPath();
+  var currentPath = inPathConfig ? loc.href : getCurrentScriptPath();
 
   // 更新fetchingList.
   fetchingList.add(mod);
@@ -1077,14 +1081,7 @@ function load(mod) {
 }
 
 /**
- * define.amd property
- *
- * To allow a clear indicator that a global define function
- * (as needed for script src browser loading) conforms to the AMD API,
- * any global define function SHOULD have a property called "amd" whose
- * value is an object. This helps avoid conflict with any other existing
- * JavaScript code that could have defined a define() function that
- * does not conform to the AMD API.
+ * define.amd property, conforms to the AMD API.
  *
  * The properties inside the define.amd object are not specified at this time.
  * It can be used by implementers who want to inform of other capabilities
@@ -1106,8 +1103,8 @@ define.amd = {
 };
 
 /**
- * 一般作为页面逻辑的入口, 提倡js初始化只调用一次require, 函数内部的异步加载用require.async.
- * 两种使用方式:
+ * 一般作为页面逻辑的入口，提倡js初始化只调用一次require。
+ * 函数内部的异步加载用require.async。两种使用方式:
  * a. var mod = require('widget/a');
  * b. require(['widget/a'], function(wid_a) {
  *      wid_a.init();
@@ -1136,16 +1133,17 @@ function require(deps, cb) {
     deps = [deps];
   }
 
-  var uid,
-      _currentPath = getCurrentPath();
+  var uid, mod,
+      uri = getCurrentScriptPath();
+
   if (cb) {
     // 'require' invoke can introduce an anonymous module,
     // it has the unique uid and id is null.
     uid = kerneljs.uidprefix + kerneljs.uid++;
-    var mod = new Module({
+    mod = new Module({
       uid: uid,
       id: null,
-      url: _currentPath,
+      url: uri,
       deps: deps,
       factory: cb,
       status: Module.STATUS.init
@@ -1155,7 +1153,8 @@ function require(deps, cb) {
     // if any rely module's export haven't resolved, use the
     // default name replace it.
     mod.depMods = map(deps, function(dep) {
-      var path = resolvePath(dep, _currentPath);
+      // 得到依赖的绝对路径
+      var path = resolvePath(dep, uri);
       return resolve(dep) || resolve(path);
     });
 
@@ -1163,14 +1162,14 @@ function require(deps, cb) {
     return null;
 
   } else {
-    var _dep = resolvePath(deps[0], _currentPath);
+    var need = resolvePath(deps[0], uri);
     // a simple require statements always be resolved preload.
     // so if length == 1 then return its exports object.
     var _mod = resolve(deps[0]);
     if (deps.length === 1 && _mod) {
       return _mod;
     } else {
-      uid = kerneljs.cache.path2uid[_dep][0];
+      uid = kerneljs.cache.path2uid[need][0];
       return kerneljs.cache.mods[uid].exports || null;
     }
   }
@@ -1241,7 +1240,7 @@ function notify(mod) {
 function resolve(name, mod) {
   // step 1: parse built-in and already existed modules
   if (kerneljs.cache.mods[name]) {
-    var currentScriptPath = getCurrentPath(),
+    var currentScriptPath = getCurrentScriptPath(),
         path = resolvePath(name, currentScriptPath);
     // we check circular reference first, if it there, we return the
     // empty_mod immediately.
@@ -1313,7 +1312,6 @@ require.async = function(id, callback) {
 
 /**
  * 全局kerneljs对象
- * @typedef {Object}
  */
 var kerneljs = {};
 
@@ -1358,15 +1356,15 @@ var fetchingList = {
 var dependencyList = {};
 
 /**
- * 如果某个模块处于fetching的状态则说明依赖的js模块文件正在下载, 在完成下载之前我们不希望同一个文件
- * 发起两次下载请求. define时会缓存到cache.path2uid对象中, 我们这里用path作为key标识模块文件正在下载.
+ * 如果某个模块处于fetching的状态则说明依赖的js模块文件正在下载，在完成下载之前我们
+ * 不希望同一个文件发起两次下载请求。define时会缓存到cache.path2uid对象中，我们这里
+ * 用path作为key标识模块文件正在下载
  * @typedef {Object}
  */
 var sendingList = {};
 
 /**
  * 动态配置kerneljs对象. 目前配置对象的属性可以是:
- * # alias: 短命名id和长路径的映射关系. (todo)
  * # paths: 一个路径映射的hash结构, 详细看:
  *          http://requirejs.org/docs/api.html#config-paths
  * # baseUrl: 所有路经解析的基路径, 包括paths, 但模块内依赖的相对路径针对模块自身路径解析. (todo)
@@ -1396,12 +1394,13 @@ kerneljs.config = function(obj) {
 kerneljs.cache = {
   // 全局缓存uid和对应模块. 是一对一的映射关系.
   mods: {},
-  // id2path记录所有的用户自定义id的模块. 在开发时不提倡自己写id但实际也可以自己写, 没啥意义
-  // 因为请求还是以路径来做. 可以通过paths配置来require短id, 这个缓存对象在开发时会有不少缺失的模块,
-  // 但在打包后id已经自生成所以它会记录完全. 这个结构是一个一对一的结构.
+  // id2path记录所有的用户自定义id的模块。在开发时不提倡自己写id但实际也可以自己写，
+  // 没啥意义，因为请求还是以路径来做。可以通过paths配置来require短id，这个缓存对象
+  // 在开发时会有不少缺失的模块，但在打包后id已经自生成所以它会记录完全。
+  // 这个结构是一个一对一的结构.
   id2path: {},
-  // 理论上每个文件可能定义多个模块, 也就是define了多次. 这种情况应该在开发时严格避免,
-  // 但经过打包之后一定会出现这种状况. 所以我们必须要做一些处理, 也使得这个结构是一对多的.
+  // 理论上每个文件可能定义多个模块，也就是define了多次。这种情况应该在开发时严格避免，
+  // 但经过打包之后一定会出现这种状况。所以我们必须要做一些处理，也使得这个结构是一对多的.
   path2uid: {},
   // kerneljs的订阅者缓存
   events: {}
@@ -1421,6 +1420,7 @@ kerneljs.reset = function() {
   this.cache.mods = {};
   this.cache.id2path = {};
   this.cache.path2uid = {};
+  this.cache.events = {};
 };
 
 /**

@@ -1,10 +1,10 @@
 
 var OP = Object.prototype,
-  AP = Array.prototype,
-  native_forEach = AP.forEach,
-  native_map = AP.map,
-  hasOwn = OP.hasOwnProperty,
-  toString = OP.toString;
+    AP = Array.prototype,
+    native_forEach = AP.forEach,
+    native_map = AP.map,
+    hasOwn = OP.hasOwnProperty,
+    toString = OP.toString;
 
 // use such an object to determine cut down a forEach loop;
 var break_obj = {};
