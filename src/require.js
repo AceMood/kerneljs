@@ -10,12 +10,12 @@
  * @param {Function?} cb
  */
 function require(deps, cb) {
-  // pass-in a config object
+  // 传入配置对象
   if (typeOf(deps) === 'object' && !cb) {
     kerneljs.config(deps);
     return null;
   }
-  // no deps
+  // 无依赖
   if (typeOf(deps) === 'array' && deps.length === 0) {
     if (typeOf(cb) === 'function') {
       return cb();

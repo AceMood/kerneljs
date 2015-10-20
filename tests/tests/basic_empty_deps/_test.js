@@ -9,8 +9,10 @@ go(["_reporter", "require"], function(amdJS, require) {
   });
 
   window.setTimeout(function() {
+    debugger;
     require(['emptyDeps'], function () {
+      debugger;
       amdJS.print('DONE', 'done');
     });
-  });
+  }, 0);
 });

@@ -1,7 +1,7 @@
 
 // 正则提取代码中的 `require('xxx')`
 var cjsRequireRegExp = /\brequire\s*\(\s*(["'])([^'"\s]+)\1\s*\)/g,
-// A regexp to drop comments in source code
+// 去掉源码中的注释
     commentRegExp = /(\/\*([\s\S]*?)\*\/|([^:]|^)\/\/(.*)$)/mg;
 
 // 初始化的空模块

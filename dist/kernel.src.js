@@ -501,9 +501,6 @@ function getCurrentScript() {
          * chrome uses ` at `, FF uses `@`
          * Also consider IE 11.
          * FireFox: e.g.
-         * getCurrentScript/<@file:///D:/Develop/SOI/lib/kernel.js:261:15
-         * getCurrentScript@file:///D:/Develop/SOI/lib/kernel.js:257:1
-         * getCurrentScriptPath@file:///D:/Develop/SOI/lib/kernel.js:314:16
          * require@file:///D:/Develop/SOI/lib/kernel.js:563:29
          * require.async@file:///D:/Develop/SOI/lib/kernel.js:1178:5
          * bind/<@file:///D:/Develop/SOI/demo/assets/js/app.js:25:9
@@ -513,8 +510,6 @@ function getCurrentScript() {
          *
          * chrome 39.0 e.g.
          * at file:///D:/lib/kernel.js:261:15
-         * at getCurrentScript (file:///D:/lib/kernel.js:294:7)
-         * at getCurrentScriptPath (file:///D:/lib/kernel.js:314:16)
          * at require (file:///D:/lib/kernel.js:563:29)
          * at Function.require.async (file:///D:/lib/kernel.js:1178:5)
          * at HTMLButtonElement.<anonymous> (file:///D:/assets/js/app.js:25:17)
@@ -524,7 +519,7 @@ function getCurrentScript() {
          *
          * IE11 e.g.
          * at Anonymous function (file:///D:/Develop/SOI/lib/kernel.js:294:7)
-         * at getCurrentScriptPath (file:///D:/Develop/SOI/lib/kernel.js:314:16)
+         * at getCurrentPath (file:///D:/Develop/SOI/lib/kernel.js:314:16)
          * at Global code (file:///D:/Develop/SOI/lib/kernel.js:563:29)
          */
         var e = stack.indexOf(' at ') !== -1 ? ' at ' : '@';
@@ -574,7 +569,7 @@ function getCurrentScriptPath() {
 
 // A directory file path must be ends with a slash (back slash in window)
 var dirRegExp = /\/$/g,
-    fileExtRegExp = /\.(js|css|tpl)$/,
+    fileExtRegExp = /\.(js|css|tpl|txt)$/,
     dot = '.',
     slash = '/',
     dot2 = '..';
@@ -1020,7 +1015,8 @@ function define(id, deps, factory) {
   }
 
   // 加载依赖模块
-  load(mod);*/
+  load(mod);
+  */
 }
 
 /**
@@ -1131,12 +1127,12 @@ define.amd = {
  * @param {Function?} cb
  */
 function require(deps, cb) {
-  // pass-in a config object
+  // 传入配置对象
   if (typeOf(deps) === 'object' && !cb) {
     kerneljs.config(deps);
     return null;
   }
-  // no deps
+  // 无依赖
   if (typeOf(deps) === 'array' && deps.length === 0) {
     if (typeOf(cb) === 'function') {
       return cb();
