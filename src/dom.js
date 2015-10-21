@@ -192,7 +192,7 @@ function fetchCss(url, name) {
       factory: null,
       status: Module.STATUS.complete
     };
-    kerneljs.trigger(kerneljs.events.create, [mod]);
+    emit(events.create, [mod]);
 
     // 打包过后define会先发生, 这种情况script标签不会带有kernel_name字段.
     if (name && isTopLevel(name) && !mod.id) {
@@ -305,8 +305,10 @@ function scripts() {
  * @return {*}
  */
 function getCurrentScript() {
-  return $doc.currentScript ||
-      currentAddingScript ||
+  // 去掉document.currentScript的判断, 因为它并不准确.
+  // 除了异步的情况, w3c对其值有明确说明, 有时未必是我们想要的特别在
+  // CommonJS wrapper的情况下
+  return currentAddingScript ||
       (function() {
         var _scripts;
         if (useInteractive) {

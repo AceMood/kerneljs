@@ -139,11 +139,10 @@ function resolvePath(id, base) {
 }
 
 /**
- * Return the directory name of a path. Similar to the
+ * 提取路径中的目录名. Similar to the
  * UNIX dirname command.
- *
- * Example:
- * path.dirname('/foo/bar/baz/asdf/quux')
+ * Usage:
+ * dirname('/foo/bar/baz/asdf/quux')
  * returns '/foo/bar/baz/asdf'
  *
  * @param {String} p
@@ -156,9 +155,9 @@ function dirname(p) {
   // Here I used to use /\//ig to split string, but unfortunately
   // it has serious bug in IE<9. See for more:
   // 'http://blog.stevenlevithan.com/archives/cross-browser-split'.
-  p = p.split(slash);
-  p.pop();
-  return p.join(slash);
+  var ps = p.split(slash);
+  ps.pop();
+  return ps.join(slash);
 }
 
 /**

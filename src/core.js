@@ -89,7 +89,7 @@ function define(id, deps, factory) {
     // 也没有很好解决. 当非首屏首页的多个模块又各自依赖或含有第三个非注册过的模块时, 这个
     // 模块会被打包进第二个和第三个package, 这样就有可能在运行时造成同一id多次注册的现象.
     if (cache.mods[id] && kerneljs.debug) {
-      kerneljs.trigger(kerneljs.events.error, [
+      emit(events.error, [
         SAME_ID_MSG.replace('%s', id),
         uri
       ]);
@@ -107,7 +107,7 @@ function define(id, deps, factory) {
     factory: factory,
     status: Module.STATUS.init
   });
-  kerneljs.trigger(kerneljs.events.create, [mod]);
+  emit(events.create, [mod]);
 
   // 打包过后define会先发生, 这种情况script标签不会带有kn_name字段.
   var name = getCurrentScript().kn_name;
@@ -257,15 +257,17 @@ function require(deps, cb) {
   }
 
   // 如果只依赖一个模块则转化成数组.
-  // var isCss;
+  var isCss;
   if (typeOf(deps) === 'string') {
     isCss = (deps.indexOf('.css') === deps.length - 4);
     deps = [deps];
   }
 
+  /*
   if (isCss && deps.length === 1) {
     return {};
   }
+  */
 
   var uid, mod,
       uri = getCurrentScriptPath();

@@ -16,7 +16,7 @@ var fetchingList = {
   mods: {},
   add: function(mod) {
     if (this.mods[mod.uid]) {
-      kerneljs.trigger(kerneljs.events.error, [
+      emit(events.error, [
         'current mod with uid: ' + mod.uid + ' and file path: ' +
         mod.url + ' is fetching now'
       ]);
@@ -51,6 +51,9 @@ var dependencyList = {};
  * @typedef {Object}
  */
 var sendingList = {};
+
+// kerneljs的订阅者缓存
+var handlersMap = {};
 
 /**
  * 动态配置kerneljs对象. 目前配置对象的属性可以是:
@@ -88,9 +91,7 @@ kerneljs.cache = {
   mods: {},
   // 理论上每个文件可能定义多个模块，也就是define了多次。这种情况应该在开发时严格避免，
   // 但经过打包之后一定会出现这种状况。所以我们必须要做一些处理，也使得这个结构是一对多的.
-  path2uid: {},
-  // kerneljs的订阅者缓存
-  events: {}
+  path2uid: {}
 };
 
 // 基础配置
@@ -106,7 +107,7 @@ kerneljs.config({
 kerneljs.reset = function() {
   this.cache.mods = {};
   this.cache.path2uid = {};
-  this.cache.events = {};
+  handlersMap = {};
 };
 
 /**
@@ -117,6 +118,10 @@ kerneljs.reset = function() {
 kerneljs.url = function(url) {
   return url;
 };
+
+kerneljs.on = on;
+kerneljs.emit = emit;
+kerneljs.eventsType = events;
 
 /** 全局导出 APIs */
 global.require = global.__r = require;

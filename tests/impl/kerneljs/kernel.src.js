@@ -433,8 +433,7 @@ function scripts() {
  * @return {*}
  */
 function getCurrentScript() {
-  return $doc.currentScript ||
-      currentAddingScript ||
+  return currentAddingScript ||
       (function() {
         var _scripts;
         if (useInteractive) {
@@ -1109,15 +1108,16 @@ function require(deps, cb) {
   }
 
   // 如果只依赖一个模块则转化成数组.
-  // var isCss;
+  var isCss;
   if (typeOf(deps) === 'string') {
     isCss = (deps.indexOf('.css') === deps.length - 4);
     deps = [deps];
   }
 
+  /*
   if (isCss && deps.length === 1) {
     return {};
-  }
+  }*/
 
   var uid, mod,
       uri = getCurrentScriptPath();

@@ -39,10 +39,10 @@ Module.prototype.setStatus = function(status) {
       case 0:
         break;
       case 2:
-        kerneljs.trigger(kerneljs.events.startFetch, [this]);
+        emit(events.startFetch, [this]);
         break;
       case 3:
-        kerneljs.trigger(kerneljs.events.complete, [this]);
+        emit(events.complete, [this]);
         break;
     }
   }
