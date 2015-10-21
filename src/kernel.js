@@ -10,7 +10,6 @@ kerneljs.uidprefix = 'AceMood@kernel_';
 /**
  * 保存所有正在获取依赖模块的模块信息.
  * key是模块的uid, value是模块自身.
- * @typedef {Object}
  */
 var fetchingList = {
   mods: {},
@@ -40,7 +39,6 @@ var fetchingList = {
  * 记录模块的依赖关系. 如果模块状态置为complete, 则用此对象通知所有依赖他的模块项.
  * 因为解析依赖的时候一般是通过相对路径（除非预配置一些短命名id和路径的映射）
  * 这个结构是以path路径作为key, 模块数组作为value
- * @typedef {Object}
  */
 var dependencyList = {};
 
@@ -94,13 +92,6 @@ kerneljs.cache = {
   path2uid: {}
 };
 
-// 基础配置
-kerneljs.config({
-  baseUrl: '',
-  debug: true,
-  paths: {}
-});
-
 /**
  * 重置全局缓存
  */
@@ -127,3 +118,10 @@ kerneljs.eventsType = events;
 global.require = global.__r = require;
 global.define = global.__d = define;
 global.kerneljs = kerneljs;
+
+// 基础配置
+kerneljs.config({
+  baseUrl: '',
+  debug: true,
+  paths: {}
+});

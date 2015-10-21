@@ -2,7 +2,6 @@
 var OP = Object.prototype,
     AP = Array.prototype,
     native_forEach = AP.forEach,
-    native_map = AP.map,
     hasOwn = OP.hasOwnProperty,
     toString = OP.toString;
 
@@ -11,26 +10,6 @@ var break_obj = {};
 
 /** 空函数作为默认回调函数 */
 function noop() {}
-
-/**
- * iterate the array and map the value to a delegation
- * function, use the return value replace original item.
- * @param {Array} arr array to be iterated.
- * @param {Function} fn callback to execute on each item
- * @param {?Object} opt_context fn's context
- * @return {!Array}
- */
-function map(arr, fn, opt_context) {
-  var ret = [];
-  if (native_map && arr.map === native_map) {
-    ret = arr.map(fn, opt_context);
-  } else if (arr.length === +arr.length) {
-    for (var i = 0; i < arr.length; ++i) {
-      ret.push(fn.call(opt_context || null, arr[i], i, arr));
-    }
-  }
-  return ret;
-}
 
 /**
  * NOTE:

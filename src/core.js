@@ -117,16 +117,15 @@ function define(id, deps, factory) {
 
   // 更新mod.depExports
   if (mod.deps && mod.deps.length > 0) {
-    mod.deps = map(mod.deps, function(dep, index) {
+    forEach(mod.deps, function(dep, index) {
       if (/^(exports|module)$/.test(dep)) {
         mod.cjsWrapper = true;
       }
-
+      // 解析依赖模块, 如已经exports则更新mod.depExports.
       var inject = resolve(dep, mod);
       if (inject) {
         mod.depExports[index] = inject;
       }
-      return dep;
     });
   }
 
@@ -288,10 +287,10 @@ function require(deps, cb) {
     // convert dependency names to an object Array, of course,
     // if any rely module's export haven't resolved, use the
     // default name replace it.
-    mod.depExports = map(deps, function(dep) {
+    forEach(deps, function(dep, index) {
       // 得到依赖的绝对路径
       var path = resolvePath(dep, uri);
-      return resolve(dep) || resolve(path);
+      mod.depExports[index] = resolve(dep) || resolve(path);
     });
 
     load(mod);
