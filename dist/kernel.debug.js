@@ -364,8 +364,8 @@ function fetchCss(url, name) {
 
 /**
  * @param {String} url 文件路径
- * @param {String} name Original name to require this module.
- *   maybe a top-level name, relative name or absolute name.
+ * @param {String} name 原始require本模块时用到的名字或路径.
+ *   top-level name, relative name or absolute name.
  */
 function fetchScript(url, name) {
   var onScriptLoad = function() {};
@@ -433,7 +433,7 @@ function scripts() {
  * @return {*}
  */
 function getCurrentScript() {
-  return document.currentScript ||
+  return $doc.currentScript ||
       currentAddingScript ||
       (function() {
         var _scripts;
@@ -766,7 +766,7 @@ function Module(obj) {
   this.id = obj.id || null;
   this.url = obj.url;
   this.deps = obj.deps || [];
-  this.depMods = new Array(this.deps.length);
+  this.depExports = new Array(this.deps.length);
   this.status = obj.status || Module.STATUS.init;
   this.factory = obj.factory || noop;
   this.exports = {}; // todo
@@ -808,7 +808,7 @@ Module.prototype.ready = function(mod) {
     for(var i = 0; i < this.deps.length; ++i) {
       var path = resolvePath(this.deps[i], inPathConfig ? loc.href : this.url);
       if (path === mod.url) {
-        this.depMods[i] = mod.exports;
+        this.depExports[i] = mod.exports;
         break;
       }
     }
@@ -828,8 +828,8 @@ Module.prototype.checkAllDepsOK = function() {
   // I do not use forEach here because native forEach will
   // bypass all undefined values, so it will introduce
   // some tricky results.
-  for (var i = 0; i < this.depMods.length; ++i) {
-    if (isNull(this.depMods[i])) {
+  for (var i = 0; i < this.depExports.length; ++i) {
+    if (isNull(this.depExports[i])) {
       ok = false;
       break;
     }
@@ -967,7 +967,7 @@ function define(id, deps, factory) {
     mod.id = name;
   }
 
-  // 更新mod.depMods
+  // 更新mod.depExports
   if (mod.deps && mod.deps.length > 0) {
     mod.deps = map(mod.deps, function(dep, index) {
       if (/^(exports|module)$/.test(dep)) {
@@ -976,7 +976,7 @@ function define(id, deps, factory) {
 
       var inject = resolve(dep, mod);
       if (inject) {
-        mod.depMods[index] = inject;
+        mod.depExports[index] = inject;
       }
       return dep;
     });
@@ -1016,7 +1016,7 @@ function load(mod) {
     // available. it's useful after static analyze and combo files
     // into one js file.
     // so check if an object first of all.
-    if (mod.depMods[index]) {
+    if (mod.depExports[index]) {
       --count;
       return;
     }
@@ -1033,7 +1033,7 @@ function load(mod) {
       (cache.mods[uid[0]].status === Module.STATUS.complete ||
         checkCycle(path, mod))) {
       --count;
-      mod.depMods[index] = cache.mods[uid[0]].exports;
+      mod.depExports[index] = cache.mods[uid[0]].exports;
 
       // It's a user-defined or not been fetched file.
       // If it's a user-defined id and not config in global alias,
@@ -1084,8 +1084,8 @@ define.amd = {
 };
 
 /**
- * 一般作为页面逻辑的入口，提倡js初始化只调用一次require。
- * 函数内部的异步加载用require.async。两种使用方式:
+ * 一般作为页面逻辑的入口, 提倡js初始化只调用一次require.
+ * 函数内部的异步加载用require.async. 两种使用方式:
  * a. var mod = require('widget/a');
  * b. require(['widget/a'], function(wid_a) {
  *      wid_a.init();
@@ -1108,17 +1108,22 @@ function require(deps, cb) {
     }
   }
 
-  // Type conversion
-  // it's a single module dependency and with no callback
+  // 如果只依赖一个模块则转化成数组.
+  // var isCss;
   if (typeOf(deps) === 'string') {
+    isCss = (deps.indexOf('.css') === deps.length - 4);
     deps = [deps];
+  }
+
+  if (isCss && deps.length === 1) {
+    return {};
   }
 
   var uid, mod,
       uri = getCurrentScriptPath();
 
   if (cb) {
-    // 'require' invoke can introduce an anonymous module,
+    // 为`require`的调用生成一个匿名模块,
     // it has the unique uid and id is null.
     uid = kerneljs.uidprefix + kerneljs.uid++;
     mod = new Module({
@@ -1133,7 +1138,7 @@ function require(deps, cb) {
     // convert dependency names to an object Array, of course,
     // if any rely module's export haven't resolved, use the
     // default name replace it.
-    mod.depMods = map(deps, function(dep) {
+    mod.depExports = map(deps, function(dep) {
       // 得到依赖的绝对路径
       var path = resolvePath(dep, uri);
       return resolve(dep) || resolve(path);
@@ -1146,9 +1151,9 @@ function require(deps, cb) {
     var need = resolvePath(deps[0], uri);
     // a simple require statements always be resolved preload.
     // so if length == 1 then return its exports object.
-    var _mod = resolve(deps[0]);
-    if (deps.length === 1 && _mod) {
-      return _mod;
+    mod = resolve(deps[0]);
+    if (deps.length === 1 && mod) {
+      return mod;
     } else {
       uid = kerneljs.cache.path2uid[need][0];
       return kerneljs.cache.mods[uid].exports || null;
@@ -1163,17 +1168,16 @@ function require(deps, cb) {
  * @param {Module} mod
  */
 function notify(mod) {
-
   fetchingList.remove(mod);
 
   // amd
   if (!mod.cjsWrapper) {
     mod.exports = typeOf(mod.factory) === 'function' ?
-        mod.factory.apply(null, mod.depMods) : mod.factory;
+        mod.factory.apply(null, mod.depExports) : mod.factory;
   }
   // cmd
   else {
-    mod.factory.apply(null, mod.depMods);
+    mod.factory.apply(null, mod.depExports);
   }
 
   if (isNull(mod.exports)) {
@@ -1215,7 +1219,6 @@ function notify(mod) {
  * @param {String} name
  * @param {Module} mod Pass-in this argument is to used in a cjs
  *   wrapper form, if not we could not refer the module and exports
- *
  * @return {Object}
  */
 function resolve(name, mod) {

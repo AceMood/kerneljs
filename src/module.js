@@ -20,7 +20,7 @@ function Module(obj) {
   this.id = obj.id || null;
   this.url = obj.url;
   this.deps = obj.deps || [];
-  this.depMods = new Array(this.deps.length);
+  this.depExports = new Array(this.deps.length);
   this.status = obj.status || Module.STATUS.init;
   this.factory = obj.factory || noop;
   this.exports = {}; // todo
@@ -62,7 +62,7 @@ Module.prototype.ready = function(mod) {
     for(var i = 0; i < this.deps.length; ++i) {
       var path = resolvePath(this.deps[i], inPathConfig ? loc.href : this.url);
       if (path === mod.url) {
-        this.depMods[i] = mod.exports;
+        this.depExports[i] = mod.exports;
         break;
       }
     }
@@ -82,8 +82,8 @@ Module.prototype.checkAllDepsOK = function() {
   // I do not use forEach here because native forEach will
   // bypass all undefined values, so it will introduce
   // some tricky results.
-  for (var i = 0; i < this.depMods.length; ++i) {
-    if (isNull(this.depMods[i])) {
+  for (var i = 0; i < this.depExports.length; ++i) {
+    if (isNull(this.depExports[i])) {
       ok = false;
       break;
     }
