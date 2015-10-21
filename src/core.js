@@ -195,8 +195,8 @@ function load(mod) {
 
       if (!sendingList[path]) {
         sendingList[path] = true;
-        // script or link insertion
-        fetch(path, name);
+        // 加载模块
+        fetch(path, name, noop);
       }
     }
   });
@@ -237,17 +237,17 @@ define.amd = {
  * b. require(['widget/a'], function(wid_a) {
  *      wid_a.init();
  *    });
- * @param {!Array|String} deps
+ * @param {!Array} deps
  * @param {Function?} cb
  */
 function require(deps, cb) {
-  // 传入配置对象
-  if (typeOf(deps) === 'object' && !cb) {
-    kerneljs.config(deps);
-    return null;
+  if (typeOf(deps) !== 'array' ||
+      typeOf(cb) !== 'function') {
+    throw 'Global require\'s args TypeError.';
   }
+
   // 无依赖
-  if (typeOf(deps) === 'array' && deps.length === 0) {
+  if (deps.length === 0) {
     if (typeOf(cb) === 'function') {
       return cb();
     } else {
@@ -255,59 +255,26 @@ function require(deps, cb) {
     }
   }
 
-  // 如果只依赖一个模块则转化成数组.
-  var isCss;
-  if (typeOf(deps) === 'string') {
-    isCss = (deps.indexOf('.css') === deps.length - 4);
-    deps = [deps];
-  }
+  var uri = getCurrentScriptPath();
 
-  /*
-  if (isCss && deps.length === 1) {
-    return {};
-  }
-  */
+  // 为`require`的调用生成一个匿名模块, 分配其uid且id为null
+  var mod = new Module({
+    uid: uidprefix + uid++,
+    id: null,
+    url: uri,
+    deps: deps,
+    factory: cb,
+    status: Module.STATUS.init
+  });
 
-  var uid, mod,
-      uri = getCurrentScriptPath();
+  // 更新mod.depExports
+  forEach(deps, function(dep, index) {
+    // 得到依赖的绝对路径
+    var path = resolvePath(dep, uri);
+    mod.depExports[index] = resolve(dep) || resolve(path);
+  });
 
-  if (cb) {
-    // 为`require`的调用生成一个匿名模块,
-    // it has the unique uid and id is null.
-    uid = uidprefix + uid++;
-    mod = new Module({
-      uid: uid,
-      id: null,
-      url: uri,
-      deps: deps,
-      factory: cb,
-      status: Module.STATUS.init
-    });
-
-    // convert dependency names to an object Array, of course,
-    // if any rely module's export haven't resolved, use the
-    // default name replace it.
-    forEach(deps, function(dep, index) {
-      // 得到依赖的绝对路径
-      var path = resolvePath(dep, uri);
-      mod.depExports[index] = resolve(dep) || resolve(path);
-    });
-
-    load(mod);
-    return null;
-
-  } else {
-    var need = resolvePath(deps[0], uri);
-    // a simple require statements always be resolved preload.
-    // so if length == 1 then return its exports object.
-    mod = resolve(deps[0]);
-    if (deps.length === 1 && mod) {
-      return mod;
-    } else {
-      uid = kerneljs.cache.path2uid[need][0];
-      return kerneljs.cache.mods[uid].exports || null;
-    }
-  }
+  load(mod);
 }
 
 /**
@@ -319,16 +286,13 @@ function notify(mod) {
   fetchingList.remove(mod);
   mod.exec();
 
-  // Register module in global cache
+  // 注册
   kerneljs.cache.mods[mod.uid] = mod;
-  // two keys are the same thing
   if (mod.id) {
     kerneljs.cache.mods[mod.id] = mod;
   }
 
-  // Dispatch ready event.
-  // All other modules recorded in dependencyList depend on this mod
-  // will execute their factories by order.
+  // 通知依赖项.
   var depandants = dependencyList[mod.url];
   if (depandants) {
     // Here I first delete it because a complex condition:

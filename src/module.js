@@ -37,8 +37,6 @@ Module.prototype.setStatus = function(status) {
   } else {
     mod.status = status;
     switch (status) {
-      case 0:
-        break;
       case 2:
         emit(events.fetch, [mod]);
         break;
@@ -96,13 +94,49 @@ Module.prototype.checkAllDepsOK = function() {
 /** 执行模块的回调函数 */
 Module.prototype.exec = function() {
   var mod = this;
+
+  function requireInContext(id, callback) {
+    // 异步调用代理到全局require方法
+    if (typeOf(id) === 'array' &&
+        typeOf(callback) === 'function') {
+      require(id, callback);
+    }
+
+    if (typeOf(id) !== 'string' ||
+        !callback) {
+      throw 'Module inner require\'s args TypeError.';
+    }
+
+    // 如果依赖css.
+    var isCss = (id.indexOf('.css') === id.length - 4);
+    if (isCss) {
+      return {};
+    }
+
+    var need = resolvePath(id, mod.url);
+    // a simple require statements always be resolved preload.
+    // so if length == 1 then return its exports object.
+    mod = resolve(id);
+
+    // debugger;
+    if (mod) {
+      return mod;
+    } else {
+      uid = kerneljs.cache.path2uid[need][0];
+      return kerneljs.cache.mods[uid].exports || null;
+    }
+  }
+
+  requireInContext.async = require.async;
+  requireInContext.toUrl = require.toUrl;
+
   // amd
   if (!mod.cjsWrapper) {
     mod.exports = typeOf(mod.factory) === 'function' ?
         mod.factory.apply(null, mod.depExports) :
         mod.factory;
   } else {
-    mod.factory.apply(null, mod.depExports);
+    mod.factory.apply(null, [requireInContext, mod.exports, mod]);
   }
 
   if (isNull(mod.exports)) {

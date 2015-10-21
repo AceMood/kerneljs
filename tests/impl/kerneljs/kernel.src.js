@@ -270,14 +270,15 @@ var currentAddingScript,
     interactiveScript;
 
 /**
- * @param {String} url 当前需要资源的网络路径
- * @param {String} name Original name to require this module.
- *   maybe a top-level name, relative name or absolute name.
+ * @param {String} url 文件路径
+ * @param {String} name 原始require本模块时用到的名字或路径.
+ *   top-level name, relative name or absolute name.
+ * @param {Function} callback
  */
-function fetchCss(url, name) {
+function fetchCss(url, name, callback) {
   function onCssLoad() {
     var mod, cache = kerneljs.cache,
-        uid = kerneljs.uidprefix + kerneljs.uid++;
+        uid = uidprefix + uid++;
 
     // doc.currentScript在异步情况下比如事件处理器或者setTimeout返回错误结果.
     // 但如果不是这种情况且遵循每个文件一个define模块的话这个属性就能正常工作.
@@ -345,10 +346,21 @@ function fetchCss(url, name) {
  * @param {String} url 文件路径
  * @param {String} name 原始require本模块时用到的名字或路径.
  *   top-level name, relative name or absolute name.
+ * @param {Function} callback
  */
-function fetchScript(url, name) {
-  var onScriptLoad = function() {};
-
+function fetchScript(url, name, callback) {
+  var onScriptLoad = function() {
+    if (!script.readyState || /complete/.test(script.readyState)) {
+      interactiveScript = null;
+      script.onreadystatschange = script.onload = script.onerror = null;
+      // Remove the script to reduce memory leak
+      if (!kerneljs.config.debug) {
+        $head.removeChild(script);
+      }
+      script = null;
+      callback();
+    }
+  };
   var script = $doc.createElement('script');
   script.charset = 'utf-8';
   script.async = 1;
@@ -357,14 +369,7 @@ function fetchScript(url, name) {
   script.kn_name = name;
 
   // 监听
-  script.onreadystatechange = script.onload = script.onerror = function() {
-    if (!script.readyState || /complete/.test(script.readyState)) {
-      interactiveScript = null;
-      script.onreadystatschange = script.onload = script.onerror = null;
-      $head.removeChild(script);
-      onScriptLoad();
-    }
-  };
+  script.onreadystatechange = script.onload = script.onerror = onScriptLoad;
 
   // 老版本IE(<11)在设置了script.src之后会立刻请求js文件,
   // 下载完成后触发readyState变更为`loaded`, 代码执行完毕
@@ -380,16 +385,17 @@ function fetchScript(url, name) {
 }
 
 /**
- * 动态获取模块
+ * 获取模块
  * @param {String} url 文件路径
- * @param {String} name Original name to require this module.
- *   maybe a top-level name, relative name or absolute name.
+ * @param {String} name 原始require本模块时用到的名字或路径.
+ *   top-level name, relative name or absolute name.
+ * @param {Function} callback
  */
-function fetch(url, name) {
+function fetch(url, name, callback) {
   if (url.indexOf('.css') === url.length - 4) {
-    fetchCss(url, name);
+    fetchCss(url, name, callback);
   } else {
-    fetchScript(url, name);
+    fetchScript(url, name, callback);
   }
 }
 
@@ -454,18 +460,11 @@ function getCurrentScript() {
          * FireFox: e.g.
          * require@file:///D:/Develop/SOI/lib/kernel.js:563:29
          * require.async@file:///D:/Develop/SOI/lib/kernel.js:1178:5
-         * bind/<@file:///D:/Develop/SOI/demo/assets/js/app.js:25:9
-         * F@file:///D:/Develop/SOI/demo/lib/events/util.js:2:4216
-         * q@file:///D:/Develop/SOI/demo/lib/events/util.js:2:1034
          * y/a<@file:///D:/Develop/SOI/demo/lib/events/util.js:2:2610
          *
          * chrome 39.0 e.g.
          * at file:///D:/lib/kernel.js:261:15
          * at require (file:///D:/lib/kernel.js:563:29)
-         * at Function.require.async (file:///D:/lib/kernel.js:1178:5)
-         * at HTMLButtonElement.<anonymous> (file:///D:/assets/js/app.js:25:17)
-         * at F (file:///D:/lib/events/util.js:2:4218)
-         * at q (file:///D:/lib/events/util.js:2:1034)
          * at HTMLButtonElement.<anonymous> (file:///D:/lib/events/util.js:2:2610)"
          *
          * IE11 e.g.
@@ -757,18 +756,17 @@ function Module(obj) {
  * @param {Number} status
  */
 Module.prototype.setStatus = function(status) {
+  var mod = this;
   if (status < 0 || status > 4) {
     throw 'Status ' + status + ' is now allowed.';
   } else {
-    this.status = status;
+    mod.status = status;
     switch (status) {
-      case 0:
-        break;
       case 2:
-        emit(events.startFetch, [this]);
+        emit(events.fetch, [mod]);
         break;
       case 3:
-        emit(events.complete, [this]);
+        emit(events.complete, [mod]);
         break;
     }
   }
@@ -799,8 +797,7 @@ Module.prototype.ready = function(mod) {
 };
 
 /**
- * 检查是否模块的依赖项都已complete的状态. note: 由于模块导出值也可能是字符串, 尤其是模板相关的模块,
- * 所以这里通过isNull函数检查.
+ * 检查是否模块的依赖项都已complete.
  * @return {boolean}
  */
 Module.prototype.checkAllDepsOK = function() {
@@ -808,6 +805,8 @@ Module.prototype.checkAllDepsOK = function() {
   // I do not use forEach here because native forEach will
   // bypass all undefined values, so it will introduce
   // some tricky results.
+  // 由于模块导出值也可能是字符串, 尤其是模板相关的模块,
+  // 所以这里通过isNull函数检查.
   for (var i = 0; i < this.depExports.length; ++i) {
     if (isNull(this.depExports[i])) {
       ok = false;
@@ -815,6 +814,61 @@ Module.prototype.checkAllDepsOK = function() {
     }
   }
   return ok;
+};
+
+/** 执行模块的回调函数 */
+Module.prototype.exec = function() {
+  var mod = this;
+
+  function requireInContext(id, callback) {
+    // 异步调用代理到全局require方法
+    if (typeOf(id) === 'array' &&
+        typeOf(callback) === 'function') {
+      require(id, callback);
+    }
+
+    if (typeOf(id) !== 'string' ||
+        !callback) {
+      throw 'Module inner require\'s args TypeError.';
+    }
+
+    // 如果依赖css.
+    var isCss = (id.indexOf('.css') === id.length - 4);
+    if (isCss) {
+      return {};
+    }
+
+    var need = resolvePath(id, mod.url);
+    // a simple require statements always be resolved preload.
+    // so if length == 1 then return its exports object.
+    mod = resolve(id);
+
+    // debugger;
+    if (mod) {
+      return mod;
+    } else {
+      uid = kerneljs.cache.path2uid[need][0];
+      return kerneljs.cache.mods[uid].exports || null;
+    }
+  }
+
+  requireInContext.async = require.async;
+  requireInContext.toUrl = require.toUrl;
+
+  // amd
+  if (!mod.cjsWrapper) {
+    mod.exports = typeOf(mod.factory) === 'function' ?
+        mod.factory.apply(null, mod.depExports) :
+        mod.factory;
+  } else {
+    mod.factory.apply(null, [requireInContext, mod.exports, mod]);
+  }
+
+  if (isNull(mod.exports)) {
+    mod.exports = {};
+  }
+
+  mod.setStatus(Module.STATUS.complete);
 };
 
 /**
@@ -865,7 +919,7 @@ function exist_id_error(id) {
  */
 function define(id, deps, factory) {
   var mod, cache = kerneljs.cache,
-      uid = kerneljs.uidprefix + kerneljs.uid++;
+      uid = uidprefix + uid++;
 
   // doc.currentScript在异步情况下比如事件处理器或者setTimeout返回错误结果.
   // 但如果不是这种情况且遵循每个文件一个define模块的话这个属性就能正常工作.
@@ -1027,8 +1081,8 @@ function load(mod) {
 
       if (!sendingList[path]) {
         sendingList[path] = true;
-        // script or link insertion
-        fetch(path, name);
+        // 加载模块
+        fetch(path, name, noop);
       }
     }
   });
@@ -1069,17 +1123,17 @@ define.amd = {
  * b. require(['widget/a'], function(wid_a) {
  *      wid_a.init();
  *    });
- * @param {!Array|String} deps
+ * @param {!Array} deps
  * @param {Function?} cb
  */
 function require(deps, cb) {
-  // 传入配置对象
-  if (typeOf(deps) === 'object' && !cb) {
-    kerneljs.config(deps);
-    return null;
+  if (typeOf(deps) !== 'array' ||
+      typeOf(cb) !== 'function') {
+    throw 'Global require\'s args TypeError.';
   }
+
   // 无依赖
-  if (typeOf(deps) === 'array' && deps.length === 0) {
+  if (deps.length === 0) {
     if (typeOf(cb) === 'function') {
       return cb();
     } else {
@@ -1087,96 +1141,47 @@ function require(deps, cb) {
     }
   }
 
-  // 如果只依赖一个模块则转化成数组.
-  var isCss;
-  if (typeOf(deps) === 'string') {
-    isCss = (deps.indexOf('.css') === deps.length - 4);
-    deps = [deps];
-  }
+  var uri = getCurrentScriptPath();
 
-  /*
-  if (isCss && deps.length === 1) {
-    return {};
-  }
-  */
+  // 为`require`的调用生成一个匿名模块,
+  // 分配其uid且id为null
+  var mod = new Module({
+    uid: uidprefix + uid++,
+    id: null,
+    url: uri,
+    deps: deps,
+    factory: cb,
+    status: Module.STATUS.init
+  });
 
-  var uid, mod,
-      uri = getCurrentScriptPath();
+  // convert dependency names to an object Array, of course,
+  // if any rely module's export haven't resolved, use the
+  // default name replace it.
+  forEach(deps, function(dep, index) {
+    // 得到依赖的绝对路径
+    var path = resolvePath(dep, uri);
+    mod.depExports[index] = resolve(dep) || resolve(path);
+  });
 
-  if (cb) {
-    // 为`require`的调用生成一个匿名模块,
-    // it has the unique uid and id is null.
-    uid = kerneljs.uidprefix + kerneljs.uid++;
-    mod = new Module({
-      uid: uid,
-      id: null,
-      url: uri,
-      deps: deps,
-      factory: cb,
-      status: Module.STATUS.init
-    });
-
-    // convert dependency names to an object Array, of course,
-    // if any rely module's export haven't resolved, use the
-    // default name replace it.
-    forEach(deps, function(dep, index) {
-      // 得到依赖的绝对路径
-      var path = resolvePath(dep, uri);
-      mod.depExports[index] = resolve(dep) || resolve(path);
-    });
-
-    load(mod);
-    return null;
-
-  } else {
-    var need = resolvePath(deps[0], uri);
-    // a simple require statements always be resolved preload.
-    // so if length == 1 then return its exports object.
-    mod = resolve(deps[0]);
-    if (deps.length === 1 && mod) {
-      return mod;
-    } else {
-      uid = kerneljs.cache.path2uid[need][0];
-      return kerneljs.cache.mods[uid].exports || null;
-    }
-  }
+  load(mod);
 }
 
 /**
- * Whenever a module is prepared, means all its dependencies have already
- * been fetched and its factory function has executed. So notify all other
- * modules depend on it.
- * @param {Module} mod
+ * 当一个模块已经准备就绪, 意味着它的所有以来全部都加载完毕并且回调函数
+ * 已经执行完毕. 在此通知依赖于此模块的其他模块.
+ * @param {Module} mod 已完毕的模块对象
  */
 function notify(mod) {
   fetchingList.remove(mod);
+  mod.exec();
 
-  // amd
-  if (!mod.cjsWrapper) {
-    mod.exports = typeOf(mod.factory) === 'function' ?
-        mod.factory.apply(null, mod.depExports) : mod.factory;
-  }
-  // cmd
-  else {
-    mod.factory.apply(null, mod.depExports);
-  }
-
-  if (isNull(mod.exports)) {
-    mod.exports = {};
-  }
-
-  mod.setStatus(Module.STATUS.complete);
-
-  // Register module in global cache
+  // 注册
   kerneljs.cache.mods[mod.uid] = mod;
-  // two keys are the same thing
   if (mod.id) {
     kerneljs.cache.mods[mod.id] = mod;
   }
 
   // Dispatch ready event.
-  // All other modules recorded in dependencyList depend on this mod
-  // will execute their factories by order.
   var depandants = dependencyList[mod.url];
   if (depandants) {
     // Here I first delete it because a complex condition:
@@ -1280,8 +1285,8 @@ require.async = function(id, callback) {
  */
 var kerneljs = {};
 
-kerneljs.uid = 0;
-kerneljs.uidprefix = 'AceMood@kernel_';
+var uid = 0;
+var uidprefix = 'AceMood@kernel_';
 
 /**
  * 保存所有正在获取依赖模块的模块信息.
@@ -1326,7 +1331,7 @@ var dependencyList = {};
  */
 var sendingList = {};
 
-// kerneljs的订阅者缓存
+// 订阅者缓存
 var handlersMap = {};
 
 /**
@@ -1408,7 +1413,7 @@ kerneljs.config({
  */
 var events = {
   create: 'create',
-  startFetch: 'start:fetch',
+  fetch: 'fetch',
   endFetch: 'end:fetch',
   complete: 'complete',
   error: 'error'

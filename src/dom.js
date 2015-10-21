@@ -163,11 +163,12 @@ var currentAddingScript,
     interactiveScript;
 
 /**
- * @param {String} url 当前需要资源的网络路径
- * @param {String} name Original name to require this module.
- *   maybe a top-level name, relative name or absolute name.
+ * @param {String} url 文件路径
+ * @param {String} name 原始require本模块时用到的名字或路径.
+ *   top-level name, relative name or absolute name.
+ * @param {Function} callback
  */
-function fetchCss(url, name) {
+function fetchCss(url, name, callback) {
   function onCssLoad() {
     var mod, cache = kerneljs.cache,
         uid = uidprefix + uid++;
@@ -238,10 +239,21 @@ function fetchCss(url, name) {
  * @param {String} url 文件路径
  * @param {String} name 原始require本模块时用到的名字或路径.
  *   top-level name, relative name or absolute name.
+ * @param {Function} callback
  */
-function fetchScript(url, name) {
-  var onScriptLoad = function() {};
-
+function fetchScript(url, name, callback) {
+  var onScriptLoad = function() {
+    if (!script.readyState || /complete/.test(script.readyState)) {
+      interactiveScript = null;
+      script.onreadystatschange = script.onload = script.onerror = null;
+      // Remove the script to reduce memory leak
+      if (!kerneljs.config.debug) {
+        $head.removeChild(script);
+      }
+      script = null;
+      callback();
+    }
+  };
   var script = $doc.createElement('script');
   script.charset = 'utf-8';
   script.async = 1;
@@ -250,14 +262,7 @@ function fetchScript(url, name) {
   script.kn_name = name;
 
   // 监听
-  script.onreadystatechange = script.onload = script.onerror = function() {
-    if (!script.readyState || /complete/.test(script.readyState)) {
-      interactiveScript = null;
-      script.onreadystatschange = script.onload = script.onerror = null;
-      $head.removeChild(script);
-      onScriptLoad();
-    }
-  };
+  script.onreadystatechange = script.onload = script.onerror = onScriptLoad;
 
   // 老版本IE(<11)在设置了script.src之后会立刻请求js文件,
   // 下载完成后触发readyState变更为`loaded`, 代码执行完毕
@@ -273,16 +278,17 @@ function fetchScript(url, name) {
 }
 
 /**
- * 动态获取模块
+ * 获取模块
  * @param {String} url 文件路径
- * @param {String} name Original name to require this module.
- *   maybe a top-level name, relative name or absolute name.
+ * @param {String} name 原始require本模块时用到的名字或路径.
+ *   top-level name, relative name or absolute name.
+ * @param {Function} callback
  */
-function fetch(url, name) {
+function fetch(url, name, callback) {
   if (url.indexOf('.css') === url.length - 4) {
-    fetchCss(url, name);
+    fetchCss(url, name, callback);
   } else {
-    fetchScript(url, name);
+    fetchScript(url, name, callback);
   }
 }
 
@@ -347,18 +353,11 @@ function getCurrentScript() {
          * FireFox: e.g.
          * require@file:///D:/Develop/SOI/lib/kernel.js:563:29
          * require.async@file:///D:/Develop/SOI/lib/kernel.js:1178:5
-         * bind/<@file:///D:/Develop/SOI/demo/assets/js/app.js:25:9
-         * F@file:///D:/Develop/SOI/demo/lib/events/util.js:2:4216
-         * q@file:///D:/Develop/SOI/demo/lib/events/util.js:2:1034
          * y/a<@file:///D:/Develop/SOI/demo/lib/events/util.js:2:2610
          *
          * chrome 39.0 e.g.
          * at file:///D:/lib/kernel.js:261:15
          * at require (file:///D:/lib/kernel.js:563:29)
-         * at Function.require.async (file:///D:/lib/kernel.js:1178:5)
-         * at HTMLButtonElement.<anonymous> (file:///D:/assets/js/app.js:25:17)
-         * at F (file:///D:/lib/events/util.js:2:4218)
-         * at q (file:///D:/lib/events/util.js:2:1034)
          * at HTMLButtonElement.<anonymous> (file:///D:/lib/events/util.js:2:2610)"
          *
          * IE11 e.g.
