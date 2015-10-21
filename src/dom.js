@@ -170,7 +170,7 @@ var currentAddingScript,
 function fetchCss(url, name) {
   function onCssLoad() {
     var mod, cache = kerneljs.cache,
-        uid = kerneljs.uidprefix + kerneljs.uid++;
+        uid = uidprefix + uid++;
 
     // doc.currentScript在异步情况下比如事件处理器或者setTimeout返回错误结果.
     // 但如果不是这种情况且遵循每个文件一个define模块的话这个属性就能正常工作.

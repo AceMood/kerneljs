@@ -1,6 +1,3 @@
-/**
- * @fileoverview 源码调试用
- */
 
 on('create', function(mod) {
   console.log('Create on:    ' + mod.url);

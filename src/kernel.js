@@ -4,8 +4,8 @@
  */
 var kerneljs = {};
 
-kerneljs.uid = 0;
-kerneljs.uidprefix = 'AceMood@kernel_';
+var uid = 0;
+var uidprefix = 'AceMood@kernel_';
 
 /**
  * 保存所有正在获取依赖模块的模块信息.
@@ -50,7 +50,7 @@ var dependencyList = {};
  */
 var sendingList = {};
 
-// kerneljs的订阅者缓存
+// 订阅者缓存
 var handlersMap = {};
 
 /**

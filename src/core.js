@@ -33,7 +33,7 @@ function exist_id_error(id) {
  */
 function define(id, deps, factory) {
   var mod, cache = kerneljs.cache,
-      uid = kerneljs.uidprefix + kerneljs.uid++;
+      uid = uidprefix + uid++;
 
   // doc.currentScript在异步情况下比如事件处理器或者setTimeout返回错误结果.
   // 但如果不是这种情况且遵循每个文件一个define模块的话这个属性就能正常工作.
@@ -274,7 +274,7 @@ function require(deps, cb) {
   if (cb) {
     // 为`require`的调用生成一个匿名模块,
     // it has the unique uid and id is null.
-    uid = kerneljs.uidprefix + kerneljs.uid++;
+    uid = uidprefix + uid++;
     mod = new Module({
       uid: uid,
       id: null,
@@ -311,29 +311,13 @@ function require(deps, cb) {
 }
 
 /**
- * Whenever a module is prepared, means all its dependencies have already
- * been fetched and its factory function has executed. So notify all other
- * modules depend on it.
- * @param {Module} mod
+ * 当一个模块已经准备就绪, 意味着它的所有以来全部都加载完毕并且回调函数
+ * 已经执行完毕. 在此通知依赖于此模块的其他模块.
+ * @param {Module} mod 已完毕的模块对象
  */
 function notify(mod) {
   fetchingList.remove(mod);
-
-  // amd
-  if (!mod.cjsWrapper) {
-    mod.exports = typeOf(mod.factory) === 'function' ?
-        mod.factory.apply(null, mod.depExports) : mod.factory;
-  }
-  // cmd
-  else {
-    mod.factory.apply(null, mod.depExports);
-  }
-
-  if (isNull(mod.exports)) {
-    mod.exports = {};
-  }
-
-  mod.setStatus(Module.STATUS.complete);
+  mod.exec();
 
   // Register module in global cache
   kerneljs.cache.mods[mod.uid] = mod;

@@ -31,18 +31,19 @@ function Module(obj) {
  * @param {Number} status
  */
 Module.prototype.setStatus = function(status) {
+  var mod = this;
   if (status < 0 || status > 4) {
     throw 'Status ' + status + ' is now allowed.';
   } else {
-    this.status = status;
+    mod.status = status;
     switch (status) {
       case 0:
         break;
       case 2:
-        emit(events.startFetch, [this]);
+        emit(events.fetch, [mod]);
         break;
       case 3:
-        emit(events.complete, [this]);
+        emit(events.complete, [mod]);
         break;
     }
   }
@@ -73,8 +74,7 @@ Module.prototype.ready = function(mod) {
 };
 
 /**
- * 检查是否模块的依赖项都已complete的状态. note: 由于模块导出值也可能是字符串, 尤其是模板相关的模块,
- * 所以这里通过isNull函数检查.
+ * 检查是否模块的依赖项都已complete.
  * @return {boolean}
  */
 Module.prototype.checkAllDepsOK = function() {
@@ -82,6 +82,8 @@ Module.prototype.checkAllDepsOK = function() {
   // I do not use forEach here because native forEach will
   // bypass all undefined values, so it will introduce
   // some tricky results.
+  // 由于模块导出值也可能是字符串, 尤其是模板相关的模块,
+  // 所以这里通过isNull函数检查.
   for (var i = 0; i < this.depExports.length; ++i) {
     if (isNull(this.depExports[i])) {
       ok = false;
@@ -89,6 +91,25 @@ Module.prototype.checkAllDepsOK = function() {
     }
   }
   return ok;
+};
+
+/** 执行模块的回调函数 */
+Module.prototype.exec = function() {
+  var mod = this;
+  // amd
+  if (!mod.cjsWrapper) {
+    mod.exports = typeOf(mod.factory) === 'function' ?
+        mod.factory.apply(null, mod.depExports) :
+        mod.factory;
+  } else {
+    mod.factory.apply(null, mod.depExports);
+  }
+
+  if (isNull(mod.exports)) {
+    mod.exports = {};
+  }
+
+  mod.setStatus(Module.STATUS.complete);
 };
 
 /**

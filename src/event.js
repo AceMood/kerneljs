@@ -5,7 +5,7 @@
  */
 var events = {
   create: 'create',
-  startFetch: 'start:fetch',
+  fetch: 'fetch',
   endFetch: 'end:fetch',
   complete: 'complete',
   error: 'error'
