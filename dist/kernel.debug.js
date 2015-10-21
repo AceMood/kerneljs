@@ -29,7 +29,6 @@
 var OP = Object.prototype,
     AP = Array.prototype,
     native_forEach = AP.forEach,
-    native_map = AP.map,
     hasOwn = OP.hasOwnProperty,
     toString = OP.toString;
 
@@ -38,26 +37,6 @@ var break_obj = {};
 
 /** 空函数作为默认回调函数 */
 function noop() {}
-
-/**
- * iterate the array and map the value to a delegation
- * function, use the return value replace original item.
- * @param {Array} arr array to be iterated.
- * @param {Function} fn callback to execute on each item
- * @param {?Object} opt_context fn's context
- * @return {!Array}
- */
-function map(arr, fn, opt_context) {
-  var ret = [];
-  if (native_map && arr.map === native_map) {
-    ret = arr.map(fn, opt_context);
-  } else if (arr.length === +arr.length) {
-    for (var i = 0; i < arr.length; ++i) {
-      ret.push(fn.call(opt_context || null, arr[i], i, arr));
-    }
-  }
-  return ret;
-}
 
 /**
  * NOTE:
@@ -320,7 +299,7 @@ function fetchCss(url, name) {
       factory: null,
       status: Module.STATUS.complete
     };
-    kerneljs.trigger(kerneljs.events.create, [mod]);
+    emit(events.create, [mod]);
 
     // 打包过后define会先发生, 这种情况script标签不会带有kernel_name字段.
     if (name && isTopLevel(name) && !mod.id) {
@@ -433,6 +412,9 @@ function scripts() {
  * @return {*}
  */
 function getCurrentScript() {
+  // 去掉document.currentScript的判断, 因为它并不准确.
+  // 除了异步的情况, w3c对其值有明确说明, 有时未必是我们想要的特别在
+  // CommonJS wrapper的情况下
   return currentAddingScript ||
       (function() {
         var _scripts;
@@ -676,11 +658,10 @@ function resolvePath(id, base) {
 }
 
 /**
- * Return the directory name of a path. Similar to the
+ * 提取路径中的目录名. Similar to the
  * UNIX dirname command.
- *
- * Example:
- * path.dirname('/foo/bar/baz/asdf/quux')
+ * Usage:
+ * dirname('/foo/bar/baz/asdf/quux')
  * returns '/foo/bar/baz/asdf'
  *
  * @param {String} p
@@ -693,9 +674,9 @@ function dirname(p) {
   // Here I used to use /\//ig to split string, but unfortunately
   // it has serious bug in IE<9. See for more:
   // 'http://blog.stevenlevithan.com/archives/cross-browser-split'.
-  p = p.split(slash);
-  p.pop();
-  return p.join(slash);
+  var ps = p.split(slash);
+  ps.pop();
+  return ps.join(slash);
 }
 
 /**
@@ -784,10 +765,10 @@ Module.prototype.setStatus = function(status) {
       case 0:
         break;
       case 2:
-        kerneljs.trigger(kerneljs.events.startFetch, [this]);
+        emit(events.startFetch, [this]);
         break;
       case 3:
-        kerneljs.trigger(kerneljs.events.complete, [this]);
+        emit(events.complete, [this]);
         break;
     }
   }
@@ -940,7 +921,7 @@ function define(id, deps, factory) {
     // 也没有很好解决. 当非首屏首页的多个模块又各自依赖或含有第三个非注册过的模块时, 这个
     // 模块会被打包进第二个和第三个package, 这样就有可能在运行时造成同一id多次注册的现象.
     if (cache.mods[id] && kerneljs.debug) {
-      kerneljs.trigger(kerneljs.events.error, [
+      emit(events.error, [
         SAME_ID_MSG.replace('%s', id),
         uri
       ]);
@@ -958,7 +939,7 @@ function define(id, deps, factory) {
     factory: factory,
     status: Module.STATUS.init
   });
-  kerneljs.trigger(kerneljs.events.create, [mod]);
+  emit(events.create, [mod]);
 
   // 打包过后define会先发生, 这种情况script标签不会带有kn_name字段.
   var name = getCurrentScript().kn_name;
@@ -968,16 +949,15 @@ function define(id, deps, factory) {
 
   // 更新mod.depExports
   if (mod.deps && mod.deps.length > 0) {
-    mod.deps = map(mod.deps, function(dep, index) {
+    forEach(mod.deps, function(dep, index) {
       if (/^(exports|module)$/.test(dep)) {
         mod.cjsWrapper = true;
       }
-
+      // 解析依赖模块, 如已经exports则更新mod.depExports.
       var inject = resolve(dep, mod);
       if (inject) {
         mod.depExports[index] = inject;
       }
-      return dep;
     });
   }
 
@@ -1117,7 +1097,8 @@ function require(deps, cb) {
   /*
   if (isCss && deps.length === 1) {
     return {};
-  }*/
+  }
+  */
 
   var uid, mod,
       uri = getCurrentScriptPath();
@@ -1138,10 +1119,10 @@ function require(deps, cb) {
     // convert dependency names to an object Array, of course,
     // if any rely module's export haven't resolved, use the
     // default name replace it.
-    mod.depExports = map(deps, function(dep) {
+    forEach(deps, function(dep, index) {
       // 得到依赖的绝对路径
       var path = resolvePath(dep, uri);
-      return resolve(dep) || resolve(path);
+      mod.depExports[index] = resolve(dep) || resolve(path);
     });
 
     load(mod);
@@ -1305,13 +1286,12 @@ kerneljs.uidprefix = 'AceMood@kernel_';
 /**
  * 保存所有正在获取依赖模块的模块信息.
  * key是模块的uid, value是模块自身.
- * @typedef {Object}
  */
 var fetchingList = {
   mods: {},
   add: function(mod) {
     if (this.mods[mod.uid]) {
-      kerneljs.trigger(kerneljs.events.error, [
+      emit(events.error, [
         'current mod with uid: ' + mod.uid + ' and file path: ' +
         mod.url + ' is fetching now'
       ]);
@@ -1335,7 +1315,6 @@ var fetchingList = {
  * 记录模块的依赖关系. 如果模块状态置为complete, 则用此对象通知所有依赖他的模块项.
  * 因为解析依赖的时候一般是通过相对路径（除非预配置一些短命名id和路径的映射）
  * 这个结构是以path路径作为key, 模块数组作为value
- * @typedef {Object}
  */
 var dependencyList = {};
 
@@ -1346,6 +1325,9 @@ var dependencyList = {};
  * @typedef {Object}
  */
 var sendingList = {};
+
+// kerneljs的订阅者缓存
+var handlersMap = {};
 
 /**
  * 动态配置kerneljs对象. 目前配置对象的属性可以是:
@@ -1383,17 +1365,8 @@ kerneljs.cache = {
   mods: {},
   // 理论上每个文件可能定义多个模块，也就是define了多次。这种情况应该在开发时严格避免，
   // 但经过打包之后一定会出现这种状况。所以我们必须要做一些处理，也使得这个结构是一对多的.
-  path2uid: {},
-  // kerneljs的订阅者缓存
-  events: {}
+  path2uid: {}
 };
-
-// 基础配置
-kerneljs.config({
-  baseUrl: '',
-  debug: true,
-  paths: {}
-});
 
 /**
  * 重置全局缓存
@@ -1401,7 +1374,7 @@ kerneljs.config({
 kerneljs.reset = function() {
   this.cache.mods = {};
   this.cache.path2uid = {};
-  this.cache.events = {};
+  handlersMap = {};
 };
 
 /**
@@ -1413,16 +1386,27 @@ kerneljs.url = function(url) {
   return url;
 };
 
+kerneljs.on = on;
+kerneljs.emit = emit;
+kerneljs.eventsType = events;
+
 /** 全局导出 APIs */
 global.require = global.__r = require;
 global.define = global.__d = define;
 global.kerneljs = kerneljs;
 
+// 基础配置
+kerneljs.config({
+  baseUrl: '',
+  debug: true,
+  paths: {}
+});
+
 /**
- * kerneljs内部分发的事件名称
+ * 内部分发的事件名称
  * @typedef {Object}
  */
-kerneljs.events = {
+var events = {
   create: 'create',
   startFetch: 'start:fetch',
   endFetch: 'end:fetch',
@@ -1436,43 +1420,43 @@ kerneljs.events = {
  * @param {Function} handler 事件处理器
  * @param {*} context 事件处理器上下文
  */
-kerneljs.on = function(eventName, handler, context) {
-  if (!this.cache.events[eventName]) {
-    this.cache.events[eventName] = [];
+function on(eventName, handler, context) {
+  if (!handlersMap[eventName]) {
+    handlersMap[eventName] = [];
   }
-  this.cache.events[eventName].push({
+  handlersMap[eventName].push({
     handler: handler,
     context: context
   });
-};
+}
 
 /**
  * 触发订阅事件
  * @param {String} eventName 事件名称定义在event.js
  * @param {Array.<Object>} args 参数
  */
-kerneljs.trigger = function(eventName, args) {
+function emit(eventName, args) {
   // 缓存防止事件处理器改变kerneljs.cache对象
-  var arr = this.cache.events[eventName];
+  var arr = handlersMap[eventName];
   if (arr) {
     forEach(arr, function(obj) {
       obj.handler.apply(obj.context, args);
     });
   }
-};
+}
 /**
  * @fileoverview 源码调试用
  */
 
-kerneljs.on('create', function(mod) {
+on('create', function(mod) {
   console.log('Create on:    ' + mod.url);
 });
 
-kerneljs.on('start:fetch', function(mod) {
+on('start:fetch', function(mod) {
   console.log('Fetch for:    ' + mod.url);
 });
 
-kerneljs.on('complete', function(mod) {
+on('complete', function(mod) {
   console.log('Complete on:  ' + mod.url);
 });
 
