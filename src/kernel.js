@@ -4,7 +4,7 @@
  */
 var kerneljs = {};
 
-var uid = 0;
+var uuid = 0;
 var uidprefix = 'AceMood@kernel_';
 
 /**

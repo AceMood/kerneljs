@@ -33,7 +33,7 @@ function exist_id_error(id) {
  */
 function define(id, deps, factory) {
   var mod, cache = kerneljs.cache,
-      uid = uidprefix + uid++;
+      uid = uidprefix + uuid++;
 
   // doc.currentScript在异步情况下比如事件处理器或者setTimeout返回错误结果.
   // 但如果不是这种情况且遵循每个文件一个define模块的话这个属性就能正常工作.
@@ -241,6 +241,13 @@ define.amd = {
  * @param {Function?} cb
  */
 function require(deps, cb) {
+  // 传入配置对象
+  if (typeOf(deps) === 'object' &&
+      !cb) {
+    kerneljs.config(deps);
+    return;
+  }
+
   if (typeOf(deps) !== 'array' ||
       typeOf(cb) !== 'function') {
     throw 'Global require\'s args TypeError.';
@@ -259,7 +266,7 @@ function require(deps, cb) {
 
   // 为`require`的调用生成一个匿名模块, 分配其uid且id为null
   var mod = new Module({
-    uid: uidprefix + uid++,
+    uid: uidprefix + uuid++,
     id: null,
     url: uri,
     deps: deps,

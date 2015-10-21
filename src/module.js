@@ -99,12 +99,12 @@ Module.prototype.exec = function() {
     // 异步调用代理到全局require方法
     if (typeOf(id) === 'array' &&
         typeOf(callback) === 'function') {
-      require(id, callback);
+      return require(id, callback);
     }
 
     if (typeOf(id) !== 'string' ||
-        !callback) {
-      throw 'Module inner require\'s args TypeError.';
+        !!callback) {
+      throw 'Module require\'s args TypeError.';
     }
 
     // 如果依赖css.
@@ -116,13 +116,11 @@ Module.prototype.exec = function() {
     var need = resolvePath(id, mod.url);
     // a simple require statements always be resolved preload.
     // so if length == 1 then return its exports object.
-    mod = resolve(id);
-
-    // debugger;
-    if (mod) {
-      return mod;
+    var inject = resolve(id);
+    if (inject) {
+      return inject;
     } else {
-      uid = kerneljs.cache.path2uid[need][0];
+      var uid = kerneljs.cache.path2uid[need][0];
       return kerneljs.cache.mods[uid].exports || null;
     }
   }
@@ -130,13 +128,20 @@ Module.prototype.exec = function() {
   requireInContext.async = require.async;
   requireInContext.toUrl = require.toUrl;
 
+  forEach(mod.depExports, function(depExport, index) {
+    if (depExport === require) {
+      mod.depExports[index] = requireInContext;
+      return break_obj;
+    }
+  });
+
   // amd
   if (!mod.cjsWrapper) {
     mod.exports = typeOf(mod.factory) === 'function' ?
         mod.factory.apply(null, mod.depExports) :
         mod.factory;
   } else {
-    mod.factory.apply(null, [requireInContext, mod.exports, mod]);
+    mod.factory.apply(null, mod.depExports);
   }
 
   if (isNull(mod.exports)) {

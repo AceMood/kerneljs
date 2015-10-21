@@ -278,7 +278,7 @@ var currentAddingScript,
 function fetchCss(url, name, callback) {
   function onCssLoad() {
     var mod, cache = kerneljs.cache,
-        uid = uidprefix + uid++;
+        uid = uidprefix + uuid++;
 
     // doc.currentScript在异步情况下比如事件处理器或者setTimeout返回错误结果.
     // 但如果不是这种情况且遵循每个文件一个define模块的话这个属性就能正常工作.
@@ -824,12 +824,12 @@ Module.prototype.exec = function() {
     // 异步调用代理到全局require方法
     if (typeOf(id) === 'array' &&
         typeOf(callback) === 'function') {
-      require(id, callback);
+      return require(id, callback);
     }
 
     if (typeOf(id) !== 'string' ||
-        !callback) {
-      throw 'Module inner require\'s args TypeError.';
+        !!callback) {
+      throw 'Module require\'s args TypeError.';
     }
 
     // 如果依赖css.
@@ -841,13 +841,13 @@ Module.prototype.exec = function() {
     var need = resolvePath(id, mod.url);
     // a simple require statements always be resolved preload.
     // so if length == 1 then return its exports object.
-    mod = resolve(id);
+    var inject = resolve(id);
 
     // debugger;
-    if (mod) {
-      return mod;
+    if (inject) {
+      return inject;
     } else {
-      uid = kerneljs.cache.path2uid[need][0];
+      var uid = kerneljs.cache.path2uid[need][0];
       return kerneljs.cache.mods[uid].exports || null;
     }
   }
@@ -855,13 +855,20 @@ Module.prototype.exec = function() {
   requireInContext.async = require.async;
   requireInContext.toUrl = require.toUrl;
 
+  forEach(mod.depExports, function(depExport, index) {
+    if (depExport === require) {
+      mod.depExports[index] = requireInContext;
+      return break_obj;
+    }
+  });
+
   // amd
   if (!mod.cjsWrapper) {
     mod.exports = typeOf(mod.factory) === 'function' ?
         mod.factory.apply(null, mod.depExports) :
         mod.factory;
   } else {
-    mod.factory.apply(null, [requireInContext, mod.exports, mod]);
+    mod.factory.apply(null, mod.depExports);
   }
 
   if (isNull(mod.exports)) {
@@ -919,7 +926,7 @@ function exist_id_error(id) {
  */
 function define(id, deps, factory) {
   var mod, cache = kerneljs.cache,
-      uid = uidprefix + uid++;
+      uid = uidprefix + uuid++;
 
   // doc.currentScript在异步情况下比如事件处理器或者setTimeout返回错误结果.
   // 但如果不是这种情况且遵循每个文件一个define模块的话这个属性就能正常工作.
@@ -1127,6 +1134,13 @@ define.amd = {
  * @param {Function?} cb
  */
 function require(deps, cb) {
+  // 传入配置对象
+  if (typeOf(deps) === 'object' &&
+      !cb) {
+    kerneljs.config(deps);
+    return;
+  }
+
   if (typeOf(deps) !== 'array' ||
       typeOf(cb) !== 'function') {
     throw 'Global require\'s args TypeError.';
@@ -1143,10 +1157,9 @@ function require(deps, cb) {
 
   var uri = getCurrentScriptPath();
 
-  // 为`require`的调用生成一个匿名模块,
-  // 分配其uid且id为null
+  // 为`require`的调用生成一个匿名模块, 分配其uid且id为null
   var mod = new Module({
-    uid: uidprefix + uid++,
+    uid: uidprefix + uuid++,
     id: null,
     url: uri,
     deps: deps,
@@ -1154,9 +1167,7 @@ function require(deps, cb) {
     status: Module.STATUS.init
   });
 
-  // convert dependency names to an object Array, of course,
-  // if any rely module's export haven't resolved, use the
-  // default name replace it.
+  // 更新mod.depExports
   forEach(deps, function(dep, index) {
     // 得到依赖的绝对路径
     var path = resolvePath(dep, uri);
@@ -1181,7 +1192,7 @@ function notify(mod) {
     kerneljs.cache.mods[mod.id] = mod;
   }
 
-  // Dispatch ready event.
+  // 通知依赖项.
   var depandants = dependencyList[mod.url];
   if (depandants) {
     // Here I first delete it because a complex condition:
@@ -1285,7 +1296,7 @@ require.async = function(id, callback) {
  */
 var kerneljs = {};
 
-var uid = 0;
+var uuid = 0;
 var uidprefix = 'AceMood@kernel_';
 
 /**
