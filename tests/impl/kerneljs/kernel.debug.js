@@ -127,13 +127,13 @@ var useImportLoad = false,
 
 // trident / msie
 if (engine[1] || engine[7]) {
-  useImportLoad = (engine[1] - 0) < 6 || (engine[7] - 0) <= 9;
+  useImportLoad = engine[1] < 6 || engine[7] <= 9;
   // webkit
 } else if (engine[2] || engine[8]) {
   useOnload = false;
   // gecko
 } else if (engine[4]) {
-  useImportLoad = (engine[4] - 0) < 18;
+  useImportLoad = engine[4] < 18;
 }
 
 var ieCnt = 0;
@@ -1186,10 +1186,11 @@ function resolve(id, mod) {
   }
 
   // step 2: parse built-in and already existed modules
-  if (kerneljs.cache.mods[id]) {
+  var cache = kerneljs.cache;
+  if (cache.mods[id]) {
     var path = resolvePath(id, (mod && mod.url) || getCurrentScriptPath());
-    var cacheMod = kerneljs.cache.mods[id] ||
-        kerneljs.cache.mods[kerneljs.cache.path2uid[path][0]];
+    var cacheMod = cache.mods[id] ||
+        cache.mods[cache.path2uid[path][0]];
     // we check circular reference first, if it there, we return the
     // empty_mod immediately.
     if (cacheMod.status === Module.STATUS.complete ||
@@ -1381,7 +1382,7 @@ kerneljs.config({
   baseUrl: '',
   debug: true,
   paths: {},
-  useLocalCache: true
+  useLocalCache: false
 });
 
 /**
