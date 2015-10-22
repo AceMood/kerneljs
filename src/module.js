@@ -48,8 +48,8 @@ Module.prototype.setStatus = function(status) {
 };
 
 /**
- * 当模块已被缓存<code>mod.status = Module.STATUS.complete</code>,
- * 则需要通知所有依赖于它的模块, 需要调用depandant.ready(mod);
+ * 当模块已被缓存, 则需要通知所有依赖于它的模块,
+ * 需要调用depandant.ready(mod);
  * @param {Module|Object} mod
  */
 Module.prototype.ready = function(mod) {
@@ -77,9 +77,7 @@ Module.prototype.ready = function(mod) {
  */
 Module.prototype.checkAllDeps = function() {
   var ok = true;
-  // I do not use forEach here because native forEach will
-  // bypass all undefined values, so it will introduce
-  // some tricky results.
+  // 没用原生forEach因为会跳过所有空值, 结果不可预期.
   // 由于模块导出值也可能是字符串, 尤其是模板相关的模块,
   // 所以这里通过isNull函数检查.
   for (var i = 0; i < this.depExports.length; ++i) {

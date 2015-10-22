@@ -151,8 +151,7 @@ function load(mod) {
     // 模块更新depExports之后, 预置的模块和已经导出的模块均已可用.
     // 尤其构建合并js文件后会是这种情况.
     if (mod.depExports[index]) {
-      --count;
-      return;
+      return --count;
     }
 
     // else it's a real file path. get its responding uid
@@ -237,9 +236,7 @@ function require(deps, cb) {
 
     // 更新mod.depExports
     forEach(deps, function(dep, index) {
-      // 得到依赖的绝对路径
-      var path = resolvePath(dep, uri);
-      mod.depExports[index] = resolve(dep) || resolve(path);
+      mod.depExports[index] = resolve(dep, mod);
     });
 
     load(mod);
@@ -256,7 +253,7 @@ function requireDirectly(id, baseUri) {
   // 如果依赖css.
   var index = id.indexOf('.css');
   if (index > 0 && index === id.length - 4) {
-    return {};
+    return {}; //todo
   }
 
   // a simple require statements always be resolved preload.

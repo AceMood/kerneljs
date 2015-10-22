@@ -77,8 +77,7 @@ function importLoad(url, callback) {
       createIeLoad(url);
       ieCurCallback = callback;
     }
-  }
-  else {
+  } else {
     // old Firefox
     curStyle.textContent = '@import "' + url + '";';
 
@@ -115,7 +114,7 @@ function linkLoad(url, callback) {
   link.rel = 'stylesheet';
   if (useOnload) {
     link.onload = function() {
-      link.onload = function() {};
+      link.onload = null;
       // for style dimensions queries, a short delay can still be necessary
       setTimeout(callback, 7);
     };
@@ -170,11 +169,9 @@ var currentAddingScript,
  */
 function fetchCss(url, name, callback) {
   function onCssLoad() {
-    var mod, cache = kerneljs.cache,
+    var mod,
+        cache = kerneljs.cache,
         uid = uidprefix + uuid++;
-
-    // doc.currentScript在异步情况下比如事件处理器或者setTimeout返回错误结果.
-    // 但如果不是这种情况且遵循每个文件一个define模块的话这个属性就能正常工作.
     var base = url;
 
     // 缓存path2uid
@@ -185,27 +182,29 @@ function fetchCss(url, name, callback) {
     }
 
     // 创建模块
-    mod = cache.mods[uid] = {
+    mod = cache.mods[uid] = new Module({
       uid: uid,
       id: null,
       url: url,
       deps: [],
       factory: null,
       status: Module.STATUS.complete
-    };
+    });
     emit(events.create, [mod]);
 
-    // 打包过后define会先发生, 这种情况script标签不会带有kernel_name字段.
+    // 打包过后define会先发生, 这种情况script标签不会带有kn_name字段.
     if (name && isTopLevel(name) && !mod.id) {
       mod.id = name;
     }
 
+    notify(mod);
+
+    /*
     fetchingList.remove(mod);
     mod.exports = {};
 
-    // Register module in global cache
+    // 注册模块
     kerneljs.cache.mods[mod.uid] = mod;
-    // two keys are the same thing
     if (mod.id) {
       kerneljs.cache.mods[mod.id] = mod;
     }
@@ -228,7 +227,7 @@ function fetchCss(url, name, callback) {
           dependant.ready(mod);
         }
       });
-    }
+    }*/
   }
 
   var method = (useImportLoad ? importLoad : linkLoad);
@@ -257,8 +256,7 @@ function fetchScript(url, name, callback) {
   var script = $doc.createElement('script');
   script.charset = 'utf-8';
   script.async = 1;
-  // custom attribute to remember the original required name
-  // which written in dependant module.
+  // 自定义属性保存初始的required name.
   script.kn_name = name;
 
   // 监听

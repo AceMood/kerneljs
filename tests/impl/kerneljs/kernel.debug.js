@@ -184,8 +184,7 @@ function importLoad(url, callback) {
       createIeLoad(url);
       ieCurCallback = callback;
     }
-  }
-  else {
+  } else {
     // old Firefox
     curStyle.textContent = '@import "' + url + '";';
 
@@ -277,11 +276,9 @@ var currentAddingScript,
  */
 function fetchCss(url, name, callback) {
   function onCssLoad() {
-    var mod, cache = kerneljs.cache,
+    var mod,
+        cache = kerneljs.cache,
         uid = uidprefix + uuid++;
-
-    // doc.currentScript在异步情况下比如事件处理器或者setTimeout返回错误结果.
-    // 但如果不是这种情况且遵循每个文件一个define模块的话这个属性就能正常工作.
     var base = url;
 
     // 缓存path2uid
@@ -292,27 +289,29 @@ function fetchCss(url, name, callback) {
     }
 
     // 创建模块
-    mod = cache.mods[uid] = {
+    mod = cache.mods[uid] = new Module({
       uid: uid,
       id: null,
       url: url,
       deps: [],
       factory: null,
       status: Module.STATUS.complete
-    };
+    });
     emit(events.create, [mod]);
 
-    // 打包过后define会先发生, 这种情况script标签不会带有kernel_name字段.
+    // 打包过后define会先发生, 这种情况script标签不会带有kn_name字段.
     if (name && isTopLevel(name) && !mod.id) {
       mod.id = name;
     }
 
+    notify(mod);
+
+    /*
     fetchingList.remove(mod);
     mod.exports = {};
 
-    // Register module in global cache
+    // 注册模块
     kerneljs.cache.mods[mod.uid] = mod;
-    // two keys are the same thing
     if (mod.id) {
       kerneljs.cache.mods[mod.id] = mod;
     }
@@ -335,7 +334,7 @@ function fetchCss(url, name, callback) {
           dependant.ready(mod);
         }
       });
-    }
+    }*/
   }
 
   var method = (useImportLoad ? importLoad : linkLoad);
@@ -364,8 +363,7 @@ function fetchScript(url, name, callback) {
   var script = $doc.createElement('script');
   script.charset = 'utf-8';
   script.async = 1;
-  // custom attribute to remember the original required name
-  // which written in dependant module.
+  // 自定义属性保存初始的required name.
   script.kn_name = name;
 
   // 监听
@@ -553,7 +551,7 @@ function normalize(p) {
 }
 
 /**
- * resolve a path with a '.' or '..' part in it.
+ * 解析相对路径部分 '.' or '..'.
  * @param {String} p
  * @return {String}
  */
@@ -773,8 +771,8 @@ Module.prototype.setStatus = function(status) {
 };
 
 /**
- * 当模块已被缓存<code>mod.status = Module.STATUS.complete</code>,
- * 则需要通知所有依赖于它的模块, 需要调用depandant.ready(mod);
+ * 当模块已被缓存, 则需要通知所有依赖于它的模块,
+ * 需要调用depandant.ready(mod);
  * @param {Module|Object} mod
  */
 Module.prototype.ready = function(mod) {
@@ -802,9 +800,7 @@ Module.prototype.ready = function(mod) {
  */
 Module.prototype.checkAllDeps = function() {
   var ok = true;
-  // I do not use forEach here because native forEach will
-  // bypass all undefined values, so it will introduce
-  // some tricky results.
+  // 没用原生forEach因为会跳过所有空值, 结果不可预期.
   // 由于模块导出值也可能是字符串, 尤其是模板相关的模块,
   // 所以这里通过isNull函数检查.
   for (var i = 0; i < this.depExports.length; ++i) {
@@ -1052,8 +1048,7 @@ function load(mod) {
     // 模块更新depExports之后, 预置的模块和已经导出的模块均已可用.
     // 尤其构建合并js文件后会是这种情况.
     if (mod.depExports[index]) {
-      --count;
-      return;
+      return --count;
     }
 
     // else it's a real file path. get its responding uid
@@ -1139,8 +1134,10 @@ function require(deps, cb) {
     // 更新mod.depExports
     forEach(deps, function(dep, index) {
       // 得到依赖的绝对路径
-      var path = resolvePath(dep, uri);
-      mod.depExports[index] = resolve(dep) || resolve(path);
+      // var path = resolvePath(dep, uri);
+      // mod.depExports[index] = resolve(dep) || resolve(path);
+
+      mod.depExports[index] = resolve(dep, mod);
     });
 
     load(mod);

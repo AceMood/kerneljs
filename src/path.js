@@ -35,7 +35,7 @@ function normalize(p) {
 }
 
 /**
- * resolve a path with a '.' or '..' part in it.
+ * 解析相对路径部分 '.' or '..'.
  * @param {String} p
  * @return {String}
  */
