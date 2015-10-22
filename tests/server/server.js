@@ -121,7 +121,8 @@ function start() {
 	  var testPath = '../tests/'+req.params.test+'/'+req.params[0];
 	  fs.readFile(path.normalize(path.join(__dirname, testPath)), function(err, data) {
 		if (err) return fourOhFour(res, err);
-		res.setHeader('Content-Type', 'text/javascript');
+		res.setHeader('Content-Type', req.params[0].indexOf('.css') > 0 ?
+				'text/css' : 'text/javascript');
 		res.end(data.toString());
 	  });
 	});

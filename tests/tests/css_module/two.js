@@ -1,14 +1,17 @@
-define(function (require) {
+define(function (require, exports, module) {
     //Dependencies
-    var one = require('one');
-    return {
+    var css = require('./one.css');
+    module.exports = {
         size: "small",
         color: "redtwo",
         doSomething: function() {
-            return one.doSomething();
+            return {
+                size: 'small',
+                color: 'redtwo'
+            }
         },
-        getOneModule: function() {
-            return one.module;
+        getCssModule: function() {
+            return css;
         }
     };
 });
