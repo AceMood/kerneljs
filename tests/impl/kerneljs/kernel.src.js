@@ -221,7 +221,7 @@ function linkLoad(url, callback) {
   link.rel = 'stylesheet';
   if (useOnload) {
     link.onload = function() {
-      link.onload = function() {};
+      link.onload = null;
       // for style dimensions queries, a short delay can still be necessary
       setTimeout(callback, 7);
     };
@@ -305,36 +305,6 @@ function fetchCss(url, name, callback) {
     }
 
     notify(mod);
-
-    /*
-    fetchingList.remove(mod);
-    mod.exports = {};
-
-    // 注册模块
-    kerneljs.cache.mods[mod.uid] = mod;
-    if (mod.id) {
-      kerneljs.cache.mods[mod.id] = mod;
-    }
-
-    // Dispatch ready event.
-    // All other modules recorded in dependencyList depend on this mod
-    // will execute their factories by order.
-    var depandants = dependencyList[mod.url];
-    if (depandants) {
-      // Here I first delete it because a complex condition:
-      // if a define occurs in a factory function, and the module whose
-      // factory function is current executing, it's a callback executing.
-      // which means the currentScript would be mod just been fetched
-      // successfully. The url would be the previous one, and we store the
-      // record in global cache dependencyList.
-      // So we must delete it first to avoid the factory function execute twice.
-      delete dependencyList[mod.url];
-      forEach(depandants, function(dependant) {
-        if (dependant.ready && dependant.status === Module.STATUS.fetching) {
-          dependant.ready(mod);
-        }
-      });
-    }*/
   }
 
   var method = (useImportLoad ? importLoad : linkLoad);
@@ -353,7 +323,7 @@ function fetchScript(url, name, callback) {
       interactiveScript = null;
       script.onreadystatschange = script.onload = script.onerror = null;
       // Remove the script to reduce memory leak
-      if (!kerneljs.config.debug) {
+      if (!kerneljs.data.debug) {
         $head.removeChild(script);
       }
       script = null;
@@ -875,7 +845,7 @@ Module.prototype.exec = function() {
   }
 
   // 删除回调函数
-  if (!kerneljs.config.debug) {
+  if (!kerneljs.data.debug) {
     delete mod.factory;
   }
 
@@ -1133,10 +1103,6 @@ function require(deps, cb) {
 
     // 更新mod.depExports
     forEach(deps, function(dep, index) {
-      // 得到依赖的绝对路径
-      // var path = resolvePath(dep, uri);
-      // mod.depExports[index] = resolve(dep) || resolve(path);
-
       mod.depExports[index] = resolve(dep, mod);
     });
 
@@ -1154,7 +1120,7 @@ function requireDirectly(id, baseUri) {
   // 如果依赖css.
   var index = id.indexOf('.css');
   if (index > 0 && index === id.length - 4) {
-    return {};
+    return {}; //todo
   }
 
   // a simple require statements always be resolved preload.
@@ -1354,12 +1320,12 @@ kerneljs.config = function(obj) {
   var key, k;
   for (key in obj) {
     if (hasOwn.call(obj, key)) {
-      if (kerneljs[key]) {
+      if (kerneljs.data[key]) {
         for (k in obj[key]) {
-          kerneljs[key][k] = obj[key][k];
+          kerneljs.data[key][k] = obj[key][k];
         }
       } else {
-        kerneljs[key] = obj[key];
+        kerneljs.data[key] = obj[key];
       }
     }
   }
@@ -1386,6 +1352,7 @@ kerneljs.cache = {
 kerneljs.reset = function() {
   this.cache.mods = {};
   this.cache.path2uid = {};
+  this.data = {};
   handlersMap = {};
 };
 
@@ -1400,18 +1367,21 @@ kerneljs.url = function(url) {
 
 kerneljs.on = on;
 kerneljs.emit = emit;
+kerneljs.request = fetchScript;
 kerneljs.eventsType = events;
+kerneljs.data = {};
 
 /** 全局导出 APIs */
-global.require = global.__r = require;
-global.define = global.__d = define;
+global.require = require;
+global.define = define;
 global.kerneljs = kerneljs;
 
 // 基础配置
 kerneljs.config({
   baseUrl: '',
   debug: true,
-  paths: {}
+  paths: {},
+  useLocalCache: true
 });
 
 /**
@@ -1457,4 +1427,62 @@ function emit(eventName, args) {
   }
 }
 
+(function() {
+  var supportLocalStorage = ('localStorage' in window);
+  var oldRequest = kerneljs.request;
+
+  fetchScript = kerneljs.request = function(url, name, callback) {
+    if (kerneljs.data.useLocalCache &&
+        supportLocalStorage) {
+      if (localStorage[url]) {
+        var code = localStorage[url];
+        eval.call(null, code);
+        callback();
+      } else {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url);
+
+        xhr.onreadystatechange = function() {
+          if (xhr.readyState === 4) {
+            if (xhr.status === 200 ||
+                ((xhr.status === 0) && xhr.responseText) ) {
+              var code = xhr.responseText;
+
+              localStorage[url] = code;
+
+              var script = $doc.createElement('script');
+              script.charset = 'utf-8';
+              script.defer = true;
+              // Have to use .text, since we support IE8,
+              // which won't allow appending to a script
+              script.text = code;
+              currentAddingScript = script;
+              if ($base) {
+                $head.insertBefore(script, $base);
+              } else {
+                $head.appendChild(script);
+              }
+              currentAddingScript = null;
+            } else {
+              // new Error(xhr.statusText);
+            }
+          }
+        };
+
+        // By default XHRs never timeout, and even Chrome doesn't implement the
+        // spec for xhr.timeout. So we do it ourselves.
+        setTimeout(function() {
+          if (xhr.readyState < 4) {
+            xhr.abort();
+          }
+        }, 5000);
+
+        xhr.send();
+      }
+    } else {
+      oldRequest(url, name, callback);
+    }
+  };
+
+})();
 }(this));

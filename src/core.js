@@ -319,10 +319,11 @@ function resolve(id, mod) {
   }
 
   // step 2: parse built-in and already existed modules
-  if (kerneljs.cache.mods[id]) {
+  var cache = kerneljs.cache;
+  if (cache.mods[id]) {
     var path = resolvePath(id, (mod && mod.url) || getCurrentScriptPath());
-    var cacheMod = kerneljs.cache.mods[id] ||
-        kerneljs.cache.mods[kerneljs.cache.path2uid[path][0]];
+    var cacheMod = cache.mods[id] ||
+        cache.mods[cache.path2uid[path][0]];
     // we check circular reference first, if it there, we return the
     // empty_mod immediately.
     if (cacheMod.status === Module.STATUS.complete ||

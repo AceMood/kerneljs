@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+    <button id="btn">click me!</button>
+    <script id="s2">
+        function handler() {
+            debugger;
+            alert(document.currentScript.id);
+        }
+    </script>
+    <script id="s1">
+        //var btn = document.getElementById('btn');
+        //btn.addEventListener('click', handler, false);
+        //setTimeout(handler, 1000);
+        var div = document.createElement('div');
+        div.innerHTML =
+            'Hello <a>&lt;script&gt;alert(&quot;!&quot;)&lt;/script&gt;</a>!';
+        console.log(div.textContent);
+        document.body.appendChild(div);
+    </script>
+</body>
+</html>

@@ -17,6 +17,7 @@ module.exports = function(grunt) {
         'src/core.js',
         'src/kernel.js',
         'src/event.js',
+        'src/plugins/localStorage.js',
         'src/log.js'
       ],
       options: {
@@ -47,6 +48,7 @@ module.exports = function(grunt) {
           'src/core.js',
           'src/kernel.js',
           'src/event.js',
+          'src/plugins/localStorage.js',
           'src/log.js',
           'src/outro.js'
         ],
@@ -62,6 +64,7 @@ module.exports = function(grunt) {
           'src/core.js',
           'src/kernel.js',
           'src/event.js',
+          'src/plugins/localStorage.js',
           'src/outro.js'
         ],
         dest: 'dist/kernel.src.js'

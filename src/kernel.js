@@ -66,12 +66,12 @@ kerneljs.config = function(obj) {
   var key, k;
   for (key in obj) {
     if (hasOwn.call(obj, key)) {
-      if (kerneljs[key]) {
+      if (kerneljs.data[key]) {
         for (k in obj[key]) {
-          kerneljs[key][k] = obj[key][k];
+          kerneljs.data[key][k] = obj[key][k];
         }
       } else {
-        kerneljs[key] = obj[key];
+        kerneljs.data[key] = obj[key];
       }
     }
   }
@@ -98,6 +98,7 @@ kerneljs.cache = {
 kerneljs.reset = function() {
   this.cache.mods = {};
   this.cache.path2uid = {};
+  this.data = {};
   handlersMap = {};
 };
 
@@ -112,16 +113,19 @@ kerneljs.url = function(url) {
 
 kerneljs.on = on;
 kerneljs.emit = emit;
+kerneljs.request = fetchScript;
 kerneljs.eventsType = events;
+kerneljs.data = {};
 
 /** 全局导出 APIs */
-global.require = global.__r = require;
-global.define = global.__d = define;
+global.require = require;
+global.define = define;
 global.kerneljs = kerneljs;
 
 // 基础配置
 kerneljs.config({
   baseUrl: '',
   debug: true,
-  paths: {}
+  paths: {},
+  useLocalCache: false
 });

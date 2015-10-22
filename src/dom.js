@@ -20,13 +20,13 @@ var useImportLoad = false,
 
 // trident / msie
 if (engine[1] || engine[7]) {
-  useImportLoad = (engine[1] - 0) < 6 || (engine[7] - 0) <= 9;
+  useImportLoad = engine[1] < 6 || engine[7] <= 9;
   // webkit
 } else if (engine[2] || engine[8]) {
   useOnload = false;
   // gecko
 } else if (engine[4]) {
-  useImportLoad = (engine[4] - 0) < 18;
+  useImportLoad = engine[4] < 18;
 }
 
 var ieCnt = 0;
@@ -198,36 +198,6 @@ function fetchCss(url, name, callback) {
     }
 
     notify(mod);
-
-    /*
-    fetchingList.remove(mod);
-    mod.exports = {};
-
-    // 注册模块
-    kerneljs.cache.mods[mod.uid] = mod;
-    if (mod.id) {
-      kerneljs.cache.mods[mod.id] = mod;
-    }
-
-    // Dispatch ready event.
-    // All other modules recorded in dependencyList depend on this mod
-    // will execute their factories by order.
-    var depandants = dependencyList[mod.url];
-    if (depandants) {
-      // Here I first delete it because a complex condition:
-      // if a define occurs in a factory function, and the module whose
-      // factory function is current executing, it's a callback executing.
-      // which means the currentScript would be mod just been fetched
-      // successfully. The url would be the previous one, and we store the
-      // record in global cache dependencyList.
-      // So we must delete it first to avoid the factory function execute twice.
-      delete dependencyList[mod.url];
-      forEach(depandants, function(dependant) {
-        if (dependant.ready && dependant.status === Module.STATUS.fetching) {
-          dependant.ready(mod);
-        }
-      });
-    }*/
   }
 
   var method = (useImportLoad ? importLoad : linkLoad);
@@ -246,7 +216,7 @@ function fetchScript(url, name, callback) {
       interactiveScript = null;
       script.onreadystatschange = script.onload = script.onerror = null;
       // Remove the script to reduce memory leak
-      if (!kerneljs.config.debug) {
+      if (!kerneljs.data.debug) {
         $head.removeChild(script);
       }
       script = null;

@@ -152,7 +152,7 @@ Module.prototype.exec = function() {
   }
 
   // 删除回调函数
-  if (!kerneljs.config.debug) {
+  if (!kerneljs.data.debug) {
     delete mod.factory;
   }
 
