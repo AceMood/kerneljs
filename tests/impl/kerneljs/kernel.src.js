@@ -819,23 +819,6 @@ Module.prototype.checkAllDeps = function() {
 /** 更新mod.depExports */
 Module.prototype.resolveDeps = function() {
   var mod = this;
-  if (mod.deps && mod.deps.length > 0) {
-    forEach(mod.deps, function(dep, index) {
-      if (/^(exports|module)$/.test(dep)) {
-        mod.cjsWrapper = true;
-      }
-      // 解析依赖模块, 如已经exports则更新mod.depExports.
-      var inject = resolve(dep, mod);
-      if (inject) {
-        mod.depExports[index] = inject;
-      }
-    });
-  }
-};
-
-/** 执行模块的回调函数 */
-Module.prototype.exec = function() {
-  var mod = this;
 
   function requireInContext(id, callback) {
     // 异步调用代理到全局require方法
@@ -854,12 +837,33 @@ Module.prototype.exec = function() {
   requireInContext.async = require.async;
   requireInContext.toUrl = require.toUrl;
 
-  forEach(mod.depExports, function(depExport, index) {
-    if (depExport === require) {
-      mod.depExports[index] = requireInContext;
-      return break_obj;
-    }
-  });
+  if (mod.deps && mod.deps.length > 0) {
+    forEach(mod.deps, function(dep, index) {
+      if (dep === 'require') {
+        mod.depExports[index] = requireInContext;
+        return;
+      } else if (dep === 'exports') {
+        mod.depExports[index] = mod.exports;
+        mod.cjsWrapper = true;
+        return;
+      } else if (dep === 'module') {
+        mod.depExports[index] = mod;
+        mod.cjsWrapper = true;
+        return;
+      }
+
+      // 解析依赖模块, 更新mod.depExports.
+      var inject = resolve(dep, mod);
+      if (inject) {
+        mod.depExports[index] = inject;
+      }
+    });
+  }
+};
+
+/** 执行模块的回调函数 */
+Module.prototype.exec = function() {
+  var mod = this;
 
   // amd
   if (!mod.cjsWrapper) {
@@ -874,12 +878,12 @@ Module.prototype.exec = function() {
     mod.exports = {};
   }
 
-  mod.setStatus(Module.STATUS.complete);
-
   // 删除回调函数
   if (!kerneljs.config.debug) {
     delete mod.factory;
   }
+
+  mod.setStatus(Module.STATUS.complete);
 };
 
 /**
@@ -1117,7 +1121,7 @@ function require(deps, cb) {
   var uri = getCurrentScriptPath();
 
   if (typeOf(deps) === 'string' && argLen === 1) {
-    requireDirectly(deps, uri);
+    return requireDirectly(deps, uri);
   } else {
     if (typeOf(cb) !== 'function') {
       throw 'Global require\'s args TypeError.';
@@ -1235,14 +1239,9 @@ function resolve(id, mod) {
 }
 
 /**
- * A mechanism to check cycle reference.
- * More about cycle reference can be solved by design pattern, and a
- * well-designed API(Architecture) can avoid this problem, but in case
- * it happened, we do the same thing for dojo loader and specification
- * written on RequireJS website. See:
- *  'http://requirejs.org/docs/api.html#circular'
- *   and
- *  'http://dojotoolkit.org/documentation/tutorials/1.9/modules_advanced/'
+ * 检查简单的循环依赖. 更多循环依赖的建议见:
+ * `http://requirejs.org/docs/api.html#circular`.
+ * `http://dojotoolkit.org/documentation/tutorials/1.9/modules_advanced/`
  *
  * todo only simple cycle refer done here
  * @param {String} path A file path that contains the fetching module.

@@ -220,7 +220,7 @@ function require(deps, cb) {
   var uri = getCurrentScriptPath();
 
   if (typeOf(deps) === 'string' && argLen === 1) {
-    requireDirectly(deps, uri);
+    return requireDirectly(deps, uri);
   } else {
     if (typeOf(cb) !== 'function') {
       throw 'Global require\'s args TypeError.';
@@ -338,14 +338,9 @@ function resolve(id, mod) {
 }
 
 /**
- * A mechanism to check cycle reference.
- * More about cycle reference can be solved by design pattern, and a
- * well-designed API(Architecture) can avoid this problem, but in case
- * it happened, we do the same thing for dojo loader and specification
- * written on RequireJS website. See:
- *  'http://requirejs.org/docs/api.html#circular'
- *   and
- *  'http://dojotoolkit.org/documentation/tutorials/1.9/modules_advanced/'
+ * 检查简单的循环依赖. 更多循环依赖的建议见:
+ * `http://requirejs.org/docs/api.html#circular`.
+ * `http://dojotoolkit.org/documentation/tutorials/1.9/modules_advanced/`
  *
  * todo only simple cycle refer done here
  * @param {String} path A file path that contains the fetching module.

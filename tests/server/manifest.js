@@ -33,7 +33,7 @@ exports.manifest.zazl = {
 };*/
 
 exports.manifest.kerneljs = {
-    name:   'kerneljs @ 0.3.0',
+    name:   'KernelJS @ 0.3.0',
     impl:   'kerneljs/kernel.debug.js',
     config: 'kerneljs/config.js'
 };

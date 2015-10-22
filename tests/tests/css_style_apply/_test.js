@@ -1,8 +1,8 @@
-go(["_reporter", "one", "two"], function (amdJS, one) {
+go(["_reporter", "one"], function (amdJS, one) {
 
-  amdJS.assert('palevioletred' === one.color, 'css_module: one.color');
-  amdJS.assert('60px' === one.lineHeight, 'css_module: one.lineHeight');
-  amdJS.assert('24px' === one.fontSize, 'css_module: one.fontSize');
+  amdJS.assert('rgb(219, 112, 147)' === one.color, 'css_style_apply: one.color');
+  amdJS.assert('60px' === one.lineHeight, 'css_style_apply: one.lineHeight');
+  amdJS.assert('24px' === one.fontSize, 'css_style_apply: one.fontSize');
 
   amdJS.print('DONE', 'done');
 

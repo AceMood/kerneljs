@@ -4,7 +4,7 @@ go([
   'a'
 ], function (amdJS, require) {
   require(['b', 'c'], function (b, c) {
-    //debugger;
+    debugger;
 
     amdJS.assert('a' === require('a').name, 'basic_require: require a.name');
     amdJS.assert('b' === b.name, 'basic_require: b.name');
