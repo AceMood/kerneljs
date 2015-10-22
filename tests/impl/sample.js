@@ -17,6 +17,7 @@ implemented = {
   basic: true,
   anon: true,
   funcString: true,
+  cssModule: true,
   namedWrapped: true,
   require: true,
 
