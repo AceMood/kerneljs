@@ -66,7 +66,7 @@ Module.prototype.ready = function(mod) {
       }
     }
   }
-  if (this.checkAllDepsOK()) {
+  if (this.checkAllDeps()) {
     notify(this);
   }
 };
@@ -75,7 +75,7 @@ Module.prototype.ready = function(mod) {
  * 检查是否模块的依赖项都已complete.
  * @return {boolean}
  */
-Module.prototype.checkAllDepsOK = function() {
+Module.prototype.checkAllDeps = function() {
   var ok = true;
   // I do not use forEach here because native forEach will
   // bypass all undefined values, so it will introduce
@@ -91,6 +91,23 @@ Module.prototype.checkAllDepsOK = function() {
   return ok;
 };
 
+/** 更新mod.depExports */
+Module.prototype.resolveDeps = function() {
+  var mod = this;
+  if (mod.deps && mod.deps.length > 0) {
+    forEach(mod.deps, function(dep, index) {
+      if (/^(exports|module)$/.test(dep)) {
+        mod.cjsWrapper = true;
+      }
+      // 解析依赖模块, 如已经exports则更新mod.depExports.
+      var inject = resolve(dep, mod);
+      if (inject) {
+        mod.depExports[index] = inject;
+      }
+    });
+  }
+};
+
 /** 执行模块的回调函数 */
 Module.prototype.exec = function() {
   var mod = this;
@@ -102,27 +119,11 @@ Module.prototype.exec = function() {
       return require(id, callback);
     }
 
-    if (typeOf(id) !== 'string' ||
-        !!callback) {
+    if (typeOf(id) !== 'string' || !!callback) {
       throw 'Module require\'s args TypeError.';
     }
 
-    // 如果依赖css.
-    var isCss = (id.indexOf('.css') === id.length - 4);
-    if (isCss) {
-      return {};
-    }
-
-    var need = resolvePath(id, mod.url);
-    // a simple require statements always be resolved preload.
-    // so if length == 1 then return its exports object.
-    var inject = resolve(id);
-    if (inject) {
-      return inject;
-    } else {
-      var uid = kerneljs.cache.path2uid[need][0];
-      return kerneljs.cache.mods[uid].exports || null;
-    }
+    return requireDirectly(id, mod.url);
   }
 
   requireInContext.async = require.async;
@@ -149,6 +150,11 @@ Module.prototype.exec = function() {
   }
 
   mod.setStatus(Module.STATUS.complete);
+
+  // 删除回调函数
+  if (!kerneljs.config.debug) {
+    delete mod.factory;
+  }
 };
 
 /**

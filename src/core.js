@@ -116,18 +116,7 @@ function define(id, deps, factory) {
   }
 
   // 更新mod.depExports
-  if (mod.deps && mod.deps.length > 0) {
-    forEach(mod.deps, function(dep, index) {
-      if (/^(exports|module)$/.test(dep)) {
-        mod.cjsWrapper = true;
-      }
-      // 解析依赖模块, 如已经exports则更新mod.depExports.
-      var inject = resolve(dep, mod);
-      if (inject) {
-        mod.depExports[index] = inject;
-      }
-    });
-  }
+  mod.resolveDeps();
 
   // 加载依赖模块
   load(mod);
@@ -159,10 +148,8 @@ function load(mod) {
   mod.setStatus(Module.STATUS.fetching);
 
   forEach(mod.deps, function(name, index) {
-    // After resolving, built-in module and existed modules are
-    // available. it's useful after static analyze and combo files
-    // into one js file.
-    // so check if an object first of all.
+    // 模块更新depExports之后, 预置的模块和已经导出的模块均已可用.
+    // 尤其构建合并js文件后会是这种情况.
     if (mod.depExports[index]) {
       --count;
       return;
@@ -172,8 +159,7 @@ function load(mod) {
     var path = resolvePath(name, currentPath);
     var uid = cache.path2uid[path];
 
-    // File has been fetched, but its deps may not being fetched yet,
-    // so its status is 'fetching' now.
+    // 如果加载模块的请求已经发出但模块没加载完成, 模块的状态是`fetching`.
     // we check circular reference first, if it there, we return the
     // empty_mod immediately.
     if (uid && cache.mods[uid[0]] &&
@@ -181,23 +167,23 @@ function load(mod) {
         checkCycle(path, mod))) {
       --count;
       mod.depExports[index] = cache.mods[uid[0]].exports;
+      return;
+    }
 
-      // It's a user-defined or not been fetched file.
-      // If it's a user-defined id and not config in global alias,
-      // it will produce a 404 error.
-    } else {
-      // record this mod depend on the dep current now.
-      if (!dependencyList[path]) {
-        dependencyList[path] = [mod];
-      } else if (indexOf(dependencyList[path], mod) < 0) {
-        dependencyList[path].push(mod);
-      }
+    // It's a user-defined or not been fetched file.
+    // If it's a user-defined id and not config in global alias,
+    // it will produce a 404 error.
+    // record this mod depend on the dep current now.
+    if (!dependencyList[path]) {
+      dependencyList[path] = [mod];
+    } else if (indexOf(dependencyList[path], mod) < 0) {
+      dependencyList[path].push(mod);
+    }
 
-      if (!sendingList[path]) {
-        sendingList[path] = true;
-        // 加载模块
-        fetch(path, name, noop);
-      }
+    if (!sendingList[path]) {
+      sendingList[path] = true;
+      // 加载模块
+      fetch(path, name, noop);
     }
   });
 
@@ -207,28 +193,6 @@ function load(mod) {
     notify(mod);
   }
 }
-
-/**
- * define.amd property, conforms to the AMD API.
- *
- * The properties inside the define.amd object are not specified at this time.
- * It can be used by implementers who want to inform of other capabilities
- * beyond the basic API that the implementation supports.
- *
- * Existence of the define.amd property with an object value indicates
- * conformance with this API. If there is another version of the API,
- * it will likely define another property, like define.amd2, to indicate
- * implementations that conform to that version of the API.
- *
- * An example of how it may be defined for an implementation that allows
- * loading more than one version of a module in an environment:
- *
- * @typedef {Object}
- */
-define.amd = {
-  creator: 'AceMood',
-  email: 'zmike86@gmail.com'
-};
 
 /**
  * 一般作为页面逻辑的入口, 提倡js初始化只调用一次require.
@@ -264,24 +228,53 @@ function require(deps, cb) {
 
   var uri = getCurrentScriptPath();
 
-  // 为`require`的调用生成一个匿名模块, 分配其uid且id为null
-  var mod = new Module({
-    uid: uidprefix + uuid++,
-    id: null,
-    url: uri,
-    deps: deps,
-    factory: cb,
-    status: Module.STATUS.init
-  });
+  if (typeOf(deps) === 'string' && arguments.length === 1) {
+    requireDirectly(deps, uri);
+  } else {
+    // 为`require`的调用生成一个匿名模块, 分配其uid且id为null
+    var mod = new Module({
+      uid: uidprefix + uuid++,
+      id: null,
+      url: uri,
+      deps: deps,
+      factory: cb,
+      status: Module.STATUS.init
+    });
 
-  // 更新mod.depExports
-  forEach(deps, function(dep, index) {
-    // 得到依赖的绝对路径
-    var path = resolvePath(dep, uri);
-    mod.depExports[index] = resolve(dep) || resolve(path);
-  });
+    // 更新mod.depExports
+    forEach(deps, function(dep, index) {
+      // 得到依赖的绝对路径
+      var path = resolvePath(dep, uri);
+      mod.depExports[index] = resolve(dep) || resolve(path);
+    });
 
-  load(mod);
+    load(mod);
+  }
+}
+
+/**
+ * 调用require的方式是`require('xxx')`
+ * @param {String} id 请求的模块id
+ * @param {String} baseUri 解析请求模块需要的base网路地址
+ * @returns {?Module|Object} 返回请求模块
+ */
+function requireDirectly(id, baseUri) {
+  // 如果依赖css.
+  var isCss = (id.indexOf('.css') === id.length - 4);
+  if (isCss) {
+    return {};
+  }
+
+  var realPath = resolvePath(id, baseUri);
+  // a simple require statements always be resolved preload.
+  // so return its exports object.
+  var inject = resolve(id);
+  if (inject) {
+    return inject;
+  } else {
+    var uid = kerneljs.cache.path2uid[realPath][0];
+    return kerneljs.cache.mods[uid].exports || null;
+  }
 }
 
 /**
@@ -321,7 +314,7 @@ function notify(mod) {
 /**
  * Used in the CommonJS wrapper form of define a module.
  * @param {String} name
- * @param {Module} mod Pass-in this argument is to used in a cjs
+ * @param {?Module=} mod Pass-in this argument is to used in a cjs
  *   wrapper form, if not we could not refer the module and exports
  * @return {Object}
  */
@@ -396,4 +389,26 @@ require.toUrl = function(id) {
  */
 require.async = function(id, callback) {
   require([id], callback);
+};
+
+/**
+ * define.amd property, conforms to the AMD API.
+ *
+ * The properties inside the define.amd object are not specified at this time.
+ * It can be used by implementers who want to inform of other capabilities
+ * beyond the basic API that the implementation supports.
+ *
+ * Existence of the define.amd property with an object value indicates
+ * conformance with this API. If there is another version of the API,
+ * it will likely define another property, like define.amd2, to indicate
+ * implementations that conform to that version of the API.
+ *
+ * An example of how it may be defined for an implementation that allows
+ * loading more than one version of a module in an environment:
+ *
+ * @typedef {Object}
+ */
+define.amd = {
+  creator: 'AceMood',
+  email: 'zmike86@gmail.com'
 };
