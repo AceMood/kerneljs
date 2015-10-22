@@ -1,6 +1,6 @@
 define(function(require, exports, module) {
 
-  //require('./moduleA.css');
+  require('./moduleA.css');
 
   debugger;
 

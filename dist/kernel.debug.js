@@ -929,7 +929,8 @@ function exist_id_error(id) {
  * @param {(Function|Object)?} factory      回调函数
  */
 function define(id, deps, factory) {
-  var mod, cache = kerneljs.cache,
+  var mod,
+      cache = kerneljs.cache,
       uid = uidprefix + uuid++;
 
   // doc.currentScript在异步情况下比如事件处理器或者setTimeout返回错误结果.
@@ -958,9 +959,7 @@ function define(id, deps, factory) {
   // CommonJS
   if (!deps && typeOf(factory) === 'function') {
     deps = [];
-    // Remove comments from the callback string,
-    // look for require calls, and pull them into the dependencies,
-    // but only if there are function args.
+    // 在回调函数中提取`require('xxx')`
     if (factory.length) {
       factory
         .toString()
@@ -1004,13 +1003,14 @@ function define(id, deps, factory) {
     factory: factory,
     status: Module.STATUS.init
   });
-  emit(events.create, [mod]);
 
   // 打包过后define会先发生, 这种情况script标签不会带有kn_name字段.
   var name = getCurrentScript().kn_name;
   if (name && isTopLevel(name) && !mod.id) {
     mod.id = name;
   }
+
+  emit(events.create, [mod]);
 
   // 更新mod.depExports
   mod.resolveDeps();
@@ -1026,11 +1026,11 @@ function define(id, deps, factory) {
 function load(mod) {
   var cache = kerneljs.cache,
       count = mod.deps.length,
-      inPathConfig = kerneljs.paths && kerneljs.paths[mod.id] ? true : false;
+      inPathConfig = kerneljs.paths && kerneljs.paths[mod.id];
 
   // 若mod.id在paths中已经配置则相对路径是location.href,
   // 详见: config_path_relative test case.
-  var currentPath = inPathConfig ? loc.href : (mod.url || getCurrentScriptPath());
+  var currentPath = inPathConfig ? loc.href : mod.url;
 
   // 更新fetchingList.
   fetchingList.add(mod);
@@ -1122,7 +1122,7 @@ function require(deps, cb) {
     if (typeOf(cb) !== 'function') {
       throw 'Global require\'s args TypeError.';
     }
-    // 为`require`的调用生成一个匿名模块, 分配其uid且id为null
+    // 为`require([], cb)`的调用生成一个匿名模块, 分配其uid且id为null
     var mod = new Module({
       uid: uidprefix + uuid++,
       id: null,
@@ -1151,18 +1151,18 @@ function require(deps, cb) {
  */
 function requireDirectly(id, baseUri) {
   // 如果依赖css.
-  var isCss = (id.indexOf('.css') === id.length - 4);
-  if (isCss) {
+  var index = id.indexOf('.css');
+  if (index > 0 && index === id.length - 4) {
     return {};
   }
 
-  var realPath = resolvePath(id, baseUri);
   // a simple require statements always be resolved preload.
   // so return its exports object.
   var inject = resolve(id);
   if (inject) {
     return inject;
   } else {
+    var realPath = resolvePath(id, baseUri);
     var uid = kerneljs.cache.path2uid[realPath][0];
     return kerneljs.cache.mods[uid].exports || null;
   }
@@ -1204,31 +1204,31 @@ function notify(mod) {
 
 /**
  * Used in the CommonJS wrapper form of define a module.
- * @param {String} name
- * @param {?Module=} mod Pass-in this argument is to used in a cjs
- *   wrapper form, if not we could not refer the module and exports
+ * @param {String} id 模块id
+ * @param {?Module=} mod 传入这个参数是为了CommonJS方式要传入mod.exports.
  * @return {Object}
  */
-function resolve(name, mod) {
-  // step 1: parse built-in and already existed modules
-  if (kerneljs.cache.mods[name]) {
-    var currentScriptPath = getCurrentScriptPath(),
-        path = resolvePath(name, currentScriptPath);
-    // we check circular reference first, if it there, we return the
-    // empty_mod immediately.
-    if (kerneljs.cache.mods[name].status === Module.STATUS.complete ||
-        checkCycle(path, mod)) {
-      return kerneljs.cache.mods[name].exports;
-    }
+function resolve(id, mod) {
+  // step 1: CommonJS
+  if (id === 'require') {
+    return require;
+  } else if (id === 'module') {
+    return mod;
+  } else if (id === 'exports') {
+    return mod && mod.exports;
   }
 
-  // step 2: cjs-wrapper form
-  if (name === 'require') {
-    return require;
-  } else if (name === 'module') {
-    return mod;
-  } else if (name === 'exports') {
-    return mod && mod.exports;
+  // step 2: parse built-in and already existed modules
+  if (kerneljs.cache.mods[id]) {
+    var path = resolvePath(id, (mod && mod.url) || getCurrentScriptPath());
+    var cacheMod = kerneljs.cache.mods[id] ||
+        kerneljs.cache.mods[kerneljs.cache.path2uid[path][0]];
+    // we check circular reference first, if it there, we return the
+    // empty_mod immediately.
+    if (cacheMod.status === Module.STATUS.complete ||
+        checkCycle(path, mod)) {
+      return cacheMod.exports;
+    }
   }
 
   return null;
@@ -1274,9 +1274,9 @@ require.toUrl = function(id) {
 };
 
 /**
- * Used to Load module after page loaded.
- * @param {!String} id Identifier or path to module.
- * @param {!Function} callback Factory function.
+ * 用于页面初始化完毕后异步加载模块.
+ * @param {!String} id 模块id.
+ * @param {!Function} callback 回调函数.
  */
 require.async = function(id, callback) {
   require([id], callback);

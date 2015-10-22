@@ -9,13 +9,13 @@
     <div id="moduleB">Hello World!</div>
     <div id="moduleC">Hello World!</div>
 
-    <!--<script src="../dist/kernel.debug.js"></script>-->
-    <script src="../sea.js"></script>
+    <script src="../dist/kernel.debug.js"></script>
+    <!--<script src="../sea.js"></script>-->
     <script>
 
-        seajs.use(['./moduleA'], function(moduleA) {
+        require(['./moduleA', './moduleB', './moduleC.css'], function(moduleA, moduleB) {
 
-            alert(moduleA.name);
+            alert(moduleA.name + '  ' + moduleB.name);
 
         });
     </script>

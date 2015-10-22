@@ -1,6 +1,8 @@
 // _reporter.js
 (function() {
-    var factory = function () {
+
+    // define this module
+    define("_reporter", [], function () {
         var exports = {};
 
         exports.print = function () {
@@ -23,9 +25,6 @@
         };
 
         return exports;
-    };
-
-    // define this module
-    define("_reporter", [], factory);
+    });
 
 })();
