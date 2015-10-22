@@ -205,32 +205,26 @@ function load(mod) {
  * @param {Function?} cb
  */
 function require(deps, cb) {
+  var argLen = arguments.length;
   // 传入配置对象
-  if (typeOf(deps) === 'object' &&
-      !cb) {
+  if (typeOf(deps) === 'object' && argLen === 1) {
     kerneljs.config(deps);
     return;
   }
 
-  if (typeOf(deps) !== 'array' ||
-      typeOf(cb) !== 'function') {
-    throw 'Global require\'s args TypeError.';
-  }
-
   // 无依赖
-  if (deps.length === 0) {
-    if (typeOf(cb) === 'function') {
-      return cb();
-    } else {
-      return cb;
-    }
+  if (typeOf(deps) === 'array' && deps.length === 0) {
+    return typeOf(cb) === 'function' ? cb() : cb;
   }
 
   var uri = getCurrentScriptPath();
 
-  if (typeOf(deps) === 'string' && arguments.length === 1) {
+  if (typeOf(deps) === 'string' && argLen === 1) {
     requireDirectly(deps, uri);
   } else {
+    if (typeOf(cb) !== 'function') {
+      throw 'Global require\'s args TypeError.';
+    }
     // 为`require`的调用生成一个匿名模块, 分配其uid且id为null
     var mod = new Module({
       uid: uidprefix + uuid++,
@@ -393,19 +387,6 @@ require.async = function(id, callback) {
 
 /**
  * define.amd property, conforms to the AMD API.
- *
- * The properties inside the define.amd object are not specified at this time.
- * It can be used by implementers who want to inform of other capabilities
- * beyond the basic API that the implementation supports.
- *
- * Existence of the define.amd property with an object value indicates
- * conformance with this API. If there is another version of the API,
- * it will likely define another property, like define.amd2, to indicate
- * implementations that conform to that version of the API.
- *
- * An example of how it may be defined for an implementation that allows
- * loading more than one version of a module in an environment:
- *
  * @typedef {Object}
  */
 define.amd = {
