@@ -10,6 +10,7 @@ var config = require,
     implemented = {
         basic: true,
         anon: true,
+        cssModule: true,
         funcString: true,
         namedWrapped: true,
         require: true,

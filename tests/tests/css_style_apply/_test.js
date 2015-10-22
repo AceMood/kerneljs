@@ -1,11 +1,9 @@
-go(["_reporter", "one", "two"], function (amdJS, one, two) {
-    var args = two.doSomething(),
-        cssMod = two.getCssModule();
+go(["_reporter", "one", "two"], function (amdJS, one) {
 
-    amdJS.assert('large' === one.size, 'css_module: one.size');
-    amdJS.assert('small' === two.size, 'css_module: two.size');
-    amdJS.assert('small' === args.size, 'css_module: args.size');
-    amdJS.assert('redtwo' === args.color, 'css_module: args.color');
-    amdJS.assert('object' === typeof cssMod, 'css_module: cssMod is an object');
-    amdJS.print('DONE', 'done');
+  amdJS.assert('palevioletred' === one.color, 'css_module: one.color');
+  amdJS.assert('60px' === one.lineHeight, 'css_module: one.lineHeight');
+  amdJS.assert('24px' === one.fontSize, 'css_module: one.fontSize');
+
+  amdJS.print('DONE', 'done');
+
 });
