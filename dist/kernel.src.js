@@ -1368,7 +1368,7 @@ kerneljs.url = function(url) {
 
 kerneljs.on = on;
 kerneljs.emit = emit;
-kerneljs.request = fetchScript;
+//kerneljs.request = fetchScript;
 kerneljs.eventsType = events;
 kerneljs.data = {};
 
