@@ -594,9 +594,8 @@ function isRelative(p) {
  */
 function resolvePath(id, base) {
   // var _mod = kerneljs.cache.mods[id];
-  if (id === "require" ||
-    id === "module" ||
-    id === "exports" /*|| (_mod &&  _mod != empty_mod)*/) {
+  if (/^(require|module|exports)$/.test(id)) {
+    /*|| (_mod &&  _mod != empty_mod)*/
     return id;
   }
 
@@ -654,27 +653,27 @@ function dirname(p) {
  */
 function parsePaths(p) {
   var ret = [];
-  if (kerneljs.paths) {
+  var paths = kerneljs.data.paths;
+  if (paths) {
     var part = p;
     var parts = p.split(slash);
-    while (!(part in kerneljs.paths) && parts.length) {
+    while (!(part in paths) && parts.length) {
       ret.unshift(parts.pop());
       part = parts.join(slash);
     }
-    p = kerneljs.paths[part] ? kerneljs.paths[part] : part;
+    p = paths[part] ? paths[part] : part;
   }
   return p + ret.join(slash);
 }
 
 /**
- * pkg name can also impact on path resolving.
- * After paths, we should find it in pkg configuration.
- * So replace it if exists in kerneljs.packages.
+ * package名称配置也会影响路径解析.
+ * 在paths解析后, 需要处理package configuration.
  * @param {String} p
  * @return {String} s
  */
 function parsePackages(p) {
-  var pkgs = kerneljs.packages,
+  var pkgs = kerneljs.data.packages,
       fpath = '';
   if (pkgs && pkgs.length > 0) {
     forEach(pkgs, function(pkg) {
@@ -748,7 +747,7 @@ Module.prototype.setStatus = function(status) {
 Module.prototype.ready = function(mod) {
   var inPathConfig;
   if (mod.url) {
-    if (kerneljs.paths && kerneljs.paths[this.id]) {
+    if (kerneljs.data.paths && kerneljs.data.paths[this.id]) {
       inPathConfig = true;
     }
     for(var i = 0; i < this.deps.length; ++i) {
@@ -996,7 +995,7 @@ function define(id, deps, factory) {
 function load(mod) {
   var cache = kerneljs.cache,
       count = mod.deps.length,
-      inPathConfig = kerneljs.paths && kerneljs.paths[mod.id];
+      inPathConfig = kerneljs.data.paths && kerneljs.data.paths[mod.id];
 
   // 若mod.id在paths中已经配置则相对路径是location.href,
   // 详见: config_path_relative test case.
@@ -1368,7 +1367,7 @@ kerneljs.url = function(url) {
 
 kerneljs.on = on;
 kerneljs.emit = emit;
-//kerneljs.request = fetchScript;
+kerneljs.request = fetchScript;
 kerneljs.eventsType = events;
 kerneljs.data = {};
 

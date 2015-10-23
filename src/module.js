@@ -55,7 +55,7 @@ Module.prototype.setStatus = function(status) {
 Module.prototype.ready = function(mod) {
   var inPathConfig;
   if (mod.url) {
-    if (kerneljs.paths && kerneljs.paths[this.id]) {
+    if (kerneljs.data.paths && kerneljs.data.paths[this.id]) {
       inPathConfig = true;
     }
     for(var i = 0; i < this.deps.length; ++i) {

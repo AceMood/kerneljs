@@ -129,7 +129,7 @@ function define(id, deps, factory) {
 function load(mod) {
   var cache = kerneljs.cache,
       count = mod.deps.length,
-      inPathConfig = kerneljs.paths && kerneljs.paths[mod.id];
+      inPathConfig = kerneljs.data.paths && kerneljs.data.paths[mod.id];
 
   // 若mod.id在paths中已经配置则相对路径是location.href,
   // 详见: config_path_relative test case.

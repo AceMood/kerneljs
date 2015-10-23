@@ -1,3 +1,5 @@
+// todo 可能需要大改define的实现
+// todo 需要判断localStorage的剩余空间，动态清除无用项
 
 (function() {
   var supportLocalStorage = ('localStorage' in window);
