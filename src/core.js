@@ -375,7 +375,12 @@ require.toUrl = function(id) {
  * @param {!Function} callback 回调函数.
  */
 require.async = function(id, callback) {
-  require([id], callback);
+  var type = typeOf(id);
+  if (type === 'string') {
+    require([id], callback);
+  } else if (type === 'array') {
+    require(id, callback);
+  }
 };
 
 /**
