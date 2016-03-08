@@ -1,7 +1,7 @@
 {
   "name": "kerneljs",
-  "version": "0.3.0",
-  "description": "Browser Side JavaScript module loader.",
+  "version": "1.0.0",
+  "description": "Browser Side JavaScript Module loader.",
   "main": "index.js",
   "directories": {
     "test": "tests"
@@ -15,11 +15,10 @@
   },
   "keywords": [
     "kerneljs",
-    "oslojs",
     "soi",
     "modular",
-    "loader",
-    "javascript"
+    "module loader",
+    "CommonJS"
   ],
   "author": "AceMood",
   "license": "MIT",

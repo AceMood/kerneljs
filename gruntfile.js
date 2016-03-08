@@ -1,7 +1,7 @@
 /**
- * @fileoverview 构建文件
+ * @file 构建文件
  * @author AceMood
- * @email zmike86@gmail.com/zmike86@126.com
+ * @email zmike86@gmail.com
  */
 
 module.exports = function(grunt) {
