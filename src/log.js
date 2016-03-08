@@ -1,3 +1,8 @@
+/**
+ * @file logs utilities
+ * @email zmike86@gmail.com
+ * @preserved
+ */
 
 on('create', function(mod) {
   console.log('Create on:    ' + mod.url);

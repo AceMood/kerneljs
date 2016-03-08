@@ -1,6 +1,9 @@
+/**
+ * @file Module Class
+ * @email zmike86@gmail.com
+ */
 
 /**
- * Module包装类.
  * # uid    自生成的uid标识唯一模块.
  * # id     用户自定义的模块名, 是可选的. 但如果我们不写id会使一些测试用例失败(see anon_circular case),
  *          于是对一些不必要的测试用例作了修改.
@@ -160,7 +163,7 @@ Module.prototype.exec = function() {
 };
 
 /**
- * 模块的4种状态.
+ * Module's status:
  *  init     模块刚被创建, 还没有获取自身的模块.
  *  loaded   只在<IE11出现, 表示自身模块已经下载完成.
  *  fetching 正在获取自身依赖模块但还没导出自身模块.

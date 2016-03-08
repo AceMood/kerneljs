@@ -2,7 +2,7 @@
 // 正则提取代码中的 `require('xxx')`
 var cjsRequireRegExp = /\brequire\s*\(\s*(["'])([^'"\s]+)\1\s*\)/g,
 // 去掉源码中的注释
-    commentRegExp = /(\/\*([\s\S]*?)\*\/|([^:]|^)\/\/(.*)$)/mg;
+  commentRegExp = /(\/\*([\s\S]*?)\*\/|([^:]|^)\/\/(.*)$)/mg;
 
 // 初始化的空模块
 var empty_mod = {
@@ -13,12 +13,9 @@ var empty_mod = {
   exports: {}
 };
 
-// ID相同的错误消息
 var SAME_ID_MSG = 'more then one module defined with the same id: %s';
 
-/**
- * 若两个模块id相同则报错
- */
+/** 若两个模块id相同则报错 */
 function exist_id_error(id) {
   throw SAME_ID_MSG.replace('%s', id);
 }
@@ -33,8 +30,8 @@ function exist_id_error(id) {
  */
 function define(id, deps, factory) {
   var mod,
-      cache = kerneljs.cache,
-      uid = uidprefix + uuid++;
+    cache = kerneljs.cache,
+    uid = uidprefix + uuid++;
 
   // doc.currentScript在异步情况下比如事件处理器或者setTimeout返回错误结果.
   // 但如果不是这种情况且遵循每个文件一个define模块的话这个属性就能正常工作.
@@ -128,8 +125,8 @@ function define(id, deps, factory) {
  */
 function load(mod) {
   var cache = kerneljs.cache,
-      count = mod.deps.length,
-      inPathConfig = kerneljs.data.paths && kerneljs.data.paths[mod.id];
+    count = mod.deps.length,
+    inPathConfig = kerneljs.data.paths && kerneljs.data.paths[mod.id];
 
   // 若mod.id在paths中已经配置则相对路径是location.href,
   // 详见: config_path_relative test case.
@@ -163,7 +160,7 @@ function load(mod) {
     // empty_mod immediately.
     if (uid && cache.mods[uid[0]] &&
       (cache.mods[uid[0]].status === Module.STATUS.complete ||
-        checkCycle(path, mod))) {
+      checkCycle(path, mod))) {
       --count;
       mod.depExports[index] = cache.mods[uid[0]].exports;
       return;
@@ -323,11 +320,11 @@ function resolve(id, mod) {
   if (cache.mods[id]) {
     var path = resolvePath(id, (mod && mod.url) || getCurrentScriptPath());
     var cacheMod = cache.mods[id] ||
-        cache.mods[cache.path2uid[path][0]];
+      cache.mods[cache.path2uid[path][0]];
     // we check circular reference first, if it there, we return the
     // empty_mod immediately.
     if (cacheMod.status === Module.STATUS.complete ||
-        checkCycle(path, mod)) {
+      checkCycle(path, mod)) {
       return cacheMod.exports;
     }
   }

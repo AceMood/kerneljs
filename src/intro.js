@@ -1,7 +1,7 @@
 /**
  * Author:  AceMood
  * Email:   zmike86@gmail.com
- * Version: 0.2.2
+ * Version: 1.0.0
  */
 
 /**

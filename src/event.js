@@ -1,8 +1,13 @@
-
 /**
- * 内部分发的事件名称
- * @typedef {Object}
+ * @file take care of kerneljs event publish and subscribe
+ * @email zmike86@gmail.com
+ * @preserved
  */
+
+// 订阅者缓存
+var handlersMap = {};
+
+// 内部分发的事件名称
 var events = {
   create: 'create',
   fetch: 'fetch',
@@ -12,10 +17,10 @@ var events = {
 };
 
 /**
- * 订阅事件
- * @param {String} eventName 事件名称定义在event.js
- * @param {Function} handler 事件处理器
- * @param {*} context 事件处理器上下文
+ * subscribe
+ * @param {string} eventName
+ * @param {function} handler
+ * @param {*} context handler's context
  */
 function on(eventName, handler, context) {
   if (!handlersMap[eventName]) {
@@ -28,9 +33,9 @@ function on(eventName, handler, context) {
 }
 
 /**
- * 触发订阅事件
- * @param {String} eventName 事件名称定义在event.js
- * @param {Array.<Object>} args 参数
+ * trigger event
+ * @param {string} eventName
+ * @param {Array.<object>} args callback parameters
  */
 function emit(eventName, args) {
   // 缓存防止事件处理器改变kerneljs.cache对象

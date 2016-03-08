@@ -1,9 +1,17 @@
-
 /**
- * 全局kerneljs对象
+ * @file Facade of kerneljs object
+ * @email zmike86@gmail.com
  */
-var kerneljs = {};
 
+var kernel = {};
+
+// if a global kerneljs object exists,
+// treat it as kerneljs configuration later.
+if (global.kerneljs) {
+  kernel._kernel = global.kerneljs;
+}
+
+// for anonymous module Ids
 var uuid = 0;
 var uidprefix = 'AceMood@kernel_';
 
@@ -46,42 +54,39 @@ var dependencyList = {};
  * 如果某个模块处于fetching的状态则说明依赖的js模块文件正在下载，在完成下载之前我们
  * 不希望同一个文件发起两次下载请求。define时会缓存到cache.path2uid对象中，我们这里
  * 用path作为key标识模块文件正在下载
- * @typedef {Object}
  */
 var sendingList = {};
 
-// 订阅者缓存
-var handlersMap = {};
-
 /**
  * 动态配置kerneljs对象. 目前配置对象的属性可以是:
- * # paths: 一个路径映射的hash结构, 详细看:
- *          http://requirejs.org/docs/api.html#config-paths
- * # baseUrl: 所有路经解析的基路径, 包括paths, 但模块内依赖的相对路径针对模块自身路径解析. (todo)
+ * # baseUrl:     All relative paths should be resolved base on this uri
+ * # resourceMap: All pre-built-in modules and dependencies. If a module has been
+ *                registered in resourceMap, skip parse module's source code for
+ *                dependency.
  */
-kerneljs.config = function(obj) {
+function config(obj) {
   if (typeOf(obj) !== 'object') {
     throw 'config object must an object';
   }
   var key, k;
   for (key in obj) {
     if (hasOwn.call(obj, key)) {
-      if (kerneljs.data[key]) {
+      if (kernel.data[key]) {
         for (k in obj[key]) {
-          kerneljs.data[key][k] = obj[key][k];
+          kernel.data[key][k] = obj[key][k];
         }
       } else {
-        kerneljs.data[key] = obj[key];
+        kernel.data[key] = obj[key];
       }
     }
   }
-};
+}
 
 /**
  * 全局缓存对象
  * @typedef {Object}
  */
-kerneljs.cache = {
+kernel.cache = {
   // mods记录所有的模块. 在开发时不提倡自己写id但实际也可以自己写,
   // 没啥意义因为请求还是以路径来做. 可以通过paths配置来require短id, 这个缓存对象
   // 在开发时会有不少缺失的模块, 但在打包后id已经自生成所以它会记录完全.
@@ -92,40 +97,27 @@ kerneljs.cache = {
   path2uid: {}
 };
 
-/**
- * 重置全局缓存
- */
-kerneljs.reset = function() {
+
+// clear all relative cache
+kernel.reset = function() {
   this.cache.mods = {};
   this.cache.path2uid = {};
   this.data = {};
   handlersMap = {};
 };
 
-/**
- * 区分开发环境和部署环境资源地址定位，便于构建时分析。
- * @param {!String} url 相对于本次js模块的地址
- * @returns {!String} 返回线上绝对路径的地址
- */
-kerneljs.url = function(url) {
-  return url;
-};
+kernel.config = config;
+kernel.on = on;
+kernel.emit = emit;
+kernel.request = fetchScript;
+kernel.eventsType = events;
+kernel.data = {};
 
-kerneljs.on = on;
-kerneljs.emit = emit;
-kerneljs.request = fetchScript;
-kerneljs.eventsType = events;
-kerneljs.data = {};
 
-/** 全局导出 APIs */
-global.require = require;
-global.define = define;
-global.kerneljs = kerneljs;
+// Global APIs
+global.define = global.__d = define;
+global.kerneljs = kernel;
 
-// 基础配置
-kerneljs.config({
-  baseUrl: '',
-  debug: true,
-  paths: {},
-  useLocalCache: false
-});
+
+// config with preserved global kerneljs object
+kernel.config(kernel._kernel);

@@ -1,10 +1,14 @@
+/**
+ * @file
+ * @email zmike86@gmail.com
+ */
 
 // A directory file path must be ends with a slash (back slash in window)
 var dirRegExp = /\/$/g,
-    fileExtRegExp = /\.(js|css|tpl|txt)$/,
-    dot = '.',
-    slash = '/',
-    dot2 = '..';
+  fileExtRegExp = /\.(js|css|tpl|txt)$/,
+  dot = '.',
+  slash = '/',
+  dot2 = '..';
 
 // retrieve current doc's absolute path
 // It may be a file system path, http path
@@ -188,7 +192,7 @@ function parsePaths(p) {
  */
 function parsePackages(p) {
   var pkgs = kerneljs.data.packages,
-      fpath = '';
+    fpath = '';
   if (pkgs && pkgs.length > 0) {
     forEach(pkgs, function(pkg) {
       // starts with a package name
