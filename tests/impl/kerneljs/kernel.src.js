@@ -96,157 +96,15 @@ var typeMap = {
 function typeOf(obj) {
   return typeMap[toString.call(obj)];
 }
-
-/**
- * 判断是否为undefined或者null
- * @param {*} obj
- * @return {boolean}
- */
-function isNull(obj) {
-  return obj === void 0 || obj === null;
-}
 /**
  * @file DOM relative ops
  * @email zmike86@gmail.com
  */
 
-var resArr = [
-  'Trident\/([^ ;]*)',
-  'AppleWebKit\/([^ ;]*)',
-  'Opera\/([^ ;]*)',
-  'rv:([^ ;]*)(.*?)Gecko\/([^ ;]*)',
-  'MSIE\s([^ ;]*)',
-  'AndroidWebKit\/([^ ;]*)'
-];
-var engineRe = new RegExp(resArr.join('|')),
-  engine = navigator.userAgent.match(engineRe) || 0,
-  curStyle, curSheet;
-
-// load css through @import directive
-// IE < 9, Firefox < 18
-var useImportLoad = false,
-// 采用onload事件在webkit下会有问题，此时设成false
-  useOnload = true;
-
-// trident / msie
-if (engine[1] || engine[7]) {
-  useImportLoad = engine[1] < 6 || engine[7] <= 9;
-  // webkit
-} else if (engine[2] || engine[8]) {
-  useOnload = false;
-  // gecko
-} else if (engine[4]) {
-  useImportLoad = engine[4] < 18;
-}
-
-var ieCnt = 0;
-var ieLoads = [];
-var ieCurCallback;
-
-function createIeLoad(url) {
-  curSheet.addImport(url);
-  curStyle.onload = processIeLoad;
-
-  ieCnt++;
-  if (ieCnt === 31) {
-    createStyle();
-    ieCnt = 0;
-  }
-}
-
-function processIeLoad() {
-  ieCurCallback();
-  var nextLoad = ieLoads.shift();
-  if (!nextLoad) {
-    ieCurCallback = null;
-    return;
-  }
-
-  ieCurCallback = nextLoad[1];
-  createIeLoad(nextLoad[0]);
-}
-
-/**
- * 创建style元素加载模块
- * @param {String} url css地址
- * @param {Function} callback 回调函数
- */
-function importLoad(url, callback) {
-  if (!curSheet || !curSheet.addImport) {
-    createStyle();
-  }
-
-  if (curSheet && curSheet.addImport) {
-    // old IE
-    if (ieCurCallback) {
-      ieLoads.push([url, callback]);
-    }
-    else {
-      createIeLoad(url);
-      ieCurCallback = callback;
-    }
-  } else {
-    // old Firefox
-    curStyle.textContent = '@import "' + url + '";';
-
-    var loadInterval = setInterval(function() {
-      try {
-        var tmp = curStyle.sheet.cssRules;
-        clearInterval(loadInterval);
-        callback();
-      } catch(e) {}
-    }, 10);
-  }
-}
-
-/**
- * 创建link元素监听onload事件
- * @param {String} url css地址
- * @param {Function} callback 回调函数
- */
-function linkLoad(url, callback) {
-  // 轮询
-  var loop = function() {
-    for (var i = 0; i < $doc.styleSheets.length; i++) {
-      var sheet = $doc.styleSheets[i];
-      if (sheet.href === link.href) {
-        clearTimeout(loadInterval);
-        return callback();
-      }
-    }
-    loadInterval = setTimeout(loop, 10);
-  };
-  // link
-  var link = $doc.createElement('link');
-  link.type = 'text/css';
-  link.rel = 'stylesheet';
-  if (useOnload) {
-    link.onload = function() {
-      link.onload = null;
-      // for style dimensions queries, a short delay can still be necessary
-      setTimeout(callback, 7);
-    };
-  } else {
-    var loadInterval = setTimeout(loop, 10);
-  }
-  link.href = url;
-  $head.appendChild(link);
-}
-
-/**
- * create style element
- */
-function createStyle() {
-  curStyle = $doc.createElement('style');
-  $head.appendChild(curStyle);
-  curSheet = curStyle.styleSheet || curStyle.sheet;
-}
-
-
 var $doc = document,
   $head = $doc.head || $doc.getElementsByTagName('head')[0],
-// IE6 bug, 有base元素的情况下head.appendChild容易出错in jQuery.
-// See: 'http://dev.jquery.com/ticket/2709'
+  // IE6 bug, when a base element exists, head.appendChild goes wrong.
+  // See: 'http://dev.jquery.com/ticket/2709'
   $base = $doc.getElementsByTagName('base')[0];
 
 if ($base) {
@@ -318,9 +176,10 @@ function fetchScript(url, callback) {
   // event listener
   script.onreadystatechange = script.onload = script.onerror = onScriptLoad;
 
-  // 老版本IE(<11)在设置了script.src之后会立刻请求js文件,
-  // 下载完成后触发readyState变更为`loaded`, 代码执行完毕
-  // readyState会变为`complete`. IE11去掉了这个特性.
+  // old IE(<11) will load javascript file once script.src has been set,
+  // script.readyState will become `loaded` when file loaded(but not executed),
+  // script.readyState will become `complete` after code evaluated.
+  // IE11 removed this feature.
   script.src = url;
   currentAddingScript = script;
   if ($base) {
@@ -460,6 +319,141 @@ function getAbsPathOfScript(script) {
 function getCurrentScriptPath() {
   var node = getCurrentScript();
   return node ? getAbsPathOfScript(node) : null;
+}
+/**
+ * @file DOM CSS relative ops
+ * @email zmike86@gmail.com
+ */
+
+var resArr = [
+  'Trident\/([^ ;]*)',
+  'AppleWebKit\/([^ ;]*)',
+  'Opera\/([^ ;]*)',
+  'rv:([^ ;]*)(.*?)Gecko\/([^ ;]*)',
+  'MSIE\s([^ ;]*)',
+  'AndroidWebKit\/([^ ;]*)'
+];
+var engineRe = new RegExp(resArr.join('|')),
+  engine = navigator.userAgent.match(engineRe) || 0,
+  curStyle, curSheet;
+
+// load css through @import directive
+// IE < 9, Firefox < 18
+var useImportLoad = false,
+// onload break in webkit
+  useOnload = true;
+
+// trident / msie
+if (engine[1] || engine[7]) {
+  useImportLoad = engine[1] < 6 || engine[7] <= 9;
+  // webkit
+} else if (engine[2] || engine[8]) {
+  useOnload = false;
+  // gecko
+} else if (engine[4]) {
+  useImportLoad = engine[4] < 18;
+}
+
+var ieCnt = 0;
+var ieLoads = [];
+var ieCurCallback;
+
+function createIeLoad(url) {
+  curSheet.addImport(url);
+  curStyle.onload = processIeLoad;
+
+  ieCnt++;
+  if (ieCnt === 31) {
+    createStyle();
+    ieCnt = 0;
+  }
+}
+
+function processIeLoad() {
+  ieCurCallback();
+  var nextLoad = ieLoads.shift();
+  if (!nextLoad) {
+    ieCurCallback = null;
+    return;
+  }
+
+  ieCurCallback = nextLoad[1];
+  createIeLoad(nextLoad[0]);
+}
+
+/**
+ * 创建style元素加载模块
+ * @param {String} url css地址
+ * @param {Function} callback 回调函数
+ */
+function importLoad(url, callback) {
+  if (!curSheet || !curSheet.addImport) {
+    createStyle();
+  }
+
+  if (curSheet && curSheet.addImport) {
+    // old IE
+    if (ieCurCallback) {
+      ieLoads.push([url, callback]);
+    }
+    else {
+      createIeLoad(url);
+      ieCurCallback = callback;
+    }
+  } else {
+    // old Firefox
+    curStyle.textContent = '@import "' + url + '";';
+
+    var loadInterval = setInterval(function() {
+      try {
+        var tmp = curStyle.sheet.cssRules;
+        clearInterval(loadInterval);
+        callback();
+      } catch(e) {}
+    }, 10);
+  }
+}
+
+/**
+ * create link element and listen for onload
+ * @param {string} url css href
+ * @param {function} callback
+ */
+function linkLoad(url, callback) {
+  var loop = function() {
+    for (var i = 0; i < $doc.styleSheets.length; i++) {
+      var sheet = $doc.styleSheets[i];
+      if (sheet.href === link.href) {
+        clearTimeout(loadInterval);
+        return callback();
+      }
+    }
+    loadInterval = setTimeout(loop, 10);
+  };
+  // link
+  var link = $doc.createElement('link');
+  link.type = 'text/css';
+  link.rel = 'stylesheet';
+  if (useOnload) {
+    link.onload = function() {
+      link.onload = null;
+      // for style dimensions queries, a short delay can still be necessary
+      setTimeout(callback, 7);
+    };
+  } else {
+    var loadInterval = setTimeout(loop, 10);
+  }
+  link.href = url;
+  $head.appendChild(link);
+}
+
+/**
+ * create style element
+ */
+function createStyle() {
+  curStyle = $doc.createElement('style');
+  $head.appendChild(curStyle);
+  curSheet = curStyle.styleSheet || curStyle.sheet;
 }
 /**
  * @file paths utilities
@@ -804,8 +798,11 @@ Module.prototype.compile = function() {
   };
 
   var self = this;
-  this.factory.call(null, localRequire, this.exports, this);
-  delete this.factory;
+  // css module not have factory
+  if (this.factory) {
+    this.factory.call(null, localRequire, this.exports, this);
+    delete this.factory;
+  }
   this.setStatus(Module.STATUS.complete);
 };
 
@@ -996,123 +993,6 @@ define.amd = {
   email: 'zmike86@gmail.com'
 };
 /**
- * @file Facade of kerneljs object
- * @email zmike86@gmail.com
- */
-
-var kernel = {};
-
-// if a global kerneljs object exists,
-// treat it as kerneljs configuration later.
-if (global.kerneljs) {
-  kernel._kernel = global.kerneljs;
-}
-
-// for anonymous module Ids
-var uuid = 0;
-var uidprefix = 'AceMood@kernel_';
-
-/**
- * Stores all modules that is fetching.
- * Use module's uid and module as key-pairs.
- */
-var fetchingList = {
-  mods: {},
-  add: function(mod) {
-    if (this.mods[mod.uid]) {
-      emit(
-        events.error,
-        [
-          'current mod with uid: ' + mod.uid + ' and file path: ' +
-          mod.uri + ' is fetching now'
-        ]
-      );
-    }
-    this.mods[mod.uid] = mod;
-  },
-  clear: function() {
-    this.mods = {};
-  },
-  remove: function(mod) {
-    if (this.mods[mod.uid]) {
-      this.mods[mod.uid] = null;
-      delete this.mods[mod.uid];
-    }
-  }
-};
-
-// Due to add module dependency when resolve id->path, we can not use
-// module's uid as the key of dependencyList, so we use url here, module
-// self as value.
-var dependencyList = {};
-
-/**
- * 如果某个模块处于fetching的状态则说明依赖的js模块文件正在下载，在完成下载之前我们
- * 不希望同一个文件发起两次下载请求。define时会缓存到cache.path2uid对象中，我们这里
- * 用path作为key标识模块文件正在下载
- */
-var sendingList = {};
-
-/**
- * Config kernel object at any time. Options:
- * --baseUrl:     All relative paths should be resolved base on this uri
- * --resourceMap: All pre-built-in modules and dependencies. If a module has been
- *                registered in resourceMap, skip parse module's source code for
- *                dependency.
- */
-function config(obj) {
-  if (typeOf(obj) !== 'object') {
-    throw 'config object must an object';
-  }
-  var key, k;
-  for (key in obj) {
-    if (hasOwn.call(obj, key)) {
-      if (kernel.data[key]) {
-        for (k in obj[key]) {
-          kernel.data[key][k] = obj[key][k];
-        }
-      } else {
-        kernel.data[key] = obj[key];
-      }
-    }
-  }
-}
-
-function globalRequire() {
-
-}
-
-// clear all relative cache
-kernel.reset = function() {
-  Module._cache = {};
-  this.path2id = {};
-  this.data = {};
-  handlersMap = {};
-};
-
-kernel.getCache = function() {
-  return Module._cache;
-};
-
-kernel.config = config;
-kernel.on = on;
-kernel.emit = emit;
-kernel.request = fetchScript;
-kernel.eventsType = events;
-kernel.data = {};
-// 理论上每个文件可能定义多个模块，也就是define了多次。这种情况应该在开发时严格避免，
-// 但经过打包之后一定会出现这种状况。所以我们必须要做一些处理，也使得这个结构是一对多的.
-kernel.path2id = {};
-
-// Global APIs
-global.define = global.__d = define;
-global.kerneljs = kernel;
-
-// config with preserved global kerneljs object
-if (kernel._kernel) {
-  kernel.config(kernel._kernel);
-}
-/**
  * @file take care of kerneljs event publish and subscribe
  * @email zmike86@gmail.com
  * @preserved
@@ -1160,5 +1040,116 @@ function emit(eventName, args) {
     });
   }
 }
+/**
+ * @file Facade of kerneljs object
+ * @email zmike86@gmail.com
+ */
+
+var kernel = {};
+
+// for anonymous module Ids
+var uuid = 0;
+var uidprefix = 'AceMood@kernel_';
+
+/**
+ * Stores all modules that is fetching.
+ * Use module's uid and module as key-pairs.
+ */
+var fetchingList = {
+  mods: {},
+  add: function(mod) {
+    if (this.mods[mod.uid]) {
+      emit(
+        events.error,
+        [
+          'current mod with uid: ' + mod.uid + ' and file path: ' +
+          mod.uri + ' is fetching now'
+        ]
+      );
+    }
+    this.mods[mod.uid] = mod;
+  },
+  clear: function() {
+    this.mods = {};
+  },
+  remove: function(mod) {
+    if (this.mods[mod.uid]) {
+      this.mods[mod.uid] = null;
+      delete this.mods[mod.uid];
+    }
+  }
+};
+
+// Due to add module dependency when resolve id->path, we can not use
+// module's uid as the key of dependencyList, so we use url here, module
+// self as value.
+var dependencyList = {};
+
+// Store for which module is being fetched.
+var sendingList = {};
+
+/**
+ * Config kernel object at any time. Options:
+ * --baseUrl:     All relative paths should be resolved base on this uri
+ * --resourceMap: All pre-built-in modules and dependencies. If a module has been
+ *                registered in resourceMap, skip parse module's source code for
+ *                dependency.
+ */
+function config(obj) {
+  if (typeOf(obj) !== 'object') {
+    throw 'config object must an object';
+  }
+  var key, k;
+  for (key in obj) {
+    if (hasOwn.call(obj, key)) {
+      if (kernel.data[key]) {
+        for (k in obj[key]) {
+          kernel.data[key][k] = obj[key][k];
+        }
+      } else {
+        kernel.data[key] = obj[key];
+      }
+    }
+  }
+}
+
+function use() {
+
+}
+
+// clear all relative cache
+kernel.reset = function() {
+  Module._cache = {};
+  this.path2id = {};
+  this.data = {};
+  handlersMap = {};
+};
+
+kernel.getCache = function() {
+  return Module._cache;
+};
+
+kernel.use = use;
+kernel.config = config;
+kernel.on = on;
+kernel.emit = emit;
+kernel.request = fetchScript;
+kernel.eventsType = events;
+kernel.data = {};
+// 理论上每个文件可能定义多个模块，也就是define了多次。这种情况应该在开发时严格避免，
+// 但经过打包之后一定会出现这种状况。所以我们必须要做一些处理，也使得这个结构是一对多的.
+kernel.path2id = {};
+
+// config with preserved global kerneljs object
+// if a global kerneljs object exists,
+// treat it as kerneljs configuration later.
+if (global.kerneljs) {
+  kernel._kernel = global.kerneljs;
+  kernel.config(kernel._kernel);
+}
+
+// Global APIs
+global.define = global.__d = define;
+global.kerneljs = kernel;
 
 }(this));

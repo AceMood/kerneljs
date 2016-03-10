@@ -4,21 +4,23 @@
  * @email zmike86@gmail.com
  */
 
+var files = [
+  'lib/utils.js',
+  'lib/dom-script.js',
+  'lib/dom-css.js',
+  'lib/path.js',
+  'lib/Module.js',
+  'lib/core.js',
+  'lib/event.js',
+  'lib/kernel.js'
+];
+
 module.exports = function(grunt) {
 
   grunt.initConfig({
     clean: ['dist/*'],
     jshint: {
-      files: [
-        'lib/utils.js',
-        'lib/dom.js',
-        'lib/path.js',
-        'lib/Module.js',
-        'lib/core.js',
-        'lib/event.js',
-        'lib/kernel.js',
-        'lib/log.js'
-      ],
+      files: files,
       options: {
         curly: true,
         eqeqeq: true,
@@ -38,32 +40,11 @@ module.exports = function(grunt) {
         nonull: true
       },
       dev: {
-        src: [
-          'lib/intro.js',
-          'lib/utils.js',
-          'lib/dom.js',
-          'lib/path.js',
-          'lib/Module.js',
-          'lib/core.js',
-          'lib/event.js',
-          'lib/kernel.js',
-          'lib/log.js',
-          'lib/outro.js'
-        ],
+        src: ['lib/intro.js'].concat(files).concat(['lib/log.js', 'lib/outro.js']),
         dest: 'dist/kernel.debug.js'
       },
       pro: {
-        src: [
-          'lib/intro.js',
-          'lib/utils.js',
-          'lib/dom.js',
-          'lib/path.js',
-          'lib/Module.js',
-          'lib/core.js',
-          'lib/event.js',
-          'lib/kernel.js',
-          'lib/outro.js'
-        ],
+        src: ['lib/intro.js'].concat(files).concat(['lib/outro.js']),
         dest: 'dist/kernel.src.js'
       }
     },
