@@ -207,8 +207,8 @@ function importLoad(url, callback) {
 function linkLoad(url, callback) {
   // 轮询
   var loop = function() {
-    for (var i = 0; i < document.styleSheets.length; i++) {
-      var sheet = document.styleSheets[i];
+    for (var i = 0; i < $doc.styleSheets.length; i++) {
+      var sheet = $doc.styleSheets[i];
       if (sheet.href === link.href) {
         clearTimeout(loadInterval);
         return callback();
@@ -217,7 +217,7 @@ function linkLoad(url, callback) {
     loadInterval = setTimeout(loop, 10);
   };
   // link
-  var link = document.createElement('link');
+  var link = $doc.createElement('link');
   link.type = 'text/css';
   link.rel = 'stylesheet';
   if (useOnload) {
@@ -234,7 +234,7 @@ function linkLoad(url, callback) {
 }
 
 /**
- * 创建style元素
+ * create style element
  */
 function createStyle() {
   curStyle = $doc.createElement('style');
@@ -275,34 +275,17 @@ var currentAddingScript,
  */
 function fetchCss(url, callback) {
   function onCssLoad() {
-    var mod,
-      cache = kerneljs.cache,
-      uid = uidprefix + uuid++;
-    var base = url;
-
-    // 缓存path2uid
-    if (cache.path2id[base]) {
-      cache.path2id[base].push(uid);
-    } else {
-      cache.path2id[base] = [uid];
-    }
-
-    // 创建模块
-    mod = cache.mods[uid] = new Module({
-      uid: uid,
-      id: null,
-      url: url,
-      deps: [],
-      factory: null,
-      status: Module.STATUS.complete
+    var mod = new Module({
+      uri: url
     });
-    emit(events.create, [mod]);
-
-    // 打包过后define会先发生, 这种情况script标签不会带有kn_name字段.
-    if (name && isTopLevel(name) && !mod.id) {
-      mod.id = name;
+    // update path2uid
+    if (kernel.path2id[url]) {
+      kernel.path2id[url].push(mod.id);
+    } else {
+      kernel.path2id[url] = [mod.id];
     }
 
+    callback();
     ready(mod);
   }
 
@@ -472,7 +455,7 @@ function getAbsPathOfScript(script) {
 
 /**
  * 获取当前执行js代码块的绝对路径. node为空则返回null
- * @return {?String}
+ * @return {?string}
  */
 function getCurrentScriptPath() {
   var node = getCurrentScript();
@@ -921,7 +904,7 @@ function define(id, factory) {
  * @param {Module} mod Module object.
  */
 function loadDependency(mod) {
-  var cnt = mode.deps.length;
+  var cnt = mod.deps.length;
   // Update fetchingList.
   fetchingList.add(mod);
   mod.setStatus(Module.STATUS.fetching);
@@ -935,7 +918,7 @@ function loadDependency(mod) {
       id = resourceMap[name].id;
     } else {
       uri = resolvePath(name, mod.uri);
-      id = kernel.path2id[path] ? kernel.path2id[path][0] : null;
+      id = kernel.path2id[uri] ? kernel.path2id[uri][0] : null;
     }
 
     var dependencyModule = id && Module._cache[id];
@@ -956,7 +939,7 @@ function loadDependency(mod) {
     if (!sendingList[uri]) {
       sendingList[uri] = true;
       // load script or style
-      fetch(uri, name, noop);
+      fetch(uri, noop);
     }
   });
 
@@ -984,7 +967,7 @@ function ready(mod) {
     // successfully. The url would be the previous one, and we store the
     // record in global cache dependencyList.
     // So we must delete it first to avoid the factory function execute twice.
-    delete dependencyList[mod.url];
+    delete dependencyList[mod.uri];
     forEach(dependants, function(dependant) {
       if (dependant.status === Module.STATUS.fetching) {
         if (dependant.checkAll()) {
@@ -999,11 +982,12 @@ function ready(mod) {
  * Used in the module.compile to determine a module.
  * @param  {string} id moduleId or relative path
  * @param  {?Module=} mod for calculate path.
- * @return {object}
+ * @return {?object}
  */
 function resolve(id, mod) {
   var path = resolvePath(id, (mod && mod.uri) || getCurrentScriptPath());
-  return Module._cache[id] || Module._cache[kernel.path2id[path][0]];
+  var mid = kernel.path2id[path] ? kernel.path2id[path][0] : null;
+  return Module._cache[id] || Module._cache[mid] || null;
 }
 
 // define.amd property, conforms to the AMD API.
@@ -1040,7 +1024,7 @@ var fetchingList = {
         events.error,
         [
           'current mod with uid: ' + mod.uid + ' and file path: ' +
-          mod.url + ' is fetching now'
+          mod.uri + ' is fetching now'
         ]
       );
     }
@@ -1094,12 +1078,20 @@ function config(obj) {
   }
 }
 
+function globalRequire() {
+
+}
+
 // clear all relative cache
 kernel.reset = function() {
   Module._cache = {};
   this.path2id = {};
   this.data = {};
   handlersMap = {};
+};
+
+kernel.getCache = function() {
+  return Module._cache;
 };
 
 kernel.config = config;
@@ -1114,11 +1106,12 @@ kernel.path2id = {};
 
 // Global APIs
 global.define = global.__d = define;
-global.require = global.__r = requireGlobal;
 global.kerneljs = kernel;
 
 // config with preserved global kerneljs object
-kernel.config(kernel._kernel);
+if (kernel._kernel) {
+  kernel.config(kernel._kernel);
+}
 /**
  * @file take care of kerneljs event publish and subscribe
  * @email zmike86@gmail.com
