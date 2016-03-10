@@ -12,7 +12,7 @@
     <script src="../dist/kernel.debug.js"></script>
     <script>
 
-        require(['./moduleA', './moduleB', './moduleC.css'], function(moduleA, moduleB) {
+        define(['./moduleA', './moduleB', './moduleC.css'], function(moduleA, moduleB) {
 
             alert(moduleA.name + '  ' + moduleB.name);
 

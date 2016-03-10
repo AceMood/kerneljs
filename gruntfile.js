@@ -10,14 +10,14 @@ module.exports = function(grunt) {
     clean: ['dist/*'],
     jshint: {
       files: [
-        'src/utils.js',
-        'src/dom.js',
-        'src/path.js',
-        'src/Module.js',
-        'src/core.js',
-        'src/kernel.js',
-        'src/event.js',
-        'src/log.js'
+        'lib/utils.js',
+        'lib/dom.js',
+        'lib/path.js',
+        'lib/Module.js',
+        'lib/core.js',
+        'lib/kernel.js',
+        'lib/event.js',
+        'lib/log.js'
       ],
       options: {
         curly: true,
@@ -39,30 +39,30 @@ module.exports = function(grunt) {
       },
       dev: {
         src: [
-          'src/intro.js',
-          'src/utils.js',
-          'src/dom.js',
-          'src/path.js',
-          'src/Module.js',
-          'src/core.js',
-          'src/kernel.js',
-          'src/event.js',
-          'src/log.js',
-          'src/outro.js'
+          'lib/intro.js',
+          'lib/utils.js',
+          'lib/dom.js',
+          'lib/path.js',
+          'lib/Module.js',
+          'lib/core.js',
+          'lib/kernel.js',
+          'lib/event.js',
+          'lib/log.js',
+          'lib/outro.js'
         ],
         dest: 'dist/kernel.debug.js'
       },
       pro: {
         src: [
-          'src/intro.js',
-          'src/utils.js',
-          'src/dom.js',
-          'src/path.js',
-          'src/Module.js',
-          'src/core.js',
-          'src/kernel.js',
-          'src/event.js',
-          'src/outro.js'
+          'lib/intro.js',
+          'lib/utils.js',
+          'lib/dom.js',
+          'lib/path.js',
+          'lib/Module.js',
+          'lib/core.js',
+          'lib/kernel.js',
+          'lib/event.js',
+          'lib/outro.js'
         ],
         dest: 'dist/kernel.src.js'
       }
