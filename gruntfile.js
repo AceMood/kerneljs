@@ -15,8 +15,8 @@ module.exports = function(grunt) {
         'lib/path.js',
         'lib/Module.js',
         'lib/core.js',
-        'lib/kernel.js',
         'lib/event.js',
+        'lib/kernel.js',
         'lib/log.js'
       ],
       options: {
@@ -45,8 +45,8 @@ module.exports = function(grunt) {
           'lib/path.js',
           'lib/Module.js',
           'lib/core.js',
-          'lib/kernel.js',
           'lib/event.js',
+          'lib/kernel.js',
           'lib/log.js',
           'lib/outro.js'
         ],
@@ -60,8 +60,8 @@ module.exports = function(grunt) {
           'lib/path.js',
           'lib/Module.js',
           'lib/core.js',
-          'lib/kernel.js',
           'lib/event.js',
+          'lib/kernel.js',
           'lib/outro.js'
         ],
         dest: 'dist/kernel.src.js'
