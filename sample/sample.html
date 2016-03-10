@@ -10,6 +10,17 @@
     <div id="moduleC">Hello World!</div>
 
     <script src="../dist/kernel.debug.js"></script>
-    <script src="app.js"></script>
+    <script type="text/javascript">
+        define('app', function(require, exports, module) {
+
+            var moduleA = require('./moduleA');
+            var moduleB = require('./moduleB');
+
+            require('./moduleC.css');
+
+            alert(moduleA.name + '  ' + moduleB.name);
+
+        });
+    </script>
 </body>
 </html>

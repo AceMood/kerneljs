@@ -1,5 +1,3 @@
-define(function () {
-    return {
-        name: 'c'
-    };
+define(function(require, exports) {
+  exports.name = 'c';
 });

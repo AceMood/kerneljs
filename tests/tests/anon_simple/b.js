@@ -1,6 +1,7 @@
-define(['sub/c'], function (c) {
-    return {
-        name: 'b',
-        cName: c.name
-    };
+define(function (require, exports, module) {
+  var c = require('./sub/c');
+  module.exports = {
+    name: 'b',
+    cName: c.name
+  };
 });
