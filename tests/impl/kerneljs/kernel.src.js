@@ -97,7 +97,7 @@ function typeOf(obj) {
   return typeMap[toString.call(obj)];
 }
 /**
- * @file DOM relative ops
+ * @file DOM JS API relative ops
  * @email zmike86@gmail.com
  */
 
@@ -117,11 +117,9 @@ var currentAddingScript,
 // in IEs. Although 'onload' in IE9 & IE10 have problems, but I do not
 // care the issure, and whatever async is true or false. We just
 // remove node in document as the callback of javascript loaded.
-// Read more about the bug:
-// 'https://connect.microsoft.com/IE/feedback/details/729164/'
-// + 'ie10-dynamic-script-element-fires-loaded-readystate-prematurely'
-// 'https://connect.microsoft.com/IE/feedback/details/648057/'
-// + 'script-onload-event-is-not-fired-immediately-after-script-execution'
+// See more info about the bug:
+// 'https://connect.microsoft.com/IE/feedback/details/729164/ie10-dynamic-script-element-fires-loaded-readystate-prematurely'
+// 'https://connect.microsoft.com/IE/feedback/details/648057/script-onload-event-is-not-fired-immediately-after-script-execution'
   useInteractive = ('readyState' in $doc.createElement('script')),
 // loop all script nodes in doc, if one's readyState is 'interactive'
 // means it's now executing;
@@ -143,8 +141,8 @@ function fetchCss(url, callback) {
       kernel.path2id[url] = [mod.id];
     }
 
-    callback();
     ready(mod);
+    callback();
   }
 
   var method = (useImportLoad ? importLoad : linkLoad);
@@ -191,8 +189,8 @@ function fetchScript(url, callback) {
 }
 
 /**
- * 获取模块
- * @param {string} url 文件路径
+ * fetch script or css file
+ * @param {string} url resource url
  * @param {function} callback
  */
 function fetch(url, callback) {
@@ -204,7 +202,7 @@ function fetch(url, callback) {
 }
 
 /**
- * 获取当前页面中所有script节点
+ * get all script elements in current document
  * @return {NodeList}
  */
 function scripts() {
@@ -313,7 +311,8 @@ function getAbsPathOfScript(script) {
 }
 
 /**
- * 获取当前执行js代码块的绝对路径. node为空则返回null
+ * Get current executing script absolute src.
+ * Return null if node is undefined.
  * @return {?string}
  */
 function getCurrentScriptPath() {
@@ -333,6 +332,7 @@ var resArr = [
   'MSIE\s([^ ;]*)',
   'AndroidWebKit\/([^ ;]*)'
 ];
+
 var engineRe = new RegExp(resArr.join('|')),
   engine = navigator.userAgent.match(engineRe) || 0,
   curStyle, curSheet;
@@ -382,9 +382,9 @@ function processIeLoad() {
 }
 
 /**
- * 创建style元素加载模块
- * @param {String} url css地址
- * @param {Function} callback 回调函数
+ * Create style element to import css module
+ * @param {string} url css href
+ * @param {function} callback
  */
 function importLoad(url, callback) {
   if (!curSheet || !curSheet.addImport) {
@@ -409,7 +409,7 @@ function importLoad(url, callback) {
         var tmp = curStyle.sheet.cssRules;
         clearInterval(loadInterval);
         callback();
-      } catch(e) {}
+      } catch(e) { }
     }, 10);
   }
 }
@@ -564,10 +564,8 @@ function isRelative(p) {
  */
 function resolvePath(id, base) {
   if (isTopLevel(id)) {
-    // step 1: normalize id and parse head part as paths
+    // normalize id and parse head part as paths
     id = parsePaths(id);
-    // step 2: normalize id and parse head part as pkgs
-    id = parsePackages(id);
     // here if a top-level path then relative base change to
     // current document's baseUri.
     base = null;
@@ -609,14 +607,13 @@ function dirname(p) {
 }
 
 /**
- * paths设置的别名会出现在路径的头部。
- * 根据kerneljs.paths替换
- * @param {String} p 依赖模块路径
- * @return {String} s 替换后的路径
+ * Search in kernel.data.paths configuration.
+ * @param {string} p 依赖模块路径
+ * @return {string} s 替换后的路径
  */
 function parsePaths(p) {
   var ret = [];
-  var paths = kerneljs.data.paths;
+  var paths = kernel.data.paths;
   if (paths) {
     var part = p;
     var parts = p.split(slash);
@@ -627,31 +624,6 @@ function parsePaths(p) {
     p = paths[part] ? paths[part] : part;
   }
   return p + ret.join(slash);
-}
-
-/**
- * package名称配置也会影响路径解析.
- * 在paths解析后, 需要处理package configuration.
- * @param {String} p
- * @return {String} s
- */
-function parsePackages(p) {
-  var pkgs = kerneljs.data.packages,
-    fpath = '';
-  if (pkgs && pkgs.length > 0) {
-    forEach(pkgs, function(pkg) {
-      // starts with a package name
-      if (p.indexOf(pkg.name) === 0) {
-        // absolutely equal
-        if (p.length === pkg.name.length) {
-          fpath = slash + (pkg.main ? pkg.main : 'main');
-        }
-        p = p.replace(pkg.name, pkg.location || pkg.name) + fpath;
-        return break_obj;
-      }
-    });
-  }
-  return p;
 }
 /**
  * @file Module Class
@@ -688,6 +660,7 @@ function Module(obj) {
   this.id = obj.id || this.uid;
   this.uri = obj.uri;
   this.deps = obj.deps || [];
+  this.depsCount = this.deps.length;
   this.status = Module.STATUS.init;
   this.factory = obj.factory || null;
   this.exports = {};
@@ -728,6 +701,8 @@ Module.prototype.setStatus = function(status) {
  * @return {boolean}
  */
 Module.prototype.checkAll = function() {
+  // return this.depCount === 0;
+
   var ok = true;
   // native forEach will skip nullify value, when exports is
   // an empty string, it will break, so use a for loop
@@ -789,11 +764,15 @@ Module.prototype.compile = function() {
    * @param {function} callback callback function.
    */
   localRequire.async = function(id, callback) {
+    if (typeOf(callback) !== 'function') {
+      throw 'require.async second parameter must be a function';
+    }
+
     var type = typeOf(id);
     if (type === 'string') {
-      requireAsync([id], callback);
+      requireAsync([id], callback, self);
     } else if (type === 'array') {
-      requireAsync(id, callback);
+      requireAsync(id, callback, self);
     }
   };
 
@@ -842,7 +821,7 @@ function exist_id_error(id) {
  * @param {string|function|object} id module Id
  * @param {(function|object)?} factory callback function
  */
-function define(id, factory) {
+function define(id, factory, execNow) {
   var mod;
   var resourceMap = kernel.data.resourceMap,
     inMap = resourceMap && resourceMap[id];
@@ -868,11 +847,12 @@ function define(id, factory) {
     mod.exports = factory;
     mod.setStatus(Module.STATUS.complete);
     ready(mod);
+
   } else if (typeOf(factory) === 'function') {
     factory
       .toString()
       .replace(commentRegExp, '')
-      .replace(cjsRequireRegExp, function (match, quote, dep) {
+      .replace(cjsRequireRegExp, function(match, quote, dep) {
         deps.push(dep);
       });
 
@@ -883,7 +863,11 @@ function define(id, factory) {
       factory: factory
     });
 
-    loadDependency(mod);
+    loadDependency(mod, execNow ? function() {
+      if (mod.checkAll()) {
+        mod.compile();
+      }
+    } : noop);
   } else {
     throw 'define with wrong parameters in ' + uri;
   }
@@ -898,15 +882,15 @@ function define(id, factory) {
 
 /**
  * Load module's dependencies.
- * @param {Module} mod Module object.
+ * @param {Module} module Module object.
+ * @param {function} callback
  */
-function loadDependency(mod) {
-  var cnt = mod.deps.length;
+function loadDependency(module, callback) {
   // Update fetchingList.
-  fetchingList.add(mod);
-  mod.setStatus(Module.STATUS.fetching);
+  fetchingList.add(module);
+  module.setStatus(Module.STATUS.fetching);
 
-  forEach(mod.deps, function(name) {
+  forEach(module.deps, function(name) {
     var resourceMap = kernel.data.resourceMap;
     var uri, id;
     // already record through build tool
@@ -914,34 +898,34 @@ function loadDependency(mod) {
       uri = resourceMap[name].uri;
       id = resourceMap[name].id;
     } else {
-      uri = resolvePath(name, mod.uri);
+      uri = resolvePath(name, module.uri);
       id = kernel.path2id[uri] ? kernel.path2id[uri][0] : null;
     }
 
     var dependencyModule = id && Module._cache[id];
     if (dependencyModule &&
-      (dependencyModule.status === Module.STATUS.complete)) {
-      cnt--;
+      (dependencyModule.status >= Module.STATUS.loaded)) {
+      module.depCount--;
       return;
     }
 
     // record this mod and dependency in dependencyList right now.
     // for notify later.
     if (!dependencyList[uri]) {
-      dependencyList[uri] = [mod];
-    } else if (indexOf(dependencyList[uri], mod) < 0) {
-      dependencyList[uri].push(mod);
+      dependencyList[uri] = [module];
+    } else if (indexOf(dependencyList[uri], module) < 0) {
+      dependencyList[uri].push(module);
     }
 
     if (!sendingList[uri]) {
       sendingList[uri] = true;
       // load script or style
-      fetch(uri, noop);
+      fetch(uri, callback);
     }
   });
 
-  if (cnt === 0) {
-    ready(mod);
+  if (module.depCount === 0) {
+    ready(module);
   }
 }
 
@@ -982,16 +966,10 @@ function ready(mod) {
  * @return {?object}
  */
 function resolve(id, mod) {
-  var path = resolvePath(id, (mod && mod.uri) || getCurrentScriptPath());
+  var path = resolvePath(id, (mod && mod.uri) || location.href);
   var mid = kernel.path2id[path] ? kernel.path2id[path][0] : null;
   return Module._cache[id] || Module._cache[mid] || null;
 }
-
-// define.amd property, conforms to the AMD API.
-define.amd = {
-  creator: 'AceMood',
-  email: 'zmike86@gmail.com'
-};
 /**
  * @file take care of kerneljs event publish and subscribe
  * @email zmike86@gmail.com
@@ -1049,7 +1027,7 @@ var kernel = {};
 
 // for anonymous module Ids
 var uuid = 0;
-var uidprefix = 'AceMood@kernel_';
+var uidprefix = 'AM@kernel_';
 
 /**
  * Stores all modules that is fetching.
@@ -1113,8 +1091,92 @@ function config(obj) {
   }
 }
 
-function use() {
+/**
+ * Entry point of web page.
+ * @param {string} id
+ */
+function exec(id) {
+  var argLen = arguments.length;
+  if (argLen < 1) {
+    throw 'require must have at least one parameter.';
+  }
 
+  // a simple require statements always be preloaded.
+  // so return its complied exports object.
+  var mod = resolve(id, null);
+  if (mod && (mod.status >= Module.STATUS.loaded)) {
+    mod.compile();
+    return mod.exports;
+  } else {
+    throw 'module with id: ' + id + ' have not be ready';
+  }
+}
+
+/**
+ * Load script async and execute callback.
+ * @param {Array|string} dependencies
+ * @param {function} callback
+ * @param {?Module} module
+ */
+function requireAsync(dependencies, callback, module) {
+  var cnt = dependencies.length;
+  // Update fetchingList.
+  fetchingList.add(module);
+  module.setStatus(Module.STATUS.fetching);
+
+  var args = [];
+
+  forEach(dependencies, function(name, index) {
+    var resourceMap = kernel.data.resourceMap;
+    var uri, id;
+    // already record through build tool
+    if (resourceMap && resourceMap[name]) {
+      uri = resourceMap[name].uri;
+      id = resourceMap[name].id;
+    } else {
+      uri = resolvePath(name, module && module.uri);
+      id = kernel.path2id[uri] ? kernel.path2id[uri][0] : null;
+    }
+
+    var dependencyModule = id && Module._cache[id];
+    if (dependencyModule &&
+      (dependencyModule.status >= Module.STATUS.loaded)) {
+      cnt--;
+      return;
+    }
+
+    // record this mod and dependency in dependencyList right now.
+    // for notify later.
+    if (!dependencyList[uri]) {
+      dependencyList[uri] = [module];
+    } else if (indexOf(dependencyList[uri], module) < 0) {
+      dependencyList[uri].push(module);
+    }
+
+    if (!sendingList[uri]) {
+      sendingList[uri] = true;
+      // load script or style
+      fetch(uri, noop);
+    }
+
+
+
+    // a simple require statements always be preloaded.
+    // so return its complied exports object.
+    //var mod = resolve(moduleId, module);
+    //if (mod && (mod.status >= Module.STATUS.loaded)) {
+    //  mod.compile();
+    //  return mod.exports;
+    //} else {
+    //  throw 'require unknown module with id: ' + moduleId;
+    //}
+  });
+
+  if (cnt === 0) {
+    setTimeout(function() {
+      ready(module);
+    }, 0);
+  }
 }
 
 // clear all relative cache
@@ -1129,7 +1191,7 @@ kernel.getCache = function() {
   return Module._cache;
 };
 
-kernel.use = use;
+kernel.exec = exec;
 kernel.config = config;
 kernel.on = on;
 kernel.emit = emit;
