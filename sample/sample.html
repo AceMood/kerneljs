@@ -14,11 +14,10 @@
         define('app', function(require, exports, module) {
 
             var moduleA = require('./moduleA');
-            //var moduleB = require('./moduleB');
-
+            var moduleB = require('./moduleB');
             require('./moduleC.css');
 
-            alert(moduleA.name);
+            alert(moduleA.name + ' ' + moduleB.name);
 
         }, true);
     </script>

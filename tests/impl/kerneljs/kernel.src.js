@@ -664,6 +664,7 @@ function Module(obj) {
   this.status = Module.STATUS.init;
   this.factory = obj.factory || null;
   this.exports = {};
+  this.execNow = !!obj.execNow;
 
   // cache
   Module._cache[this.id] = this;
@@ -701,19 +702,7 @@ Module.prototype.setStatus = function(status) {
  * @return {boolean}
  */
 Module.prototype.checkAll = function() {
-  // return this.depCount === 0;
-
-  var ok = true;
-  // native forEach will skip nullify value, when exports is
-  // an empty string, it will break, so use a for loop
-  for (var i = 0; i < this.deps.length; ++i) {
-    var dependency = resolve(this.deps[i], this);
-    if (!dependency || (dependency.status < Module.STATUS.loaded)) {
-      ok = false;
-      break;
-    }
-  }
-  return ok;
+  return this.depsCount === 0;
 };
 
 /**
@@ -815,11 +804,21 @@ function exist_id_error(id) {
   throw SAME_ID_MSG.replace('%s', id);
 }
 
+function recordPath2Id(uri, id) {
+  // cache in path2id
+  if (kernel.path2id[uri]) {
+    kernel.path2id[uri].push(id);
+  } else {
+    kernel.path2id[uri] = [id];
+  }
+}
+
 /**
  * global define.
  * define(id?, factory);
  * @param {string|function|object} id module Id
  * @param {(function|object)?} factory callback function
+ * @param {boolean} execNow
  */
 function define(id, factory, execNow) {
   var mod;
@@ -844,9 +843,13 @@ function define(id, factory, execNow) {
       factory: null
     });
 
+    // cache in path2id
+    recordPath2Id(uri, mod.id);
     mod.exports = factory;
-    mod.setStatus(Module.STATUS.complete);
-    ready(mod);
+
+    setTimeout(function() {
+      ready(mod);
+    }, 0);
 
   } else if (typeOf(factory) === 'function') {
     factory
@@ -860,23 +863,16 @@ function define(id, factory, execNow) {
       id: id,
       uri: uri,
       deps: deps,
-      factory: factory
+      factory: factory,
+      execNow: !!execNow
     });
 
-    loadDependency(mod, execNow ? function() {
-      if (mod.checkAll()) {
-        mod.compile();
-      }
-    } : noop);
+    // cache in path2id
+    recordPath2Id(uri, mod.id);
+    loadDependency(mod, noop);
+
   } else {
     throw 'define with wrong parameters in ' + uri;
-  }
-
-  // cache in path2id
-  if (kernel.path2id[uri]) {
-    kernel.path2id[uri].push(mod.id);
-  } else {
-    kernel.path2id[uri] = [mod.id];
   }
 }
 
@@ -905,7 +901,7 @@ function loadDependency(module, callback) {
     var dependencyModule = id && Module._cache[id];
     if (dependencyModule &&
       (dependencyModule.status >= Module.STATUS.loaded)) {
-      module.depCount--;
+      module.depsCount--;
       return;
     }
 
@@ -924,8 +920,10 @@ function loadDependency(module, callback) {
     }
   });
 
-  if (module.depCount === 0) {
-    ready(module);
+  if (module.depsCount === 0) {
+    setTimeout(function() {
+      ready(module);
+    }, 0);
   }
 }
 
@@ -950,12 +948,17 @@ function ready(mod) {
     // So we must delete it first to avoid the factory function execute twice.
     delete dependencyList[mod.uri];
     forEach(dependants, function(dependant) {
+      dependant.depsCount--;
       if (dependant.status === Module.STATUS.fetching) {
         if (dependant.checkAll()) {
           ready(dependant);
         }
       }
     });
+  }
+
+  if (mod.execNow) {
+    mod.compile();
   }
 }
 
