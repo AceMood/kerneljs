@@ -2,26 +2,43 @@
 <html>
 <head lang="en">
     <meta charset="UTF-8">
-    <title></title>
+    <title>test sample</title>
+    <style>
+        div {
+            display: inline-block;
+            border: dashed 2px #444444;
+            width: 300px;
+            height: 100px;
+        }
+        button {
+            display: block;
+            line-height: 30px;
+            padding: 0 10px;
+            text-align: center;
+            color: #0b97c4;
+        }
+    </style>
 </head>
 <body>
     <div id="moduleA">Hello World!</div>
     <div id="moduleB">Hello World!</div>
     <div id="moduleC">Hello World!</div>
-
+    <button>load dialog.js</button>
     <script src="../dist/kernel.debug.js"></script>
     <script type="text/javascript">
-        define('app', function(require, exports, module) {
+        define('app', function(require) {
+            var moduleA = require('./moduleA');
+            var moduleB = require('./moduleB');
+            require('./moduleC.css');
 
-//            var moduleA = require('./moduleA');
-//            var moduleB = require('./moduleB');
-//            require('./moduleC.css');
-//
-//            alert(moduleA.name + ' ' + moduleB.name);
+            alert(moduleA.name + ' ' + moduleB.name);
 
-            require.async(['./dir/mod'], function(mod) {
-               alert(mod.name);
-            });
+            document.querySelector('button').addEventListener('click', function(e) {
+                require.async(['./dialog'], function(dialog) {
+                    alert(dialog.name);
+                });
+            }, false);
+
         });
     </script>
 </body>

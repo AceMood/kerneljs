@@ -125,11 +125,13 @@ var currentAddingScript,
 // means it's now executing;
   interactiveScript;
 
+// Store callback list map to same url
+var callbacksList = {};
+
 /**
- * @param {string} url 文件路径
- * @param {function} callback
+ * @param {string} url css href
  */
-function fetchCss(url, callback) {
+function fetchCss(url) {
   function onCssLoad() {
     var mod = new Module({
       uri: url
@@ -142,7 +144,11 @@ function fetchCss(url, callback) {
     }
 
     ready(mod);
-    callback();
+    sendingList[url] = false;
+    var callbacks = callbacksList[url];
+    forEach(callbacks, function(cb) {
+      cb();
+    });
   }
 
   var method = (useImportLoad ? importLoad : linkLoad);
@@ -150,20 +156,34 @@ function fetchCss(url, callback) {
 }
 
 /**
- * @param {string} url script src
+ * @param {string} url
  * @param {function} callback
  */
-function fetchScript(url, callback) {
+function addOnLoad(url, callback) {
+  if (!callbacksList[url]) {
+    callbacksList[url] = [];
+  }
+  callbacksList[url].push(callback);
+}
+
+/**
+ * @param {string} url script src
+ */
+function fetchScript(url) {
   function onScriptLoad() {
     if (!script.readyState || /complete/.test(script.readyState)) {
       interactiveScript = null;
       script.onreadystatschange = script.onload = script.onerror = null;
-      // Remove the script to reduce memory leak
-      if (!kerneljs.data.debug) {
-        $head.removeChild(script);
-      }
+      //// Remove the script to reduce memory leak
+      //if (!kernel.data.debug) {
+      //  $head.removeChild(script);
+      //}
       script = null;
-      callback();
+      sendingList[url] = false;
+      var callbacks = callbacksList[url];
+      forEach(callbacks, function(cb) {
+        cb();
+      });
     }
   }
 
@@ -194,10 +214,18 @@ function fetchScript(url, callback) {
  * @param {function} callback
  */
 function fetch(url, callback) {
-  if (url.indexOf('.css') === url.length - 4) {
-    fetchCss(url, callback);
-  } else {
-    fetchScript(url, callback);
+  if (sendingList[url] === void 0) {
+    sendingList[url] = true;
+    addOnLoad(url, callback);
+    if (url.indexOf('.css') === url.length - 4) {
+      fetchCss(url);
+    } else {
+      fetchScript(url);
+    }
+  } else if (sendingList[url]) {
+    addOnLoad(url, callback);
+  } else if (sendingList[url] === false) {
+    callback();
   }
 }
 
@@ -210,7 +238,7 @@ function scripts() {
 }
 
 /**
- * 获取当前正在执行的script元素。
+ * Current executing script element.
  * In chrome and FF and Opera, use Error.prototype.stack
  * It's important to note that this will not reference the <script> element
  * if the code in the script is being called as a callback or event handler;
@@ -478,8 +506,7 @@ var loc = global.location;
  * When multiple slashes are found, they're replaced by a single one;
  * when the path contains a trailing slash, it is preserved.
  * On Windows backslashes are used in FileSystem.
- *
- * Example:
+ * e.g:
  * path.normalize('/foo/bar//baz/asdf/quux/..')
  * returns '/foo/bar/baz/asdf'
  * @param {string} p
@@ -557,7 +584,6 @@ function isRelative(p) {
  * Map the identifier for a module to a Internet file
  * path. SCRIPT insertion will set path with it, except
  * build-in names.
- *
  * @param  {string} id 依赖模块的name或者id。
  * @param  {string=} base 作为baseUri，解析依赖模块的绝对路径。
  * @return {string|object} exports object or absolute file path from Internet
@@ -573,8 +599,8 @@ function resolvePath(id, base) {
 
   // add file extension if necessary
   id = normalize(id);
-  var conjuction = id.charAt(0) === slash ? '' : slash;
-  var url = (base ? dirname(base) : dirname(loc.href)) + conjuction + id;
+  var adjoin = id.charAt(0) === slash ? '' : slash;
+  var url = (base ? dirname(base) : dirname(loc.href)) + adjoin + id;
 
   if (!fileExtRegExp.test(url)) {
     url += '.js';
@@ -794,9 +820,9 @@ Module.Status = {
 Module._cache = {};
 
 // extract `require('xxx')`
-var cjsRequireRegExp = /\brequire\s*\(\s*(["'])([^'"\s]+)\1\s*\)/g,
+var cjsRequireRegExp = /\brequire\s*\(\s*(["'])([^'"\s]+)\1\s*\)/g;
 // remove line/block comments
-  commentRegExp = /(\/\*([\s\S]*?)\*\/|([^:]|^)\/\/(.*)$)/mg;
+var commentRegExp = /(\/\*([\s\S]*?)\*\/|([^:]|^)\/\/(.*)$)/mg;
 
 var SAME_ID_MSG = 'more then one module defined with the same id: %s';
 
@@ -861,7 +887,7 @@ function recordDependencyList(uri, module) {
   }
 }
 
-
+// expect module have been pre-build, try to resolve id & uri
 function buildIdAndUri(name, baseUri) {
   var resourceMap = kernel.data.resourceMap;
   var uri, id;
@@ -876,7 +902,7 @@ function buildIdAndUri(name, baseUri) {
   return {
     uri: uri,
     id: id
-  }
+  };
 }
 
 /**
@@ -917,7 +943,7 @@ function define(id, factory) {
 
     // cache in path2id
     recordPath2Id(uri, module.id);
-    loadDependency(module, noop);
+    loadDependency(module);
 
   } else {
     throw 'define with wrong parameters in ' + uri;
@@ -927,10 +953,10 @@ function define(id, factory) {
 /**
  * Load module's dependencies.
  * @param {Module} module
- * @param {function} callback
+ * @param {function=} callback
  */
 function loadDependency(module, callback) {
-  requireAsync(null, callback, module);
+  requireAsync(null, callback || noop, module);
 }
 
 /**
@@ -940,7 +966,6 @@ function loadDependency(module, callback) {
 function ready(module) {
   fetchingList.remove(module);
   module.setStatus(Module.Status.loaded);
-
   module.compile();
 
   // Inform all module that depend on current module.
@@ -965,7 +990,8 @@ function ready(module) {
   }
 }
 
-function notify(module) {
+// async ready for consistence
+function doAsyncNotify(module) {
   setTimeout(function() {
     ready(module);
   }, 0);
@@ -984,7 +1010,7 @@ function resolve(id, mod) {
 }
 
 /**
- * Load script async and execute callback.
+ * Internal api to load script async and execute callback.
  * @param {?Array} dependencies
  * @param {function} callback
  * @param {?Module} module
@@ -1013,19 +1039,12 @@ function requireAsync(dependencies, callback, module) {
         cnt--;
         return;
       }
-
-      // recordDependencyList(ret.uri, module);
-      if (!sendingList[ret.uri]) {
-        sendingList[ret.uri] = true;
-        // load script or style
-        fetch(ret.uri, onLoad);
-      } else {
-
-      }
+      // load script or style
+      fetch(ret.uri, onLoad);
     });
 
     if (cnt === 0) {
-      notify(module);
+      callback.apply(null, args);
     }
   }
   // called from define
@@ -1036,7 +1055,7 @@ function requireAsync(dependencies, callback, module) {
 
     // no dependencies
     if (module.deps.length === 0) {
-      notify(module);
+      doAsyncNotify(module);
       return;
     }
 
@@ -1050,20 +1069,17 @@ function requireAsync(dependencies, callback, module) {
       }
 
       recordDependencyList(ret.uri, module);
-      if (!sendingList[ret.uri]) {
-        sendingList[ret.uri] = true;
-        // load script or style
-        fetch(ret.uri, callback);
-      }
+      // load script or style
+      fetch(ret.uri, callback);
     });
 
     if (module.checkAll()) {
-      notify(module);
+      doAsyncNotify(module);
     }
   }
 }
 /**
- * @file take care of kerneljs event publish and subscribe
+ * @file take care of kernel event publish and subscribe
  * @email zmike86@gmail.com
  * @preserved
  */
