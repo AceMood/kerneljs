@@ -571,7 +571,7 @@ function resolvePath(id, base) {
     base = null;
   }
 
-  // step 3: add file extension if necessary
+  // add file extension if necessary
   id = normalize(id);
   var conjuction = id.charAt(0) === slash ? '' : slash;
   var url = (base ? dirname(base) : dirname(loc.href)) + conjuction + id;
@@ -635,11 +635,11 @@ function parsePaths(p) {
  * @param {object} obj Configuration object. Include:
  *                     --uid: self generated uid.
  *                     --id: user defined moduleId(optional).
- *                     --url: 模块对用的物理文件路径
+ *                     --uri: 模块对用的物理文件路径
  *                     --deps: dependency array, which stores moduleId or relative module path.
  *                     --factory: callback function
  *                     --exports: exports object
- *                     --status: Module.STATUS
+ *                     --status: Module.Status
  */
 function Module(obj) {
   // user defined id
@@ -661,14 +661,13 @@ function Module(obj) {
   this.uri = obj.uri;
   this.deps = obj.deps || [];
   this.depsCount = this.deps.length;
-  this.status = Module.STATUS.init;
+  this.status = Module.Status.init;
   this.factory = obj.factory || null;
   this.exports = {};
-  this.execNow = !!obj.execNow;
 
   // cache
   Module._cache[this.id] = this;
-  this.setStatus(Module.STATUS.init);
+  this.setStatus(Module.Status.init);
 }
 
 /**
@@ -707,10 +706,11 @@ Module.prototype.checkAll = function() {
 
 /**
  * compile module
+ * @return {*} module's exports object
  */
 Module.prototype.compile = function() {
-  if (this.status === Module.STATUS.complete) {
-    return;
+  if (this.status === Module.Status.complete) {
+    return this.exports;
   }
 
   /**
@@ -730,7 +730,7 @@ Module.prototype.compile = function() {
     // a simple require statements always be preloaded.
     // so return its complied exports object.
     var mod = resolve(moduleId, self);
-    if (mod && (mod.status >= Module.STATUS.loaded)) {
+    if (mod && (mod.status >= Module.Status.loaded)) {
       mod.compile();
       return mod.exports;
     } else {
@@ -771,7 +771,8 @@ Module.prototype.compile = function() {
     this.factory.call(null, localRequire, this.exports, this);
     delete this.factory;
   }
-  this.setStatus(Module.STATUS.complete);
+  this.setStatus(Module.Status.complete);
+  return this.exports;
 };
 
 /**
@@ -781,7 +782,7 @@ Module.prototype.compile = function() {
  *  loaded:   all dependencies are ready.
  *  complete: after compiled.
  */
-Module.STATUS = {
+Module.Status = {
   'init'      : 0,
   'fetching'  : 1,
   'loaded'    : 2,
@@ -799,13 +800,50 @@ var cjsRequireRegExp = /\brequire\s*\(\s*(["'])([^'"\s]+)\1\s*\)/g,
 
 var SAME_ID_MSG = 'more then one module defined with the same id: %s';
 
-/** same module Id error */
+/**
+ * Stores all modules that is fetching.
+ * Use module's uid and module as key-pairs.
+ */
+var fetchingList = {
+  mods: {},
+  add: function(mod) {
+    if (this.mods[mod.uid]) {
+      emit(
+        events.error,
+        [
+          'current mod with uid: ' + mod.uid + ' and file path: ' +
+          mod.uri + ' is fetching now'
+        ]
+      );
+    }
+    this.mods[mod.uid] = mod;
+  },
+  clear: function() {
+    this.mods = {};
+  },
+  remove: function(mod) {
+    if (this.mods[mod.uid]) {
+      this.mods[mod.uid] = null;
+      delete this.mods[mod.uid];
+    }
+  }
+};
+
+// Due to add module dependency when resolve id->path, we can not use
+// module's uid as the key of dependencyList, so we use url here, module
+// self as value.
+var dependencyList = {};
+
+// Store for which module is being fetched.
+var sendingList = {};
+
+// same module Id error
 function exist_id_error(id) {
   throw SAME_ID_MSG.replace('%s', id);
 }
 
+// record cache in path2id
 function recordPath2Id(uri, id) {
-  // cache in path2id
   if (kernel.path2id[uri]) {
     kernel.path2id[uri].push(id);
   } else {
@@ -813,20 +851,47 @@ function recordPath2Id(uri, id) {
   }
 }
 
+// record this mod and dependency in dependencyList right now.
+// for notify later.
+function recordDependencyList(uri, module) {
+  if (!dependencyList[uri]) {
+    dependencyList[uri] = [module];
+  } else if (indexOf(dependencyList[uri], module) < 0) {
+    dependencyList[uri].push(module);
+  }
+}
+
+
+function buildIdAndUri(name, baseUri) {
+  var resourceMap = kernel.data.resourceMap;
+  var uri, id;
+  // already record through build tool
+  if (resourceMap && resourceMap[name]) {
+    uri = resourceMap[name].uri;
+    id = resourceMap[name].id;
+  } else {
+    uri = resolvePath(name, baseUri);
+    id = kernel.path2id[uri] ? kernel.path2id[uri][0] : null;
+  }
+  return {
+    uri: uri,
+    id: id
+  }
+}
+
 /**
- * global define.
+ * Global define|__d function.
  * define(id?, factory);
- * @param {string|function|object} id module Id
- * @param {(function|object)?} factory callback function
- * @param {boolean} execNow
+ * @param {string|function} id module Id or factory function
+ * @param {?function=} factory callback function
  */
-function define(id, factory, execNow) {
-  var mod;
-  var resourceMap = kernel.data.resourceMap,
-    inMap = resourceMap && resourceMap[id];
+function define(id, factory) {
+  var module;
+  var resourceMap = kernel.data.resourceMap;
+  var inMap = resourceMap && resourceMap[id];
 
   // If module in resourceMap, get its uri property.
-  // doc.currentScript is not always available.
+  // document.currentScript is not always available.
   var uri = inMap ? resourceMap[id].uri : getCurrentScriptPath();
   var deps = inMap ? resourceMap[id].deps : [];
 
@@ -835,23 +900,7 @@ function define(id, factory, execNow) {
     id = null;
   }
 
-  if (typeOf(factory) === 'object') {
-    mod = new Module({
-      id: id,
-      uri: uri,
-      deps: deps,
-      factory: null
-    });
-
-    // cache in path2id
-    recordPath2Id(uri, mod.id);
-    mod.exports = factory;
-
-    setTimeout(function() {
-      ready(mod);
-    }, 0);
-
-  } else if (typeOf(factory) === 'function') {
+  if (typeOf(factory) === 'function') {
     factory
       .toString()
       .replace(commentRegExp, '')
@@ -859,17 +908,16 @@ function define(id, factory, execNow) {
         deps.push(dep);
       });
 
-    mod = new Module({
+    module = new Module({
       id: id,
       uri: uri,
       deps: deps,
-      factory: factory,
-      execNow: !!execNow
+      factory: factory
     });
 
     // cache in path2id
-    recordPath2Id(uri, mod.id);
-    loadDependency(mod, noop);
+    recordPath2Id(uri, module.id);
+    loadDependency(module, noop);
 
   } else {
     throw 'define with wrong parameters in ' + uri;
@@ -878,66 +926,25 @@ function define(id, factory, execNow) {
 
 /**
  * Load module's dependencies.
- * @param {Module} module Module object.
+ * @param {Module} module
  * @param {function} callback
  */
 function loadDependency(module, callback) {
-  // Update fetchingList.
-  fetchingList.add(module);
-  module.setStatus(Module.STATUS.fetching);
-
-  forEach(module.deps, function(name) {
-    var resourceMap = kernel.data.resourceMap;
-    var uri, id;
-    // already record through build tool
-    if (resourceMap && resourceMap[name]) {
-      uri = resourceMap[name].uri;
-      id = resourceMap[name].id;
-    } else {
-      uri = resolvePath(name, module.uri);
-      id = kernel.path2id[uri] ? kernel.path2id[uri][0] : null;
-    }
-
-    var dependencyModule = id && Module._cache[id];
-    if (dependencyModule &&
-      (dependencyModule.status >= Module.STATUS.loaded)) {
-      module.depsCount--;
-      return;
-    }
-
-    // record this mod and dependency in dependencyList right now.
-    // for notify later.
-    if (!dependencyList[uri]) {
-      dependencyList[uri] = [module];
-    } else if (indexOf(dependencyList[uri], module) < 0) {
-      dependencyList[uri].push(module);
-    }
-
-    if (!sendingList[uri]) {
-      sendingList[uri] = true;
-      // load script or style
-      fetch(uri, callback);
-    }
-  });
-
-  if (module.depsCount === 0) {
-    setTimeout(function() {
-      ready(module);
-    }, 0);
-  }
+  requireAsync(null, callback, module);
 }
 
 /**
- * 当一个模块已经准备就绪, 意味着它的所有以来全部都加载完毕并且回调函数
- * 已经执行完毕. 在此通知依赖于此模块的其他模块.
- * @param {Module} mod 已完毕的模块对象
+ * When a module is ready, means that all the dependencies have been ready.
+ * @param {Module} module
  */
-function ready(mod) {
-  fetchingList.remove(mod);
-  mod.setStatus(Module.STATUS.loaded);
+function ready(module) {
+  fetchingList.remove(module);
+  module.setStatus(Module.Status.loaded);
 
-  // Inform all module that depend on this current module.
-  var dependants = dependencyList[mod.uri];
+  module.compile();
+
+  // Inform all module that depend on current module.
+  var dependants = dependencyList[module.uri];
   if (dependants) {
     // Here I first delete it because a complex condition:
     // if a define occurs in a factory function, and the module whose
@@ -946,20 +953,22 @@ function ready(mod) {
     // successfully. The url would be the previous one, and we store the
     // record in global cache dependencyList.
     // So we must delete it first to avoid the factory function execute twice.
-    delete dependencyList[mod.uri];
+    delete dependencyList[module.uri];
     forEach(dependants, function(dependant) {
       dependant.depsCount--;
-      if (dependant.status === Module.STATUS.fetching) {
+      if (dependant.status === Module.Status.fetching) {
         if (dependant.checkAll()) {
           ready(dependant);
         }
       }
     });
   }
+}
 
-  if (mod.execNow) {
-    mod.compile();
-  }
+function notify(module) {
+  setTimeout(function() {
+    ready(module);
+  }, 0);
 }
 
 /**
@@ -972,6 +981,86 @@ function resolve(id, mod) {
   var path = resolvePath(id, (mod && mod.uri) || location.href);
   var mid = kernel.path2id[path] ? kernel.path2id[path][0] : null;
   return Module._cache[id] || Module._cache[mid] || null;
+}
+
+/**
+ * Load script async and execute callback.
+ * @param {?Array} dependencies
+ * @param {function} callback
+ * @param {?Module} module
+ */
+function requireAsync(dependencies, callback, module) {
+  // called from require.async
+  if (module.status >= Module.Status.loaded) {
+    var args = new Array(dependencies.length);
+    var cnt = dependencies.length;
+    forEach(dependencies, function(name, index) {
+      function onLoad() {
+        var ret = buildIdAndUri(name, module.uri);
+        dependencyModule = ret.id && Module._cache[ret.id];
+        args[index] = dependencyModule.compile();
+        cnt--;
+        if (cnt === 0) {
+          callback.apply(null, args);
+        }
+      }
+
+      var ret = buildIdAndUri(name, module.uri);
+      var dependencyModule = ret.id && Module._cache[ret.id];
+      if (dependencyModule &&
+        (dependencyModule.status >= Module.Status.loaded)) {
+        args[index] = dependencyModule.compile();
+        cnt--;
+        return;
+      }
+
+      // recordDependencyList(ret.uri, module);
+      if (!sendingList[ret.uri]) {
+        sendingList[ret.uri] = true;
+        // load script or style
+        fetch(ret.uri, onLoad);
+      } else {
+
+      }
+    });
+
+    if (cnt === 0) {
+      notify(module);
+    }
+  }
+  // called from define
+  else {
+    // Update fetchingList.
+    fetchingList.add(module);
+    module.setStatus(Module.Status.fetching);
+
+    // no dependencies
+    if (module.deps.length === 0) {
+      notify(module);
+      return;
+    }
+
+    forEach(module.deps, function(name) {
+      var ret = buildIdAndUri(name, module.uri);
+      var dependencyModule = ret.id && Module._cache[ret.id];
+      if (dependencyModule &&
+        (dependencyModule.status >= Module.Status.loaded)) {
+        module.depsCount--;
+        return;
+      }
+
+      recordDependencyList(ret.uri, module);
+      if (!sendingList[ret.uri]) {
+        sendingList[ret.uri] = true;
+        // load script or style
+        fetch(ret.uri, callback);
+      }
+    });
+
+    if (module.checkAll()) {
+      notify(module);
+    }
+  }
 }
 /**
  * @file take care of kerneljs event publish and subscribe
@@ -1033,43 +1122,6 @@ var uuid = 0;
 var uidprefix = 'AM@kernel_';
 
 /**
- * Stores all modules that is fetching.
- * Use module's uid and module as key-pairs.
- */
-var fetchingList = {
-  mods: {},
-  add: function(mod) {
-    if (this.mods[mod.uid]) {
-      emit(
-        events.error,
-        [
-          'current mod with uid: ' + mod.uid + ' and file path: ' +
-          mod.uri + ' is fetching now'
-        ]
-      );
-    }
-    this.mods[mod.uid] = mod;
-  },
-  clear: function() {
-    this.mods = {};
-  },
-  remove: function(mod) {
-    if (this.mods[mod.uid]) {
-      this.mods[mod.uid] = null;
-      delete this.mods[mod.uid];
-    }
-  }
-};
-
-// Due to add module dependency when resolve id->path, we can not use
-// module's uid as the key of dependencyList, so we use url here, module
-// self as value.
-var dependencyList = {};
-
-// Store for which module is being fetched.
-var sendingList = {};
-
-/**
  * Config kernel object at any time. Options:
  * --baseUrl:     All relative paths should be resolved base on this uri
  * --resourceMap: All pre-built-in modules and dependencies. If a module has been
@@ -1094,94 +1146,6 @@ function config(obj) {
   }
 }
 
-/**
- * Entry point of web page.
- * @param {string} id
- */
-function exec(id) {
-  var argLen = arguments.length;
-  if (argLen < 1) {
-    throw 'require must have at least one parameter.';
-  }
-
-  // a simple require statements always be preloaded.
-  // so return its complied exports object.
-  var mod = resolve(id, null);
-  if (mod && (mod.status >= Module.STATUS.loaded)) {
-    mod.compile();
-    return mod.exports;
-  } else {
-    throw 'module with id: ' + id + ' have not be ready';
-  }
-}
-
-/**
- * Load script async and execute callback.
- * @param {Array|string} dependencies
- * @param {function} callback
- * @param {?Module} module
- */
-function requireAsync(dependencies, callback, module) {
-  var cnt = dependencies.length;
-  // Update fetchingList.
-  fetchingList.add(module);
-  module.setStatus(Module.STATUS.fetching);
-
-  var args = [];
-
-  forEach(dependencies, function(name, index) {
-    var resourceMap = kernel.data.resourceMap;
-    var uri, id;
-    // already record through build tool
-    if (resourceMap && resourceMap[name]) {
-      uri = resourceMap[name].uri;
-      id = resourceMap[name].id;
-    } else {
-      uri = resolvePath(name, module && module.uri);
-      id = kernel.path2id[uri] ? kernel.path2id[uri][0] : null;
-    }
-
-    var dependencyModule = id && Module._cache[id];
-    if (dependencyModule &&
-      (dependencyModule.status >= Module.STATUS.loaded)) {
-      cnt--;
-      return;
-    }
-
-    // record this mod and dependency in dependencyList right now.
-    // for notify later.
-    if (!dependencyList[uri]) {
-      dependencyList[uri] = [module];
-    } else if (indexOf(dependencyList[uri], module) < 0) {
-      dependencyList[uri].push(module);
-    }
-
-    if (!sendingList[uri]) {
-      sendingList[uri] = true;
-      // load script or style
-      fetch(uri, noop);
-    }
-
-
-
-    // a simple require statements always be preloaded.
-    // so return its complied exports object.
-    //var mod = resolve(moduleId, module);
-    //if (mod && (mod.status >= Module.STATUS.loaded)) {
-    //  mod.compile();
-    //  return mod.exports;
-    //} else {
-    //  throw 'require unknown module with id: ' + moduleId;
-    //}
-  });
-
-  if (cnt === 0) {
-    setTimeout(function() {
-      ready(module);
-    }, 0);
-  }
-}
-
 // clear all relative cache
 kernel.reset = function() {
   Module._cache = {};
@@ -1190,11 +1154,11 @@ kernel.reset = function() {
   handlersMap = {};
 };
 
+// helper function
 kernel.getCache = function() {
   return Module._cache;
 };
 
-kernel.exec = exec;
 kernel.config = config;
 kernel.on = on;
 kernel.emit = emit;
@@ -1207,7 +1171,7 @@ kernel.path2id = {};
 
 // config with preserved global kerneljs object
 // if a global kerneljs object exists,
-// treat it as kerneljs configuration later.
+// treat it as kerneljs configuration.
 if (global.kerneljs) {
   kernel._kernel = global.kerneljs;
   kernel.config(kernel._kernel);
