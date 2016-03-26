@@ -964,7 +964,7 @@ function loadDependency(module, callback) {
  * @param {Module} module
  */
 function ready(module) {
-  fetchingList.remove(module);
+  //fetchingList.remove(module);
   module.setStatus(Module.Status.loaded);
   module.compile();
 
@@ -1050,7 +1050,7 @@ function requireAsync(dependencies, callback, module) {
   // called from define
   else {
     // Update fetchingList.
-    fetchingList.add(module);
+    //fetchingList.add(module);
     module.setStatus(Module.Status.fetching);
 
     // no dependencies
@@ -1181,8 +1181,9 @@ kernel.emit = emit;
 kernel.request = fetchScript;
 kernel.eventsType = events;
 kernel.data = {};
-// 理论上每个文件可能定义多个模块，也就是define了多次。这种情况应该在开发时严格避免，
-// 但经过打包之后一定会出现这种状况。所以我们必须要做一些处理，也使得这个结构是一对多的.
+// One javascript file can define more than one module.
+// We never do that when dev time. But not after build process.
+// Key-value pairs would be path->Array.<id>
 kernel.path2id = {};
 
 // config with preserved global kerneljs object

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>test resourceMap sample</title>
+    <style>
+        div {
+            display: inline-block;
+            border: dashed 2px #444444;
+            width: 300px;
+            height: 100px;
+        }
+        button {
+            display: block;
+            line-height: 30px;
+            padding: 0 10px;
+            text-align: center;
+            color: #0b97c4;
+        }
+    </style>
+</head>
+<body>
+<button>load dialog.js</button>
+<script type="text/javascript">
+    var kerneljs = {
+        resourceMap: {
+            'a': {
+                id: 'a',
+                uri: '/kerneljs/sample/id/a.js'
+            },
+            'b': {
+                id: 'b',
+                uri: '/kerneljs/sample/id/b.js'
+            },
+            'dialog': {
+                id: 'dialog',
+                uri: '/kerneljs/sample/id/dialog.js'
+            }
+        }
+    };
+</script>
+<script src="../dist/kernel.debug.js"></script>
+<script type="text/javascript" src="id/main.js"></script>
+</body>
+</html>
