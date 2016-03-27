@@ -826,35 +826,6 @@ var commentRegExp = /(\/\*([\s\S]*?)\*\/|([^:]|^)\/\/(.*)$)/mg;
 
 var SAME_ID_MSG = 'more then one module defined with the same id: %s';
 
-/**
- * Stores all modules that is fetching.
- * Use module's uid and module as key-pairs.
- */
-var fetchingList = {
-  mods: {},
-  add: function(mod) {
-    if (this.mods[mod.uid]) {
-      emit(
-        events.error,
-        [
-          'current mod with uid: ' + mod.uid + ' and file path: ' +
-          mod.uri + ' is fetching now'
-        ]
-      );
-    }
-    this.mods[mod.uid] = mod;
-  },
-  clear: function() {
-    this.mods = {};
-  },
-  remove: function(mod) {
-    if (this.mods[mod.uid]) {
-      this.mods[mod.uid] = null;
-      delete this.mods[mod.uid];
-    }
-  }
-};
-
 // Due to add module dependency when resolve id->path, we can not use
 // module's uid as the key of dependencyList, so we use url here, module
 // self as value.
@@ -964,7 +935,6 @@ function loadDependency(module, callback) {
  * @param {Module} module
  */
 function ready(module) {
-  //fetchingList.remove(module);
   module.setStatus(Module.Status.loaded);
   module.compile();
 
@@ -1013,7 +983,7 @@ function resolve(id, mod) {
  * Internal api to load script async and execute callback.
  * @param {?Array} dependencies
  * @param {function} callback
- * @param {?Module} module
+ * @param {Module} module
  */
 function requireAsync(dependencies, callback, module) {
   // called from require.async
@@ -1024,10 +994,13 @@ function requireAsync(dependencies, callback, module) {
       function onLoad() {
         var ret = buildIdAndUri(name, module.uri);
         dependencyModule = ret.id && Module._cache[ret.id];
-        args[index] = dependencyModule.compile();
-        cnt--;
-        if (cnt === 0) {
-          callback.apply(null, args);
+        // might need other modules
+        if (dependencyModule.status >= Module.Status.loaded) {
+          args[index] = dependencyModule.compile();
+          cnt--;
+          if (cnt === 0) {
+            callback.apply(null, args);
+          }
         }
       }
 
@@ -1049,8 +1022,6 @@ function requireAsync(dependencies, callback, module) {
   }
   // called from define
   else {
-    // Update fetchingList.
-    //fetchingList.add(module);
     module.setStatus(Module.Status.fetching);
 
     // no dependencies
@@ -1073,7 +1044,8 @@ function requireAsync(dependencies, callback, module) {
       fetch(ret.uri, callback);
     });
 
-    if (module.checkAll()) {
+    // might been loaded through require.async and compiled before
+    if (module.checkAll() && module.status < Module.Status.loaded) {
       doAsyncNotify(module);
     }
   }
