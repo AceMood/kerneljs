@@ -14,6 +14,6 @@ var waitForServer = function() {
 		setTimeout(waitForServer, 1000);
 	});
 	req.end();
-}
+};
 
 waitForServer();
