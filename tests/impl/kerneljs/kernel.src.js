@@ -101,11 +101,11 @@ function typeOf(obj) {
  * @email zmike86@gmail.com
  */
 
-var $doc = document,
-  $head = $doc.head || $doc.getElementsByTagName('head')[0],
-  // IE6 bug, when a base element exists, head.appendChild goes wrong.
-  // See: 'http://dev.jquery.com/ticket/2709'
-  $base = $doc.getElementsByTagName('base')[0];
+var $doc = document;
+var $head = $doc.head || $doc.getElementsByTagName('head')[0];
+// IE6 bug, when a base element exists, head.appendChild goes wrong.
+// See: 'http://dev.jquery.com/ticket/2709'
+var $base = $doc.getElementsByTagName('base')[0];
 
 if ($base) {
   $head = $base.parentNode;
@@ -136,12 +136,9 @@ function fetchCss(url) {
     var mod = new Module({
       uri: url
     });
+
     // update path2uid
-    if (kernel.path2id[url]) {
-      kernel.path2id[url].push(mod.id);
-    } else {
-      kernel.path2id[url] = [mod.id];
-    }
+    recordPath2Id(url, mod.id);
 
     ready(mod);
     sendingList[url] = false;
@@ -174,10 +171,6 @@ function fetchScript(url) {
     if (!script.readyState || /complete/.test(script.readyState)) {
       interactiveScript = null;
       script.onreadystatschange = script.onload = script.onerror = null;
-      //// Remove the script to reduce memory leak
-      //if (!kernel.data.debug) {
-      //  $head.removeChild(script);
-      //}
       script = null;
       sendingList[url] = false;
       var callbacks = callbacksList[url];
@@ -190,6 +183,7 @@ function fetchScript(url) {
   var script = $doc.createElement('script');
   script.charset = 'utf-8';
   script.async = 1;
+  script.crossorigin = 1;
 
   // event listener
   script.onreadystatechange = script.onload = script.onerror = onScriptLoad;
@@ -332,7 +326,7 @@ function getCurrentScript() {
 /**
  * 跨浏览器解决方案获得script节点的src绝对路径.
  * @param {HTMLScriptElement} script
- * @return {String}
+ * @return {string}
  */
 function getAbsPathOfScript(script) {
   return script.hasAttribute ? script.src : script.getAttribute('src', 4);
@@ -352,7 +346,7 @@ function getCurrentScriptPath() {
  * @email zmike86@gmail.com
  */
 
-var resArr = [
+var reg = [
   'Trident\/([^ ;]*)',
   'AppleWebKit\/([^ ;]*)',
   'Opera\/([^ ;]*)',
@@ -361,9 +355,9 @@ var resArr = [
   'AndroidWebKit\/([^ ;]*)'
 ];
 
-var engineRe = new RegExp(resArr.join('|')),
-  engine = navigator.userAgent.match(engineRe) || 0,
-  curStyle, curSheet;
+var engineRe = new RegExp(reg.join('|'));
+var engine = navigator.userAgent.match(engineRe) || 0;
+var curStyle, curSheet;
 
 // load css through @import directive
 // IE < 9, Firefox < 18
@@ -489,11 +483,11 @@ function createStyle() {
  */
 
 // A directory file path must be ends with a slash (back slash in window)
-var dirRegExp = /\/$/g,
-  fileExtRegExp = /\.(js|css|tpl|txt)$/,
-  dot = '.',
-  slash = '/',
-  dot2 = '..';
+var dirRegExp = /\/$/g;
+var fileExtRegExp = /\.(js|css|txt)$/;
+var dot = '.';
+var slash = '/';
+var dot2 = '..';
 
 // retrieve current doc's absolute path
 // It may be a file system path, http path
@@ -678,7 +672,7 @@ function Module(obj) {
           obj.uri
         ]
       );
-      return exist_id_error(obj.id);
+      return existIdError(obj.id);
     }
   }
 
@@ -835,7 +829,7 @@ var dependencyList = {};
 var sendingList = {};
 
 // same module Id error
-function exist_id_error(id) {
+function existIdError(id) {
   throw SAME_ID_MSG.replace('%s', id);
 }
 
@@ -960,13 +954,6 @@ function ready(module) {
   }
 }
 
-// async ready for consistence
-function doAsyncNotify(module) {
-  setTimeout(function() {
-    ready(module);
-  }, 0);
-}
-
 /**
  * Used in the module.compile to determine a module.
  * @param  {string} id moduleId or relative path
@@ -1026,7 +1013,7 @@ function requireAsync(dependencies, callback, module) {
 
     // no dependencies
     if (module.deps.length === 0) {
-      doAsyncNotify(module);
+      ready(module);
       return;
     }
 
@@ -1046,7 +1033,7 @@ function requireAsync(dependencies, callback, module) {
 
     // might been loaded through require.async and compiled before
     if (module.checkAll() && module.status < Module.Status.loaded) {
-      doAsyncNotify(module);
+      ready(module);
     }
   }
 }
