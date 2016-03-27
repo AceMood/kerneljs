@@ -1,6 +1,8 @@
-go(["_reporter", "require"], function(amdJS, require) {
+go(function(require) {
 
-  amdJS.assert(typeof define.amd === 'object', 'basic_define: define.amd is object');
+  var amdJS = require('_reporter');
+
+  amdJS.assert(typeof define === 'function', 'basic_define: define is a function');
   amdJS.print('DONE', 'done');
   
 });

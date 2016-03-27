@@ -1,4 +1,6 @@
-go(["_reporter", "require"], function(amdJS, require) {
+go(function(require) {
+
+  var amdJS = require('_reporter');
 
   // tests if there are NO dependencies, the default
   // values of "require, exports, module" are used
@@ -12,8 +14,8 @@ go(["_reporter", "require"], function(amdJS, require) {
   });
 
   window.setTimeout(function() {
-    require(['noDeps'], function () {
+    require.async(['noDeps'], function () {
       amdJS.print('DONE', 'done');
     });
-  });
+  }, 0);
 });

@@ -25,6 +25,6 @@ var config = require,
     //pluginDynamic: true
   };
 
-//Remove the global require, to make sure a global require is not assumed
+//Remove the global define, to make sure a global define is not assumed
 //in the tests
-require = undefined;
+define = undefined;

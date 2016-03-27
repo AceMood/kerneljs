@@ -1,4 +1,4 @@
-define('b', [], function () {
+define('b', function () {
   return {
     name: 'b'
   };
