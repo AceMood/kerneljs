@@ -1,3 +1,3 @@
-define(function () {
-    return 'four';
+define(function(require, exports, module) {
+  module.exports = 'four';
 });

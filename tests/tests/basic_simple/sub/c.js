@@ -1,5 +1,3 @@
-define('sub/c', function () {
-    return {
-        name: 'c'
-    };
+define('sub/c', function (require, exports) {
+  exports.name = 'c';
 });

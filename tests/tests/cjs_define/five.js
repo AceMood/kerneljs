@@ -1,5 +1,5 @@
-define(function () {
-    return function () {
-        return 'five';
-    }
+define(function(require, exports, module) {
+  module.exports = function () {
+    return 'five';
+  }
 });

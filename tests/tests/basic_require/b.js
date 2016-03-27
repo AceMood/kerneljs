@@ -1,5 +1,5 @@
-define('b', function () {
-  return {
+define('b', function(require, exports, module) {
+  module.exports = {
     name: 'b'
   };
 });

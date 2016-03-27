@@ -1,6 +1,6 @@
 
 //Map the configure({}) call to loader-specific call.
-var config = require,
+var config = kerneljs,
 
 //Map the top-level entry point to start loading to loader-specific call.
   go = define,
@@ -27,4 +27,4 @@ var config = require,
 
 //Remove the global define, to make sure a global define is not assumed
 //in the tests
-define = undefined;
+kerneljs = undefined;

@@ -1,5 +1,5 @@
 
-define(function (require, exports, module) {
+define(function(require, exports, module) {
   var dotUtil = require('./util');
   var util = require('util');
 

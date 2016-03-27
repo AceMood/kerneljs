@@ -1,3 +1,5 @@
-define('a', {
-  name: 'a'
+define('a', function(require, exports, module) {
+  module.exports = {
+    name: 'a'
+  }
 });

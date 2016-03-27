@@ -1,7 +1,7 @@
-define('car', function (require) {
-    return {
-        name: 'car',
-        wheels: require('wheels'),
-        engine: require('engine')
-    };
+define('car', function(require, exports, module) {
+  module.exports = {
+    name: 'car',
+    wheels: require('wheels'),
+    engine: require('engine')
+  };
 });
