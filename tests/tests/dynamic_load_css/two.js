@@ -1,6 +1,6 @@
-define(function (require, exports, module) {
+define(function(require, exports, module) {
     //Dependencies
-    var one = require('./one');
+    var one = require('./one.css');
     module.exports = {
         size: "small",
         color: "redtwo",
@@ -9,9 +9,6 @@ define(function (require, exports, module) {
                 size: 'small',
                 color: 'red'
             }
-        },
-        getOneModule: function() {
-            return one;
         }
     };
 });

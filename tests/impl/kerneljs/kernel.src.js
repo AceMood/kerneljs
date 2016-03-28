@@ -664,7 +664,7 @@ function parsePaths(p) {
 function Module(obj) {
   // user defined id
   if (obj.id) {
-    if (Module._cache[obj.id] && kernel.debug) {
+    if (Module._cache[obj.id]) {
       emit(
         events.error,
         [
@@ -697,22 +697,18 @@ function Module(obj) {
 Module.prototype.setStatus = function(status) {
   if (status < 0 || status > 4) {
     throw 'Status ' + status + ' is now allowed.';
-  } else {
+  } else if (status === 0) {
     this.status = status;
-    switch (status) {
-      case 0:
-        emit(events.create, [this]);
-        break;
-      case 1:
-        emit(events.fetch, [this]);
-        break;
-      case 2:
-        emit(events.loaded, [this]);
-        break;
-      case 3:
-        emit(events.complete, [this]);
-        break;
-    }
+    emit(events.create, [this]);
+  } else if (status === 1) {
+    this.status = status;
+    emit(events.fetch, [this]);
+  } else if (status === 2) {
+    this.status = status;
+    emit(events.loaded, [this]);
+  } else if (status === 3) {
+    this.status = status;
+    emit(events.complete, [this]);
   }
 };
 
@@ -739,9 +735,9 @@ Module.prototype.compile = function() {
    * b. require.async(['widget/a'], function(wid_a) {
    *      wid_a.init();
    *    });
-   * @param {!string} moduleId module id or relative path
+   * @param {!string} name module Id or relative path
    */
-  function localRequire(moduleId) {
+  function localRequire(name) {
     var argLen = arguments.length;
     if (argLen < 1) {
       throw 'require must have at least one parameter.';
@@ -749,12 +745,12 @@ Module.prototype.compile = function() {
 
     // a simple require statements always be preloaded.
     // so return its complied exports object.
-    var mod = resolve(moduleId, self);
+    var mod = resolve(name, self.uri);
     if (mod && (mod.status >= Module.Status.loaded)) {
       mod.compile();
       return mod.exports;
     } else {
-      throw 'require unknown module with id: ' + moduleId;
+      throw 'require unknown module with id: ' + name;
     }
   }
 
@@ -769,7 +765,7 @@ Module.prototype.compile = function() {
 
   /**
    * Asynchronously loading module after page loaded.
-   * @param {string} id moduleId.
+   * @param {string|Array} id moduleId or dependencies names.
    * @param {function} callback callback function.
    */
   localRequire.async = function(id, callback) {
@@ -785,12 +781,12 @@ Module.prototype.compile = function() {
       deps = id;
     }
 
-    var module = new AnonymousModule({
+    var anon = new AnonymousModule({
       uri: self.uri,
       deps: deps,
       factory: callback
     });
-    requireAsync(null, noop, module);
+    requireAsync(noop, anon);
   };
 
   var self = this;
@@ -821,7 +817,7 @@ Module.Status = {
 // id-module key-pairs
 Module._cache = {};
 /**
- * @file Module Class
+ * @file Anonymous Module Class represents require.async calls
  * @email zmike86@gmail.com
  */
 
@@ -943,6 +939,21 @@ function buildIdAndUri(name, baseUri) {
 }
 
 /**
+ * Used in the module.compile to determine a module.
+ * @param  {string} name moduleId or relative path
+ * @param  {?string=} baseUri base for calculate path.
+ * @return {?Module}
+ */
+function resolve(name, baseUri) {
+  if (Module._cache[name]) {
+    return Module._cache[name];
+  }
+  var path = resolvePath(name, baseUri || location.href);
+  var mid = kernel.path2id[path] ? kernel.path2id[path][0] : null;
+  return Module._cache[mid] || null;
+}
+
+/**
  * Global define|__d function.
  * define(id?, factory);
  * @param {string|function} id module Id or factory function
@@ -989,7 +1000,7 @@ function define(id, factory) {
 
   // cache in path2id
   recordPath2Id(uri, module.id);
-  requireAsync(null, noop, module);
+  requireAsync(noop, module);
 }
 
 /**
@@ -1022,93 +1033,35 @@ function ready(module) {
 }
 
 /**
- * Used in the module.compile to determine a module.
- * @param  {string} id moduleId or relative path
- * @param  {?Module=} mod for calculate path.
- * @return {?Module}
- */
-function resolve(id, mod) {
-  if (Module._cache[id]) {
-    return Module._cache[id];
-  }
-  var path = resolvePath(id, (mod && mod.uri) || location.href);
-  var mid = kernel.path2id[path] ? kernel.path2id[path][0] : null;
-  return Module._cache[mid] || null;
-}
-
-/**
  * Internal api to load script async and execute callback.
- * @param {?Array} dependencies
  * @param {function} callback
  * @param {Module} module
  */
-function requireAsync(dependencies, callback, module) {
-  /*
-  // called from require.async
-  if (module.status >= Module.Status.loaded) {
-    var args = new Array(dependencies.length);
-    var cnt = dependencies.length;
-    forEach(dependencies, function(name, index) {
-      function onLoad() {
-        var ret = buildIdAndUri(name, module.uri);
-        dependencyModule = ret.id && Module._cache[ret.id];
-        // might need other modules
-        if (dependencyModule.status >= Module.Status.loaded) {
-          args[index] = dependencyModule.compile();
-          cnt--;
-          if (cnt === 0) {
-            callback.apply(null, args);
-          }
-        }
-      }
-
-      var ret = buildIdAndUri(name, module.uri);
-      var dependencyModule = ret.id && Module._cache[ret.id];
-      if (dependencyModule &&
-        (dependencyModule.status >= Module.Status.loaded)) {
-        args[index] = dependencyModule.compile();
-        cnt--;
-        return;
-      }
-      // load script or style
-      fetch(ret.uri, onLoad);
-    });
-
-    if (cnt === 0) {
-      callback.apply(null, args);
-    }
+function requireAsync(callback, module) {
+  module.setStatus(Module.Status.fetching);
+  // no dependencies
+  if (module.deps.length === 0) {
+    ready(module);
+    return;
   }
-  // called from define
-  else
-  */
 
-  {
-    module.setStatus(Module.Status.fetching);
-
-    // no dependencies
-    if (module.deps.length === 0) {
-      ready(module);
+  forEach(module.deps, function(name) {
+    var ret = buildIdAndUri(name, module.uri);
+    var dependencyModule = ret.id && Module._cache[ret.id];
+    if (dependencyModule &&
+      (dependencyModule.status >= Module.Status.loaded)) {
+      module.depsCount--;
       return;
     }
 
-    forEach(module.deps, function(name) {
-      var ret = buildIdAndUri(name, module.uri);
-      var dependencyModule = ret.id && Module._cache[ret.id];
-      if (dependencyModule &&
-        (dependencyModule.status >= Module.Status.loaded)) {
-        module.depsCount--;
-        return;
-      }
+    recordDependencyList(ret.uri, module);
+    // load script or style
+    fetch(ret.uri, callback);
+  });
 
-      recordDependencyList(ret.uri, module);
-      // load script or style
-      fetch(ret.uri, callback);
-    });
-
-    // might been loaded through require.async and compiled before
-    if (module.checkAll() && module.status < Module.Status.loaded) {
-      ready(module);
-    }
+  // might been loaded through require.async and compiled before
+  if (module.checkAll() && module.status < Module.Status.loaded) {
+    ready(module);
   }
 }
 /**

@@ -11,11 +11,11 @@ var config = kerneljs,
     basic: true,
     css: true,
     dynamic: true,
-    require: true
+    require: true,
     //plugins: false,
     //pathsConfig: false,
     //packagesConfig: false
-    //mapConfig: false,
+    mapConfig: true
     //moduleConfig: false,
     //shimConfig: false
 

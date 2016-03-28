@@ -6,3 +6,4 @@
 *.bak
 .idea/
 .DS_Store
+private
