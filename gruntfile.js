@@ -10,6 +10,7 @@ var files = [
   'lib/dom-css.js',
   'lib/path.js',
   'lib/Module.js',
+  'lib/AnonymousModule.js',
   'lib/core.js',
   'lib/event.js',
   'lib/kernel.js'

@@ -13,7 +13,7 @@ iframe {
   height: 1em;
   display: block;
   float: left;
-  margin-right: 10px;
+  margin: 1px 10px 1px 1px;
   border: 0;
 }
 .skipped {
@@ -22,6 +22,6 @@ iframe {
   background: #ccc;
   display: block;
   float: left;
-  margin-right: 10px;
+  margin: 1px 10px 1px 1px;
   border: 0;
 }

@@ -20,22 +20,22 @@
 
 <ul id="tests">
 
-    <li>Basic Tests
+    <li>Basic CommonJS Tests
         <ul>
-            <li class="anon" id="anon_relative"><a href="/{{FRAMEWORK}}/anon_relative/test.html">
+            <li class="basic" id="anon_relative"><a href="/{{FRAMEWORK}}/anon_relative/test.html">
                 anon_relative: test for relative module ids in anonymous modules
             </a></li>
-            <li class="anon" id="anon_simple"><a href="/{{FRAMEWORK}}/anon_simple/test.html">
-                anon_simple: basic AMD functionality for anonymous modules
+            <li class="basic" id="anon_simple"><a href="/{{FRAMEWORK}}/anon_simple/test.html">
+                anon_simple: basic CommonJS functionality for anonymous modules
             </a></li>
             <li class="basic" id="basic_define"><a href="/{{FRAMEWORK}}/basic_define/test.html">
-                basic_define: ensure define and define.amd are working properly
+                basic_define: ensure global define function are working properly
             </a></li>
             <li class="basic" id="basic_require"><a href="/{{FRAMEWORK}}/basic_require/test.html">
-                basic_require: ensure the AMD require() interface is working properly
+                basic_require: ensure the internal require() interface is working properly
             </a></li>
             <li class="basic" id="basic_simple"><a href="/{{FRAMEWORK}}/basic_simple/test.html">
-                basic_simple: amd simple includes for named AMD modules
+                basic_simple: amd simple includes for named CommonJS modules
             </a></li>
             <li class="basic" id="basic_empty_deps"><a href="/{{FRAMEWORK}}/basic_empty_deps/test.html">
                 basic_empty_deps: [] should imply no dependencies, while an empty "dependencies" variable defaults to require, exports, module
@@ -43,32 +43,38 @@
             <li class="basic" id="basic_no_deps"><a href="/{{FRAMEWORK}}/basic_no_deps/test.html">
                 basic_no_deps: [] should imply no dependencies, while an empty "dependencies" variable defaults to require, exports, module
             </a></li>
-        </ul>
-    </li>
-
-    <li>CSS module
-        <ul>
-            <li class="cssModule" id="css_module"><a href="/{{FRAMEWORK}}/css_module/test.html">
-                css_module: load css file as dependence module
-            </a></li>
-            <li class="cssModule" id="css_style_apply"><a href="/{{FRAMEWORK}}/css_style_apply/test.html">
-                css_style_apply: css apply to dom
-            </a></li>
-        </ul>
-    </li>
-
-    <li>CommonJS
-        <ul>
-            <li class="funcString" id="cjs_define"><a href="/{{FRAMEWORK}}/cjs_define/test.html">
+            <li class="basic" id="cjs_define"><a href="/{{FRAMEWORK}}/cjs_define/test.html">
                 cjs_define: tests for anonymous wrapped CommonJS Modules
             </a></li>
-            <li class="namedWrapped" id="cjs_named"><a href="/{{FRAMEWORK}}/cjs_named/test.html">
+            <li class="basic" id="cjs_named"><a href="/{{FRAMEWORK}}/cjs_named/test.html">
                 cjs_named: tests for named wrapped CommonJS Modules
             </a></li>
         </ul>
     </li>
 
-    <li>"map" in config (DRAFT)
+    <li>CSS module
+        <ul>
+            <li class="css" id="css_module"><a href="/{{FRAMEWORK}}/css_module/test.html">
+                css_module: css file as dependence module
+            </a></li>
+            <li class="css" id="css_style_apply"><a href="/{{FRAMEWORK}}/css_style_apply/test.html">
+                css_style_apply: css apply to dom
+            </a></li>
+        </ul>
+    </li>
+
+    <li>Dynamic load modules
+        <ul>
+            <li class="dynamic" id="dynamic_load_js"><a href="/{{FRAMEWORK}}/dynamic_load_js/test.html">
+                dynamic_load_js: dynamic load js file as dependence module
+            </a></li>
+            <li class="dynamic" id="dynamic_load_css"><a href="/{{FRAMEWORK}}/dynamic_load_css/test.html">
+                dynamic_load_css: css apply to dom
+            </a></li>
+        </ul>
+    </li>
+
+    <li>"resourceMap" in config
         <ul>
             <li class="mapConfig" id="config_map"><a href="/{{FRAMEWORK}}/config_map/test.html">
                 config_map: test for the "map" functionality of Common Config
@@ -78,14 +84,6 @@
             </a></li>
             <li class="mapConfig" id="config_map_star_adapter"><a href="/{{FRAMEWORK}}/config_map_star_adapter/test.html">
                 config_map_star_adapter: test for the "map" functionality of Common Config with wildcards and adapters
-            </a></li>
-        </ul>
-    </li>
-
-    <li>"module" in config (DRAFT)
-        <ul>
-            <li class="moduleConfig" id="config_module"><a href="/{{FRAMEWORK}}/config_module/test.html">
-                config_module: test for the "module" functionality of Common Config with module
             </a></li>
         </ul>
     </li>

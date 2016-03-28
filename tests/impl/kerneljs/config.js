@@ -9,10 +9,8 @@ var config = kerneljs,
 //and therefore which tests to run.
   implemented = {
     basic: true,
-    anon: true,
-    cssModule: true,
-    funcString: true,
-    namedWrapped: true,
+    css: true,
+    dynamic: true,
     require: true
     //plugins: false,
     //pathsConfig: false,

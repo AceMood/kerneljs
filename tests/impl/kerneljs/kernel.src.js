@@ -777,18 +777,26 @@ Module.prototype.compile = function() {
       throw 'require.async second parameter must be a function';
     }
 
+    var deps = [];
     var type = typeOf(id);
     if (type === 'string') {
-      requireAsync([id], callback, self);
+      deps = [id];
     } else if (type === 'array') {
-      requireAsync(id, callback, self);
+      deps = id;
     }
+
+    var module = new AnonymousModule({
+      uri: self.uri,
+      deps: deps,
+      factory: callback
+    });
+    requireAsync(null, noop, module);
   };
 
   var self = this;
   // css module not have factory
   if (this.factory) {
-    this.factory.call(null, localRequire, this.exports, this);
+    this.factory.apply(null, [localRequire, this.exports, this]);
     delete this.factory;
   }
   this.setStatus(Module.Status.complete);
@@ -812,6 +820,67 @@ Module.Status = {
 // cache for module
 // id-module key-pairs
 Module._cache = {};
+/**
+ * @file Module Class
+ * @email zmike86@gmail.com
+ */
+
+/**
+ * @class
+ * @param {object} obj Configuration object. Include:
+ *                     --uri: 模块对用的物理文件路径
+ *                     --deps: dependency array, which stores moduleId or relative module path.
+ *                     --factory: callback function
+ *                     --status: Module.Status
+ */
+function AnonymousModule(obj) {
+  this.uid = uidprefix + uuid++;
+  this.id = obj.id || this.uid;
+  this.uri = obj.uri;
+  this.deps = obj.deps || [];
+  this.depsCount = this.deps.length;
+  this.status = Module.Status.init;
+  this.factory = obj.factory || null;
+
+  this.setStatus(Module.Status.init);
+}
+
+/**
+ * Set module's status
+ * @param {number} status
+ */
+AnonymousModule.prototype.setStatus = Module.prototype.setStatus;
+
+/**
+ * Inform current module that one of its dependencies has been loaded.
+ * @return {boolean}
+ */
+AnonymousModule.prototype.checkAll = Module.prototype.checkAll;
+
+/**
+ * compile module
+ */
+AnonymousModule.prototype.compile = function() {
+  if (this.status === Module.Status.complete) {
+    return;
+  }
+
+  var mod = this;
+  var args = [];
+
+  forEach(mod.deps, function(name) {
+    var ret = buildIdAndUri(name, mod.uri);
+    var dependencyModule = ret.id && Module._cache[ret.id];
+    if (dependencyModule &&
+      (dependencyModule.status >= Module.Status.loaded)) {
+      args.push(dependencyModule.compile());
+    }
+  });
+
+  this.factory.apply(null, args);
+  delete this.factory;
+  this.setStatus(Module.Status.complete);
+};
 
 // extract `require('xxx')`
 var cjsRequireRegExp = /\brequire\s*\(\s*(["'])([^'"\s]+)\1\s*\)/g;
@@ -880,22 +949,26 @@ function buildIdAndUri(name, baseUri) {
  * @param {?function=} factory callback function
  */
 function define(id, factory) {
-  var module;
   var resourceMap = kernel.data.resourceMap;
   var inMap = resourceMap && resourceMap[id];
-
-  // If module in resourceMap, get its uri property.
-  // document.currentScript is not always available.
-  var uri = inMap ? resourceMap[id].uri : getCurrentScriptPath();
-  var deps = inMap ? resourceMap[id].deps : [];
-  var requireTextMap = {};
 
   if (typeOf(id) !== 'string') {
     factory = id;
     id = null;
   }
 
-  if (typeOf(factory) === 'function') {
+  if (typeOf(factory) !== 'function') {
+    throw 'define with wrong parameters ' + factory;
+  }
+
+  var uri, deps;
+  if (inMap) {
+    uri = resourceMap[id].uri;
+    deps = resourceMap[id].deps;
+  } else {
+    uri = getCurrentScriptPath();
+    deps = [];
+    var requireTextMap = {};
     factory
       .toString()
       .replace(commentRegExp, '')
@@ -905,21 +978,18 @@ function define(id, factory) {
           requireTextMap[dep] = true;
         }
       });
-
-    module = new Module({
-      id: id,
-      uri: uri,
-      deps: deps,
-      factory: factory
-    });
-
-    // cache in path2id
-    recordPath2Id(uri, module.id);
-    requireAsync(null, noop, module);
-
-  } else {
-    throw 'define with wrong parameters in ' + uri;
   }
+
+  var module = new Module({
+    id: id,
+    uri: uri,
+    deps: deps,
+    factory: factory
+  });
+
+  // cache in path2id
+  recordPath2Id(uri, module.id);
+  requireAsync(null, noop, module);
 }
 
 /**
@@ -973,6 +1043,7 @@ function resolve(id, mod) {
  * @param {Module} module
  */
 function requireAsync(dependencies, callback, module) {
+  /*
   // called from require.async
   if (module.status >= Module.Status.loaded) {
     var args = new Array(dependencies.length);
@@ -984,11 +1055,10 @@ function requireAsync(dependencies, callback, module) {
         // might need other modules
         if (dependencyModule.status >= Module.Status.loaded) {
           args[index] = dependencyModule.compile();
-        }
-
-        cnt--;
-        if (cnt === 0) {
-          callback.apply(null, args);
+          cnt--;
+          if (cnt === 0) {
+            callback.apply(null, args);
+          }
         }
       }
 
@@ -1009,7 +1079,10 @@ function requireAsync(dependencies, callback, module) {
     }
   }
   // called from define
-  else {
+  else
+  */
+
+  {
     module.setStatus(Module.Status.fetching);
 
     // no dependencies
