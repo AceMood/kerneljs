@@ -1,17 +1,9 @@
 // _reporter.js
 (function() {
-  var factory = function () {
-    var exports = {};
-
+  var factory = function(require, exports, module) {
     exports.print = function () {
       // global print
-      if (typeof amdJSPrint !== "undefined") {
-        amdJSPrint.apply(undefined, arguments);
-      }
-      else {
-        var stdout = require("system").stdout;
-        stdout.print.apply(stdout, arguments);
-      }
+      print.apply(undefined, arguments);
     };
 
     exports.assert = function (guard, message) {
@@ -21,11 +13,9 @@
         exports.print("FAIL " + message, "fail");
       }
     };
-
-    return exports;
   };
 
   // define this module
-  define("_reporter", [], factory);
+  define("_reporter", factory);
 
 })();

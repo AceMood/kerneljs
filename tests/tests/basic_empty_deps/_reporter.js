@@ -3,13 +3,7 @@
   var factory = function (require, exports, module) {
     exports.print = function () {
       // global print
-      if (typeof amdJSPrint !== "undefined") {
-        amdJSPrint.apply(undefined, arguments);
-      }
-      else {
-        var stdout = require("system").stdout;
-        stdout.print.apply(stdout, arguments);
-      }
+      print.apply(undefined, arguments);
     };
 
     exports.assert = function (guard, message) {

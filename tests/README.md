@@ -44,17 +44,17 @@ Please then add your framework to `server/manifest` and add a line to `.travis.y
 
 # Adding AMD-JS Tests To Your Own Framework
 
-It's possible to run the AMD-JS tests as part of your existing CI system. You need to provide *bridges* between the AMD-JS suite and your unit testing framework of choice. You can do this by either implementing a global `amdJSPrint` object or defining/implementing a global `system` object on which a `print()` method resides.
+It's possible to run the AMD-JS tests as part of your existing CI system. You need to provide *bridges* between the AMD-JS suite and your unit testing framework of choice. You can do this by either implementing a global `print` object or defining/implementing a global `system` object on which a `print()` method resides.
 
 Here is a rudimentary system that just outputs to the console:
 
 ```js
-window.amdJSPrint = function (message, type) {
+window.print = function (message, type) {
   console.log(message, type);
 };
 ```
 
-* **amdJSPrint(message, type)**: Outputs the results of a reporter assertion. The *type* is one of `pass`, `fail`, `info`, or `done`.
+* **print(message, type)**: Outputs the results of a reporter assertion. The *type* is one of `pass`, `fail`, `info`, or `done`.
 
 Using the above, this would be the QUnit equivalent. We use the QUnit **stop** and **start** methods to support any asynchronous operations that may be occuring in the test. In the example below, we also proxy our `go` method, allowing us to capture when a require() call begins, and when all callbacks have completed.
 
@@ -77,7 +77,7 @@ Using the above, this would be the QUnit equivalent. We use the QUnit **stop** a
 
     oldGo.apply(window, newArgs);
   };
-  window.amdJSPrint = function (message, type) {
+  window.print = function (message, type) {
     if (type === 'info' || type === 'done') return;
     test(message, function() {
       ok(type === 'pass', message);

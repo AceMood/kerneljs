@@ -5,8 +5,8 @@
 
     exports.print = function () {
       // global print
-      if (typeof amdJSPrint !== "undefined") {
-        amdJSPrint.apply(undefined, arguments);
+      if (typeof print !== "undefined") {
+        print.apply(undefined, arguments);
       }
       else {
         var stdout = require("system").stdout;

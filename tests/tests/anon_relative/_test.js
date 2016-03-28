@@ -1,4 +1,4 @@
-go(function (require, exports, module) {
+go(function(require, exports, module) {
 
   var amdJS = require('_reporter');
   var array = require('impl/array');

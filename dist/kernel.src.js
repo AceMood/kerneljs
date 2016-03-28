@@ -114,14 +114,14 @@ if ($base) {
 // current adding script node
 var currentAddingScript,
 // Old Firefox don't support script.readyState, so we only use this prop
-// in IEs. Although 'onload' in IE9 & IE10 have problems, but I do not
-// care the issure, and whatever async is true or false. We just
+// in IEs. Although 'onload' in IE9 & IE10 have problems, but do not
+// care the issue, and whatever async is true or false. We just
 // remove node in document as the callback of javascript loaded.
 // See more info about the bug:
 // 'https://connect.microsoft.com/IE/feedback/details/729164/ie10-dynamic-script-element-fires-loaded-readystate-prematurely'
 // 'https://connect.microsoft.com/IE/feedback/details/648057/script-onload-event-is-not-fired-immediately-after-script-execution'
   useInteractive = ('readyState' in $doc.createElement('script')),
-// loop all script nodes in doc, if one's readyState is 'interactive'
+// loop all script nodes in doc, if one readyState is 'interactive'
 // means it's now executing;
   interactiveScript;
 
@@ -228,7 +228,7 @@ function fetch(url, callback) {
  * @return {NodeList}
  */
 function scripts() {
-  return $doc.getElementsByTagName('script');
+  return $head.getElementsByTagName('script');
 }
 
 /**
@@ -860,6 +860,9 @@ function buildIdAndUri(name, baseUri) {
   if (resourceMap && resourceMap[name]) {
     uri = resourceMap[name].uri;
     id = resourceMap[name].id;
+  } else if (Module._cache[name]) {
+    uri = Module._cache[name].uri;
+    id = name;
   } else {
     uri = resolvePath(name, baseUri);
     id = kernel.path2id[uri] ? kernel.path2id[uri][0] : null;
@@ -885,6 +888,7 @@ function define(id, factory) {
   // document.currentScript is not always available.
   var uri = inMap ? resourceMap[id].uri : getCurrentScriptPath();
   var deps = inMap ? resourceMap[id].deps : [];
+  var requireTextMap = {};
 
   if (typeOf(id) !== 'string') {
     factory = id;
@@ -896,7 +900,10 @@ function define(id, factory) {
       .toString()
       .replace(commentRegExp, '')
       .replace(cjsRequireRegExp, function(match, quote, dep) {
-        deps.push(dep);
+        if (!requireTextMap[dep]) {
+          deps.push(dep);
+          requireTextMap[dep] = true;
+        }
       });
 
     module = new Module({
@@ -908,20 +915,11 @@ function define(id, factory) {
 
     // cache in path2id
     recordPath2Id(uri, module.id);
-    loadDependency(module);
+    requireAsync(null, noop, module);
 
   } else {
     throw 'define with wrong parameters in ' + uri;
   }
-}
-
-/**
- * Load module's dependencies.
- * @param {Module} module
- * @param {function=} callback
- */
-function loadDependency(module, callback) {
-  requireAsync(null, callback || noop, module);
 }
 
 /**
@@ -945,10 +943,9 @@ function ready(module) {
     delete dependencyList[module.uri];
     forEach(dependants, function(dependant) {
       dependant.depsCount--;
-      if (dependant.status === Module.Status.fetching) {
-        if (dependant.checkAll()) {
-          ready(dependant);
-        }
+      if (dependant.checkAll() &&
+        (dependant.status === Module.Status.fetching)) {
+        ready(dependant);
       }
     });
   }
@@ -958,12 +955,15 @@ function ready(module) {
  * Used in the module.compile to determine a module.
  * @param  {string} id moduleId or relative path
  * @param  {?Module=} mod for calculate path.
- * @return {?object}
+ * @return {?Module}
  */
 function resolve(id, mod) {
+  if (Module._cache[id]) {
+    return Module._cache[id];
+  }
   var path = resolvePath(id, (mod && mod.uri) || location.href);
   var mid = kernel.path2id[path] ? kernel.path2id[path][0] : null;
-  return Module._cache[id] || Module._cache[mid] || null;
+  return Module._cache[mid] || null;
 }
 
 /**
@@ -984,10 +984,11 @@ function requireAsync(dependencies, callback, module) {
         // might need other modules
         if (dependencyModule.status >= Module.Status.loaded) {
           args[index] = dependencyModule.compile();
-          cnt--;
-          if (cnt === 0) {
-            callback.apply(null, args);
-          }
+        }
+
+        cnt--;
+        if (cnt === 0) {
+          callback.apply(null, args);
         }
       }
 

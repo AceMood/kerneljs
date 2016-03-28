@@ -5,8 +5,8 @@ go(function(require) {
   // tests if there are empty dependencies, no arguments are
   // available in the factory's method
   define('emptyDeps', function() {
-    amdJS.assert(arguments.length === 0,
-        'basic_empty_deps: [] should be treated as no dependencies instead of the ' +
+    amdJS.assert(arguments.length === 3,
+        'basic_empty_deps: [] should be treated as no dependencies and the ' +
         'default require, exports, module');
   });
 

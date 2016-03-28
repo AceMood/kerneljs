@@ -25,6 +25,6 @@ var config = kerneljs,
     //pluginDynamic: true
   };
 
-//Remove the global define, to make sure a global define is not assumed
+//Remove the global require, to make sure a global require is not assumed
 //in the tests
-kerneljs = undefined;
+//kerneljs = undefined;

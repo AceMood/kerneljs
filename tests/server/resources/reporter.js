@@ -1,13 +1,13 @@
 /*
  * This file bridges the standard AMD-JS test suite with the simple
  * browser runner. We proxy the go() method, and then we implement
- * the window.amdJSPrint method as per the specification.
+ * the window.print method as per the specification.
  *
  * The proxy of go() allows us to manage a timeout for the test
  * in case there is a deep problem with the loader itself
  * (read: even require() is broken)
  *
- * The amdJSPrint method pushes data to the top-level window.console
+ * The print method pushes data to the top-level window.console
  * as well as registering its suite result with the parent
  */
 (function(scope) {
@@ -42,7 +42,7 @@
     var fn = newArgs[newArgs.length - 1];
 
     stopStack.push(window.setTimeout(function() {
-      window.amdJSPrint('Test timed out: ' + newArgs.join(';'), 'fail');
+      window.print('Test timed out: ' + newArgs.join(';'), 'fail');
     }, 3000));
 
     oldGo.apply(oldGo, newArgs);
@@ -50,7 +50,7 @@
 
   // print causes a console log event
   // on first fail, we flag as red
-  window.amdJSPrint = function(message, type) {
+  window.print = function(message, type) {
     var fullMessage = type + '    ' + message;
     window.top.console && window.top.console.log(fullMessage);
 
