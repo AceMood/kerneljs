@@ -1,6 +1,6 @@
 {
   "name": "kerneljs",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Browser Side JavaScript Module loader.",
   "main": "index.js",
   "directories": {
