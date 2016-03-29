@@ -888,8 +888,9 @@ AnonymousModule.prototype.compile = function() {
   var args = [];
 
   forEach(mod.deps, function(name) {
-    var ret = buildIdAndUri(name, mod.uri);
-    var dependencyModule = ret.id && Module._cache[ret.id];
+    //var ret = buildIdAndUri(name, mod.uri);
+    //var dependencyModule = ret.id && Module._cache[ret.id];
+    var dependencyModule = resolve(name, mod.uri);
     if (dependencyModule &&
       (dependencyModule.status >= Module.Status.loaded)) {
       args.push(dependencyModule.compile());
@@ -1092,6 +1093,7 @@ function requireAsync(callback, module) {
   forEach(module.deps, function(name) {
     var ret = buildIdAndUri(name, module.uri);
     var dependencyModule = ret.id && Module._cache[ret.id];
+   // var dependencyModule = resolve(name, module.uri);
     if (dependencyModule &&
       (dependencyModule.status >= Module.Status.loaded)) {
       module.depsCount--;
