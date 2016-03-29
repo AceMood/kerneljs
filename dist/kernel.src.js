@@ -59,7 +59,7 @@ var OP = Object.prototype,
 // use such an object to determine cut down a forEach loop;
 var break_obj = {};
 
-/** noop function as callback */
+// no operation function as callback
 function noop() {}
 
 /**
@@ -71,8 +71,8 @@ function noop() {}
  * successfully to a host object is implementation-dependent.
  *
  * @param {Array|NodeList} arr array to be iterated.
- * @param {Function} fn callback to execute on each item
- * @param {Object?} opt_context fn's context
+ * @param {function} fn callback to execute on each item
+ * @param {object?} opt_context fn's context
  */
 function forEach(arr, fn, opt_context) {
   if (native_forEach && arr.forEach === native_forEach) {
@@ -108,13 +108,12 @@ var typeMap = {
   '[object Object]'   : 'object',
   '[object Array]'    : 'array',
   '[object Function]' : 'function',
-  '[object RegExp]'   : 'regexp',
   '[object String]'   : 'string',
   '[object Number]'   : 'number'
 };
 
 /**
- * object Type, see typeMap
+ * Object Type, see typeMap
  */
 function typeOf(obj) {
   return typeMap[toString.call(obj)];
@@ -505,12 +504,12 @@ function createStyle() {
  * @email zmike86@gmail.com
  */
 
-// A directory file path must be ends with a slash (back slash in window)
-var dirRegExp = /\/$/g;
-var fileExtRegExp = /\.(js|css|txt)$/;
-var dot = '.';
-var slash = '/';
-var dot2 = '..';
+// A directory file path must be ends with a slash (backslash in window)
+var dirReg = /\/$/g;
+var fileExtReg = /\.(js|css|txt)$/;
+var dotCH = '.';
+var slashCH = '/';
+var dot2CH = '..';
 
 // retrieve current doc's absolute path
 // It may be a file system path, http path
@@ -530,7 +529,7 @@ var loc = global.location;
  */
 function normalize(p) {
   // step1: combine multi slashes
-  p = p.replace(/(\/)+/g, slash);
+  p = p.replace(/(\/)+/g, slashCH);
 
   // step2: resolve '.' and '..'
   p = resolveDot(p);
@@ -539,38 +538,38 @@ function normalize(p) {
 
 /**
  * Resolve relative path such as '.' or '..'.
- * @param {string} p
+ * @param {string} path
  * @return {string}
  */
-function resolveDot(p) {
-  // Here I used to use /\//ig to split string, but unfortunately
+function resolveDot(path) {
+  // Here I used to use /\//g to split string, but unfortunately
   // it has serious bug in IE<9. See for more:
   // 'http://blog.stevenlevithan.com/archives/cross-browser-split'.
-  p = p.split(slash);
-  for (var i = 0; i < p.length; ++i) {
-    if (p[i] === dot) {
-      p.splice(i, 1);
+  path = path.split(slashCH);
+  for (var i = 0; i < path.length; ++i) {
+    if (path[i] === dotCH) {
+      path.splice(i, 1);
       --i;
-    } else if (p[i] === dot2 && i > 0 && p[i - 1] !== dot2) {
-      p.splice(i - 1, 2);
+    } else if (path[i] === dot2CH && i > 0 && path[i - 1] !== dot2CH) {
+      path.splice(i - 1, 2);
       i -= 2;
     }
   }
-  return p.join(slash);
+  return path.join(slashCH);
 }
 
 /**
  * Judge if a path is top-level, such as 'core/class.js'
- * @param  {string} p Path to check.
- * @return {boolean} b
+ * @param  {string} path Path to check.
+ * @return {boolean}
  */
-function isTopLevel(p) {
+function isTopLevel(path) {
   // if we use array-like as string[index] will return undefined
   // in IE6 & 7, so we should use string.charAt(index) instead.
   // see more:
   // 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/
   // +Global_Objects/String#section_5'
-  return isRelative(p) && p.charAt(0) !== dot;
+  return isRelative(path) && path.charAt(0) !== dotCH;
 }
 
 /**
@@ -578,11 +577,11 @@ function isTopLevel(p) {
  * In most web environment, absolute url starts with a 'http://' or 'https://';
  * In Windows File System, starts with a 'file:///' protocol;
  * In UNIX like System, starts with a single '/';
- * @param {string} p Path to check.
- * @return {boolean} b Is p absolute?
+ * @param {string} path Path to check.
+ * @return {boolean} Is path absolute?
  */
-function isAbsolute(p) {
-  return /:\/\//.test(p) || /^\//.test(p);
+function isAbsolute(path) {
+  return /:\/\//.test(path) || /^\//.test(path);
 }
 
 /**
@@ -594,15 +593,15 @@ function isAbsolute(p) {
  * @return {boolean} b
  */
 function isRelative(p) {
-  return !isAbsolute(p) && (/^(\.){1,2}\//.test(p) || p.charAt(0) !== slash);
+  return !isAbsolute(p) && (/^(\.){1,2}\//.test(p) || p.charAt(0) !== slashCH);
 }
 
 /**
  * Map the identifier for a module to a Internet file
- * path. SCRIPT insertion will set path with it, except
+ * path. script insertion will set path with it, except
  * build-in names.
- * @param  {string} id 依赖模块的name或者id。
- * @param  {string=} base 作为baseUri，解析依赖模块的绝对路径。
+ * @param  {string} id dependency's name or id.
+ * @param  {string=} base As based uri, to help resolve path
  * @return {string|object} exports object or absolute file path from Internet
  */
 function resolvePath(id, base) {
@@ -616,16 +615,14 @@ function resolvePath(id, base) {
 
   // add file extension if necessary
   id = normalize(id);
-  var adjoin = id.charAt(0) === slash ? '' : slash;
+  var adjoin = id.charAt(0) === slashCH ? '' : slashCH;
   var url = (base ? dirname(base) : dirname(loc.href)) + adjoin + id;
 
-  if (!fileExtRegExp.test(url)) {
+  if (!fileExtReg.test(url)) {
     url += '.js';
   }
 
-  url = resolveDot(url);
-
-  return url;
+  return resolveDot(url);
 }
 
 /**
@@ -634,19 +631,19 @@ function resolvePath(id, base) {
  * dirname('/foo/bar/baz/asdf/quux')
  * returns '/foo/bar/baz/asdf'
  *
- * @param {string} p
+ * @param {string} path
  * @return {string}
  */
-function dirname(p) {
-  if (dirRegExp.test(p)) {
-    return p.slice(0, -1);
+function dirname(path) {
+  if (dirReg.test(path)) {
+    return path.slice(0, -1);
   }
   // Here I used to use /\//ig to split string, but unfortunately
   // it has serious bug in IE<9. See for more:
   // 'http://blog.stevenlevithan.com/archives/cross-browser-split'.
-  var ps = p.split(slash);
+  var ps = path.split(slashCH);
   ps.pop();
-  return ps.join(slash);
+  return ps.join(slashCH);
 }
 
 /**
@@ -659,14 +656,14 @@ function parsePaths(p) {
   var paths = kernel.data.paths;
   if (paths) {
     var part = p;
-    var parts = p.split(slash);
+    var parts = p.split(slashCH);
     while (!(part in paths) && parts.length) {
       ret.unshift(parts.pop());
-      part = parts.join(slash);
+      part = parts.join(slashCH);
     }
     p = paths[part] ? paths[part] : part;
   }
-  return p + ret.join(slash);
+  return p + ret.join(slashCH);
 }
 /**
  * @file Module Class
@@ -847,7 +844,7 @@ Module._cache = {};
 /**
  * @class
  * @param {object} obj Configuration object. Include:
- *                     --uri: 模块对用的物理文件路径
+ *                     --uri: absolute path of module
  *                     --deps: dependency array, which stores moduleId or relative module path.
  *                     --factory: callback function
  *                     --status: Module.Status
@@ -888,8 +885,6 @@ AnonymousModule.prototype.compile = function() {
   var args = [];
 
   forEach(mod.deps, function(name) {
-    //var ret = buildIdAndUri(name, mod.uri);
-    //var dependencyModule = ret.id && Module._cache[ret.id];
     var dependencyModule = resolve(name, mod.uri);
     if (dependencyModule &&
       (dependencyModule.status >= Module.Status.loaded)) {
@@ -941,31 +936,23 @@ function recordDependencyList(uri, module) {
   }
 }
 
-// expect module have been pre-build, try to resolve id & uri
-function buildIdAndUri(name, baseUri) {
+// expect module have been pre-build, try to resolve uri
+function buildFetchUri(name, baseUri) {
   var resourceMap = kernel.data.resourceMap;
-  var uri, id;
   // already record through build tool
   if (resourceMap && resourceMap[name]) {
-    uri = resourceMap[name].uri;
-    id = resourceMap[name].id;
+    return resourceMap[name].uri;
   } else if (Module._cache[name]) {
-    uri = Module._cache[name].uri;
-    id = name;
+    return Module._cache[name].uri;
   } else {
-    uri = resolvePath(name, baseUri);
-    id = kernel.path2id[uri] ? kernel.path2id[uri][0] : null;
+    return resolvePath(name, baseUri);
   }
-  return {
-    uri: uri,
-    id: id
-  };
 }
 
 /**
- * Used in the module.compile to determine a module.
+ * Used in the module.compile to resolve an existed module.
  * @param  {string} name moduleId or relative path
- * @param  {?string=} baseUri base for calculate path.
+ * @param  {?string=} baseUri base for calculate path, often the host module uri.
  * @return {?Module}
  */
 function resolve(name, baseUri) {
@@ -981,18 +968,14 @@ function resolve(name, baseUri) {
     id = resourceMap[name].id;
     if (Module._cache[id]) {
       return Module._cache[id];
-    } else {
-      mid = kernel.path2id[uri] ? kernel.path2id[uri][0] : null;
-      if (mid && Module._cache[mid]) {
-        return Module._cache[mid];
-      }
     }
   } else {
-    var path = resolvePath(name, baseUri || location.href);
-    mid = kernel.path2id[path] ? kernel.path2id[path][0] : null;
-    if (mid && Module._cache[mid]) {
-      return Module._cache[mid];
-    }
+    uri = resolvePath(name, baseUri || location.href);
+  }
+
+  mid = kernel.path2id[uri] ? kernel.path2id[uri][0] : null;
+  if (mid && Module._cache[mid]) {
+    return Module._cache[mid];
   }
 
   return null;
@@ -1025,8 +1008,7 @@ function define(id, factory) {
     uri = getCurrentScriptPath();
     deps = [];
     var requireTextMap = {};
-    factory
-      .toString()
+    factory.toString()
       .replace(commentRegExp, '')
       .replace(cjsRequireRegExp, function(match, quote, dep) {
         if (!requireTextMap[dep]) {
@@ -1091,18 +1073,17 @@ function requireAsync(callback, module) {
   }
 
   forEach(module.deps, function(name) {
-    var ret = buildIdAndUri(name, module.uri);
-    var dependencyModule = ret.id && Module._cache[ret.id];
-   // var dependencyModule = resolve(name, module.uri);
+    var dependencyModule = resolve(name, module.uri);
     if (dependencyModule &&
       (dependencyModule.status >= Module.Status.loaded)) {
       module.depsCount--;
       return;
     }
 
-    recordDependencyList(ret.uri, module);
-    // load script or style
-    fetch(ret.uri, callback);
+    var uri = buildFetchUri(name, module.uri);
+    recordDependencyList(uri, module);
+    // load script or stylesheet
+    fetch(uri, callback);
   });
 
   // might been loaded through require.async and compiled before
@@ -1121,11 +1102,11 @@ var handlersMap = {};
 
 // event names
 var events = {
-  create: 'create',
-  fetch: 'fetch',
-  loaded: 'loaded',
-  complete: 'complete',
-  error: 'error'
+  create    : 'create',
+  fetch     : 'fetch',
+  loaded    : 'loaded',
+  complete  : 'complete',
+  error     : 'error'
 };
 
 /**

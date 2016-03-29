@@ -1,6 +1,6 @@
 {
   "name": "kerneljs",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "description": "Browser Side JavaScript Module loader.",
   "main": "index.js",
   "directories": {
@@ -14,10 +14,11 @@
     "url": "https://github.com/AceMood/kerneljs.git"
   },
   "keywords": [
+    "front-end",
     "kerneljs",
     "soi",
     "modular",
-    "module loader",
+    "js loader",
     "CommonJS"
   ],
   "author": "AceMood",
