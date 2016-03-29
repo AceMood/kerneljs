@@ -1,14 +1,33 @@
 /**
  * Author:  AceMood
  * Email:   zmike86@gmail.com
- * Version: 1.0.0
+ * Version: 1.0.2
  */
 
 /**
  * ==================================================================
  * browser code in development
  *
- * The Asynchronous Module Definition (AMD) API specifies a mechanism
+ * JavaScript is a powerful object oriented language with some of the
+ * fastest dynamic language interpreters around. The official JavaScript
+ * specification defines APIs for some objects that are useful for building
+ * browser-based applications. However, the spec does not define a standard
+ * library that is useful for building a broader range of applications.
+ *
+ * I . The CommonJS API will fill that gap by defining APIs that handle many
+ * common application needs, ultimately providing a standard library as rich
+ * as those of Python, Ruby and Java. The intention is that an application
+ * developer will be able to write an application using the CommonJS APIs
+ * and then run that application across different JavaScript interpreters
+ * and host environments. With CommonJS-compliant systems, you can use
+ * JavaScript to write:
+
+ * 1. Server-side JavaScript applications
+ * 2. Command line tools
+ * 3. Desktop GUI-based applications
+ * 4. Hybrid applications (Titanium, Adobe AIR)
+ *
+ * II. The Asynchronous Module Definition (AMD) API specifies a mechanism
  * for defining modules such that the module and its dependencies can
  * be asynchronously loaded. This is particularly well suited for the
  * browser environment where synchronous loading of modules incurs
@@ -19,12 +38,17 @@
  *
  *
  * See for more:
+ * "http://wiki.commonjs.org/wiki/CommonJS"
  * "https://github.com/amdjs/amdjs-api/wiki/AMD"
  */
 
 (function (global, undefined) {
 
 'use strict';
+/**
+ * @file utility functions
+ * @email zmike86@gmail.com
+ */
 
 var OP = Object.prototype,
     AP = Array.prototype,
@@ -35,7 +59,7 @@ var OP = Object.prototype,
 // use such an object to determine cut down a forEach loop;
 var break_obj = {};
 
-/** 空函数作为默认回调函数 */
+/** noop function as callback */
 function noop() {}
 
 /**
@@ -63,10 +87,10 @@ function forEach(arr, fn, opt_context) {
 }
 
 /**
- * 正向寻找指定项在数组的位置;
- * @param {Array} arr
- * @param {*} tar
- * @return {Number}
+ * Search for specific item in an array.
+ * @param {Array} arr search array
+ * @param {*} tar target object
+ * @return {number} position index based from Zero
  */
 function indexOf(arr, tar) {
   for (var i = 0; i < arr.length; ++i) {
@@ -78,8 +102,7 @@ function indexOf(arr, tar) {
 }
 
 /**
- * 类型映射
- * @type {Object}
+ * @type {object}
  */
 var typeMap = {
   '[object Object]'   : 'object',
@@ -91,7 +114,7 @@ var typeMap = {
 };
 
 /**
- * 判断对象类型, 见typeMap
+ * object Type, see typeMap
  */
 function typeOf(obj) {
   return typeMap[toString.call(obj)];
@@ -655,7 +678,7 @@ function parsePaths(p) {
  * @param {object} obj Configuration object. Include:
  *                     --uid: self generated uid.
  *                     --id: user defined moduleId(optional).
- *                     --uri: 模块对用的物理文件路径
+ *                     --uri: absolute path of file
  *                     --deps: dependency array, which stores moduleId or relative module path.
  *                     --factory: callback function
  *                     --exports: exports object
@@ -1125,7 +1148,6 @@ function on(eventName, handler, context) {
  * @param {Array.<object>} args callback parameters
  */
 function emit(eventName, args) {
-  // 缓存防止事件处理器改变kerneljs.cache对象
   var arr = handlersMap[eventName];
   if (arr) {
     forEach(arr, function(obj) {
