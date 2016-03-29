@@ -133,15 +133,15 @@ var callbacksList = {};
  */
 function fetchCss(url) {
   function onCssLoad() {
+    sendingList[url] = false;
+
     var mod = new Module({
       uri: url
     });
 
     // update path2uid
     recordPath2Id(url, mod.id);
-
     ready(mod);
-    sendingList[url] = false;
     var callbacks = callbacksList[url];
     forEach(callbacks, function(cb) {
       cb();
@@ -948,9 +948,30 @@ function resolve(name, baseUri) {
   if (Module._cache[name]) {
     return Module._cache[name];
   }
-  var path = resolvePath(name, baseUri || location.href);
-  var mid = kernel.path2id[path] ? kernel.path2id[path][0] : null;
-  return Module._cache[mid] || null;
+
+  var resourceMap = kernel.data.resourceMap;
+  var mid, id, uri;
+  // already record through build tool
+  if (resourceMap && resourceMap[name]) {
+    uri = resourceMap[name].uri;
+    id = resourceMap[name].id;
+    if (Module._cache[id]) {
+      return Module._cache[id];
+    } else {
+      mid = kernel.path2id[uri] ? kernel.path2id[uri][0] : null;
+      if (mid && Module._cache[mid]) {
+        return Module._cache[mid];
+      }
+    }
+  } else {
+    var path = resolvePath(name, baseUri || location.href);
+    mid = kernel.path2id[path] ? kernel.path2id[path][0] : null;
+    if (mid && Module._cache[mid]) {
+      return Module._cache[mid];
+    }
+  }
+
+  return null;
 }
 
 /**
