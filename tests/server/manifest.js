@@ -10,7 +10,7 @@ exports.manifest = {};
  */
 
 exports.manifest.kerneljs = {
-  name:   'KernelJS @ 1.0.0',
+  name:   'KernelJS @ 1.2.0',
   impl:   'kerneljs/kernel.debug.js',
   config: 'kerneljs/config.js'
 };
