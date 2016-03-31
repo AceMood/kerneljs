@@ -704,6 +704,7 @@ function Module(obj) {
   this.status = Module.Status.init;
   this.factory = obj.factory || null;
   this.exports = {};
+  this.isEntryPoint = obj.isEntryPoint;
 
   // cache
   Module._cache[this.id] = this;
@@ -804,7 +805,8 @@ Module.prototype.compile = function() {
     var anon = new AnonymousModule({
       uri: self.uri,
       deps: deps,
-      factory: callback
+      factory: callback,
+      isEntryPoint: true
     });
     requireAsync(noop, anon);
   };
@@ -836,6 +838,58 @@ Module.Status = {
 // cache for module
 // id-module key-pairs
 Module._cache = {};
+
+/**
+ * Internal define function. Differ if is entry point factory which
+ * should be called immediately after loaded, or else not execute until
+ * require occur.
+ * @param {string|function} id module Id or factory function
+ * @param {function=} factory callback function
+ * @param {boolean} entry If entry point
+ */
+Module.define = function(id, factory, entry) {
+  var resourceMap = kernel.data.resourceMap;
+  var inMap = resourceMap && resourceMap[id];
+
+  if (typeOf(id) !== 'string') {
+    factory = id;
+    id = null;
+  }
+
+  if (typeOf(factory) !== 'function') {
+    throw 'define with wrong parameters ' + factory;
+  }
+
+  var uri, deps;
+  if (inMap) {
+    uri = resourceMap[id].uri;
+    deps = resourceMap[id].deps;
+  } else {
+    uri = getCurrentScriptPath();
+    deps = [];
+    var requireTextMap = {};
+    factory.toString()
+      .replace(commentRegExp, '')
+      .replace(cjsRequireRegExp, function(match, quote, dep) {
+        if (!requireTextMap[dep]) {
+          deps.push(dep);
+          requireTextMap[dep] = true;
+        }
+      });
+  }
+
+  var module = new Module({
+    id: id,
+    uri: uri,
+    deps: deps,
+    factory: factory,
+    isEntryPoint: entry
+  });
+
+  // cache in path2id
+  recordPath2Id(uri, module.id);
+  requireAsync(noop, module);
+};
 /**
  * @file Anonymous Module Class represents require.async calls
  * @email zmike86@gmail.com
@@ -857,6 +911,7 @@ function AnonymousModule(obj) {
   this.depsCount = this.deps.length;
   this.status = Module.Status.init;
   this.factory = obj.factory || null;
+  this.isEntryPoint = obj.isEntryPoint;
 
   this.setStatus(Module.Status.init);
 }
@@ -988,46 +1043,7 @@ function resolve(name, baseUri) {
  * @param {?function=} factory callback function
  */
 function define(id, factory) {
-  var resourceMap = kernel.data.resourceMap;
-  var inMap = resourceMap && resourceMap[id];
-
-  if (typeOf(id) !== 'string') {
-    factory = id;
-    id = null;
-  }
-
-  if (typeOf(factory) !== 'function') {
-    throw 'define with wrong parameters ' + factory;
-  }
-
-  var uri, deps;
-  if (inMap) {
-    uri = resourceMap[id].uri;
-    deps = resourceMap[id].deps;
-  } else {
-    uri = getCurrentScriptPath();
-    deps = [];
-    var requireTextMap = {};
-    factory.toString()
-      .replace(commentRegExp, '')
-      .replace(cjsRequireRegExp, function(match, quote, dep) {
-        if (!requireTextMap[dep]) {
-          deps.push(dep);
-          requireTextMap[dep] = true;
-        }
-      });
-  }
-
-  var module = new Module({
-    id: id,
-    uri: uri,
-    deps: deps,
-    factory: factory
-  });
-
-  // cache in path2id
-  recordPath2Id(uri, module.id);
-  requireAsync(noop, module);
+  Module.define(id, factory, false);
 }
 
 /**
@@ -1036,7 +1052,9 @@ function define(id, factory) {
  */
 function ready(module) {
   module.setStatus(Module.Status.loaded);
-  module.compile();
+  if (module.isEntryPoint) {
+    module.compile();
+  }
 
   // Inform all module that depend on current module.
   var dependants = dependencyList[module.uri];
@@ -1192,11 +1210,17 @@ kernel.on = on;
 kernel.emit = emit;
 kernel.request = fetchScript;
 kernel.eventsType = events;
+// Store configuration object
 kernel.data = {};
 // One javascript file can define more than one module.
 // We never do that when dev time. But not after build process.
 // Key-value pairs would be path->Array.<id>
 kernel.path2id = {};
+
+// define an entry point module
+kernel.exec = function(id, factory) {
+  Module.define(id, factory, true);
+};
 
 // config with preserved global kerneljs object
 // if a global kerneljs object exists,

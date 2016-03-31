@@ -1,4 +1,4 @@
-define('app', function(require, exports, module) {
+kerneljs.exec('app', function(require, exports, module) {
 
   var moduleA = require('./moduleA');
   var moduleB = require('./moduleB');

@@ -26,7 +26,7 @@
     <button>load dialog.js</button>
     <script src="../dist/kernel.debug.js"></script>
     <script type="text/javascript">
-        define('app', function(require) {
+        kerneljs.exec('app', function(require) {
             var moduleA = require('./moduleA');
             var moduleB = require('./moduleB');
             require('./moduleC.css');

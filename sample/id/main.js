@@ -1,4 +1,4 @@
-__d('main', function(require) {
+kerneljs.exec('main', function(require) {
   var moduleA = require('a');
   var moduleB = require('b');
 
