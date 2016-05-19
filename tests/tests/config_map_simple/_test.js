@@ -2,17 +2,14 @@ kerneljs.config({
   resourceMap: {
     JS: {
       'a': {
-        id: 'a',
         uri: '/kerneljs/config_map_simple/a1.js',
         deps: ['c', 'c/sub']
       },
       'c': {
-        id: 'c',
         uri: '/kerneljs/config_map_simple/c.js',
         deps: []
       },
       'c/sub': {
-        id: 'c/sub',
         uri: '/kerneljs/config_map_simple/c/sub.js',
         deps: []
       }

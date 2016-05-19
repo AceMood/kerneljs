@@ -2,23 +2,19 @@ kerneljs.config({
   resourceMap: {
     JS: {
       'a': {
-        id: 'a',
         uri: '/kerneljs/config_map_css/a1.js',
         deps: ['c/sub'],
         css: ['c']
       },
       'c/sub': {
-        id: 'c/sub',
         uri: '/kerneljs/config_map_css/c/sub.js'
       }
     },
     CSS: {
       'b': {
-        id: 'b',
         uri: '/kerneljs/config_map_css/c/b.css'
       },
       'c': {
-        id: 'c',
         uri: '/kerneljs/config_map_css/c.css',
         css: ['b']
       }

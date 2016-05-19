@@ -1037,7 +1037,7 @@ function resolve(name, baseUri) {
   // already record through build tool
   if (resourceMap && resourceMap[type.toUpperCase()][name]) {
     uri = resourceMap[type.toUpperCase()][name].uri;
-    id = resourceMap[type.toUpperCase()][name].id;
+    id = name;
     if (Module._cache[id]) {
       return Module._cache[id];
     }
