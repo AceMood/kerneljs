@@ -1,26 +1,27 @@
 kerneljs.config({
   resourceMap: {
-    'a': {
-      id: 'a',
-      uri: '/kerneljs/config_map_css/a1.js',
-      deps: ['c', 'c/sub'],
-      type: 'JS'
+    JS: {
+      'a': {
+        id: 'a',
+        uri: '/kerneljs/config_map_css/a1.js',
+        deps: ['c/sub'],
+        css: ['c']
+      },
+      'c/sub': {
+        id: 'c/sub',
+        uri: '/kerneljs/config_map_css/c/sub.js'
+      }
     },
-    'b': {
-      id: 'b',
-      uri: '/kerneljs/config_map_css/c/b.css',
-      type: 'CSS'
-    },
-    'c': {
-      id: 'c',
-      uri: '/kerneljs/config_map_css/c.css',
-      deps: ['b'],
-      type: 'CSS'
-    },
-    'c/sub': {
-      id: 'c/sub',
-      uri: '/kerneljs/config_map_css/c/sub.js',
-      type: 'JS'
+    CSS: {
+      'b': {
+        id: 'b',
+        uri: '/kerneljs/config_map_css/c/b.css'
+      },
+      'c': {
+        id: 'c',
+        uri: '/kerneljs/config_map_css/c.css',
+        css: ['b']
+      }
     }
   }
 });

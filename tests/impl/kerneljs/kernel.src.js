@@ -1,7 +1,7 @@
 /**
  * Author:  AceMood
  * Email:   zmike86@gmail.com
- * Version: 1.2.0
+ * Version: 1.3.0
  */
 
 /**
@@ -849,7 +849,7 @@ Module._cache = {};
  */
 Module.define = function(id, factory, entry) {
   var resourceMap = kernel.data.resourceMap;
-  var inMap = resourceMap && resourceMap[id];
+  var inMap = resourceMap && resourceMap.JS[id];
 
   if (typeOf(id) !== 'string') {
     factory = id;
@@ -862,8 +862,13 @@ Module.define = function(id, factory, entry) {
 
   var uri, deps;
   if (inMap) {
-    uri = resourceMap[id].uri;
-    deps = resourceMap[id].deps;
+    uri = resourceMap.JS[id].uri;
+    deps = resourceMap.JS[id].deps;
+    if (resourceMap.JS[id].css) {
+      for (var n = 0; n < resourceMap.JS[id].css.length; n++) {
+        deps.push('css:' + resourceMap.JS[id].css[n]);
+      }
+    }
   } else {
     uri = getCurrentScriptPath();
     deps = [];
@@ -994,9 +999,15 @@ function recordDependencyList(uri, module) {
 // expect module have been pre-build, try to resolve uri
 function buildFetchUri(name, baseUri) {
   var resourceMap = kernel.data.resourceMap;
+  var type = 'js';
+  if (/^css:/.test(name)) {
+    type = 'css';
+    name = name.replace(/^css:/, '');
+  }
+
   // already record through build tool
-  if (resourceMap && resourceMap[name]) {
-    return resourceMap[name].uri;
+  if (resourceMap && resourceMap[type.toUpperCase()][name]) {
+    return resourceMap[type.toUpperCase()][name].uri;
   } else if (Module._cache[name]) {
     return Module._cache[name].uri;
   } else {
@@ -1015,12 +1026,18 @@ function resolve(name, baseUri) {
     return Module._cache[name];
   }
 
+  var type = 'js';
+  if (/^css:/.test(name)) {
+    type = 'css';
+    name = name.replace(/^css:/, '');
+  }
+
   var resourceMap = kernel.data.resourceMap;
   var mid, id, uri;
   // already record through build tool
-  if (resourceMap && resourceMap[name]) {
-    uri = resourceMap[name].uri;
-    id = resourceMap[name].id;
+  if (resourceMap && resourceMap[type.toUpperCase()][name]) {
+    uri = resourceMap[type.toUpperCase()][name].uri;
+    id = resourceMap[type.toUpperCase()][name].id;
     if (Module._cache[id]) {
       return Module._cache[id];
     }
@@ -1078,7 +1095,7 @@ function ready(module) {
 }
 
 /**
- * Internal api to load script async and execute callback.
+ * Internal api to load script or stylesheet async and execute callback.
  * @param {function} callback
  * @param {Module} module
  */
