@@ -692,7 +692,7 @@ function Module(obj) {
           obj.uri
         ]
       );
-      return existIdError(obj.id);
+      return existIdError(obj.id)
     }
   }
 
@@ -717,19 +717,19 @@ function Module(obj) {
  */
 Module.prototype.setStatus = function(status) {
   if (status < 0 || status > 4) {
-    throw 'Status ' + status + ' is now allowed.';
+    throw 'Status ' + status + ' is now allowed.'
   } else if (status === 0) {
     this.status = status;
-    emit(events.create, [this]);
+    emit(events.create, [this])
   } else if (status === 1) {
     this.status = status;
-    emit(events.fetch, [this]);
+    emit(events.fetch, [this])
   } else if (status === 2) {
     this.status = status;
-    emit(events.loaded, [this]);
+    emit(events.loaded, [this])
   } else if (status === 3) {
     this.status = status;
-    emit(events.complete, [this]);
+    emit(events.complete, [this])
   }
 };
 
@@ -738,7 +738,7 @@ Module.prototype.setStatus = function(status) {
  * @return {boolean}
  */
 Module.prototype.checkAll = function() {
-  return this.depsCount === 0;
+  return this.depsCount === 0
 };
 
 /**
@@ -747,7 +747,7 @@ Module.prototype.checkAll = function() {
  */
 Module.prototype.compile = function() {
   if (this.status === Module.Status.complete) {
-    return this.exports;
+    return this.exports
   }
 
   /**
@@ -761,7 +761,7 @@ Module.prototype.compile = function() {
   function localRequire(name) {
     var argLen = arguments.length;
     if (argLen < 1) {
-      throw 'require must have at least one parameter.';
+      throw 'require must have at least one parameter.'
     }
 
     // a simple require statements always be preloaded.
@@ -769,9 +769,9 @@ Module.prototype.compile = function() {
     var mod = resolve(name, self.uri);
     if (mod && (mod.status >= Module.Status.loaded)) {
       mod.compile();
-      return mod.exports;
+      return mod.exports
     } else {
-      throw 'require unknown module with id: ' + name;
+      throw 'require unknown module with id: ' + name
     }
   }
 
@@ -808,7 +808,7 @@ Module.prototype.compile = function() {
       factory: callback,
       isEntryPoint: true
     });
-    requireAsync(noop, anon);
+    anon.fetch()
   };
 
   var self = this;
@@ -822,8 +822,44 @@ Module.prototype.compile = function() {
 };
 
 /**
+ * async load dependency
+ */
+Module.prototype.fetch = function() {
+  function onLoad() {
+
+  }
+
+  var module = this;
+  module.setStatus(Module.Status.fetching);
+  // no dependencies
+  if (module.deps.length === 0) {
+    ready(module);
+    return
+  }
+
+  forEach(module.deps, function(name) {
+    var dependencyModule = resolve(name, module.uri);
+    if (dependencyModule &&
+        (dependencyModule.status >= Module.Status.loaded)) {
+      module.depsCount--;
+      return
+    }
+
+    var uri = buildFetchUri(name, module.uri);
+    recordDependencyList(uri, module);
+    // load
+    fetch(uri, onLoad)
+  });
+
+  // might been loaded through require.async and compiled before
+  if (module.checkAll() && module.status < Module.Status.loaded) {
+    ready(module)
+  }
+};
+
+/**
  * Module's status:
- *  init:     created with `new` operator.
+ *  init:     created with `new` operator, in define or fetchCss.
  *  fetching: loading dependencies script.
  *  loaded:   all dependencies are ready.
  *  complete: after compiled.
@@ -853,11 +889,11 @@ Module.define = function(id, factory, entry) {
 
   if (typeOf(id) !== 'string') {
     factory = id;
-    id = null;
+    id = null
   }
 
   if (typeOf(factory) !== 'function') {
-    throw 'define with wrong parameters ' + factory;
+    throw 'define with wrong parameters ' + factory
   }
 
   var uri, deps;
@@ -866,7 +902,7 @@ Module.define = function(id, factory, entry) {
     deps = resourceMap.JS[id].deps;
     if (resourceMap.JS[id].css) {
       for (var n = 0; n < resourceMap.JS[id].css.length; n++) {
-        deps.push('css:' + resourceMap.JS[id].css[n]);
+        deps.push('css:' + resourceMap.JS[id].css[n])
       }
     }
   } else {
@@ -878,9 +914,9 @@ Module.define = function(id, factory, entry) {
       .replace(cjsRequireRegExp, function(match, quote, dep) {
         if (!requireTextMap[dep]) {
           deps.push(dep);
-          requireTextMap[dep] = true;
+          requireTextMap[dep] = true
         }
-      });
+      })
   }
 
   var module = new Module({
@@ -893,7 +929,10 @@ Module.define = function(id, factory, entry) {
 
   // cache in path2id
   recordPath2Id(uri, module.id);
-  requireAsync(noop, module);
+
+  if (entry) {
+    module.fetch()
+  }
 };
 /**
  * @file Anonymous Module Class represents require.async calls
@@ -980,9 +1019,9 @@ function existIdError(id) {
 // record cache in path2id
 function recordPath2Id(uri, id) {
   if (kernel.path2id[uri]) {
-    kernel.path2id[uri].push(id);
+    kernel.path2id[uri].push(id)
   } else {
-    kernel.path2id[uri] = [id];
+    kernel.path2id[uri] = [id]
   }
 }
 
@@ -990,9 +1029,9 @@ function recordPath2Id(uri, id) {
 // for notify later.
 function recordDependencyList(uri, module) {
   if (!dependencyList[uri]) {
-    dependencyList[uri] = [module];
+    dependencyList[uri] = [module]
   } else if (indexOf(dependencyList[uri], module) < 0) {
-    dependencyList[uri].push(module);
+    dependencyList[uri].push(module)
   }
 }
 
@@ -1002,16 +1041,16 @@ function buildFetchUri(name, baseUri) {
   var type = 'js';
   if (/^css:/.test(name)) {
     type = 'css';
-    name = name.replace(/^css:/, '');
+    name = name.replace(/^css:/, '')
   }
 
   // already record through build tool
   if (resourceMap && resourceMap[type.toUpperCase()][name]) {
-    return resourceMap[type.toUpperCase()][name].uri;
+    return resourceMap[type.toUpperCase()][name].uri
   } else if (Module._cache[name]) {
-    return Module._cache[name].uri;
+    return Module._cache[name].uri
   } else {
-    return resolvePath(name, baseUri);
+    return resolvePath(name, baseUri)
   }
 }
 
@@ -1023,13 +1062,13 @@ function buildFetchUri(name, baseUri) {
  */
 function resolve(name, baseUri) {
   if (Module._cache[name]) {
-    return Module._cache[name];
+    return Module._cache[name]
   }
 
   var type = 'js';
   if (/^css:/.test(name)) {
     type = 'css';
-    name = name.replace(/^css:/, '');
+    name = name.replace(/^css:/, '')
   }
 
   var resourceMap = kernel.data.resourceMap;
@@ -1039,18 +1078,18 @@ function resolve(name, baseUri) {
     uri = resourceMap[type.toUpperCase()][name].uri;
     id = name;
     if (Module._cache[id]) {
-      return Module._cache[id];
+      return Module._cache[id]
     }
   } else {
-    uri = resolvePath(name, baseUri || location.href);
+    uri = resolvePath(name, baseUri || location.href)
   }
 
   mid = kernel.path2id[uri] ? kernel.path2id[uri][0] : null;
   if (mid && Module._cache[mid]) {
-    return Module._cache[mid];
+    return Module._cache[mid]
   }
 
-  return null;
+  return null
 }
 
 /**
@@ -1060,7 +1099,7 @@ function resolve(name, baseUri) {
  * @param {?function=} factory callback function
  */
 function define(id, factory) {
-  Module.define(id, factory, false);
+  Module.define(id, factory, false)
 }
 
 /**
@@ -1070,7 +1109,7 @@ function define(id, factory) {
 function ready(module) {
   module.setStatus(Module.Status.loaded);
   if (module.isEntryPoint) {
-    module.compile();
+    module.compile()
   }
 
   // Inform all module that depend on current module.
@@ -1088,42 +1127,9 @@ function ready(module) {
       dependant.depsCount--;
       if (dependant.checkAll() &&
         (dependant.status === Module.Status.fetching)) {
-        ready(dependant);
+        ready(dependant)
       }
     });
-  }
-}
-
-/**
- * Internal api to load script or stylesheet async and execute callback.
- * @param {function} callback
- * @param {Module} module
- */
-function requireAsync(callback, module) {
-  module.setStatus(Module.Status.fetching);
-  // no dependencies
-  if (module.deps.length === 0) {
-    ready(module);
-    return;
-  }
-
-  forEach(module.deps, function(name) {
-    var dependencyModule = resolve(name, module.uri);
-    if (dependencyModule &&
-      (dependencyModule.status >= Module.Status.loaded)) {
-      module.depsCount--;
-      return;
-    }
-
-    var uri = buildFetchUri(name, module.uri);
-    recordDependencyList(uri, module);
-    // load script or stylesheet
-    fetch(uri, callback);
-  });
-
-  // might been loaded through require.async and compiled before
-  if (module.checkAll() && module.status < Module.Status.loaded) {
-    ready(module);
   }
 }
 /**
@@ -1152,12 +1158,12 @@ var events = {
  */
 function on(eventName, handler, context) {
   if (!handlersMap[eventName]) {
-    handlersMap[eventName] = [];
+    handlersMap[eventName] = []
   }
   handlersMap[eventName].push({
     handler: handler,
     context: context
-  });
+  })
 }
 
 /**
@@ -1169,7 +1175,7 @@ function emit(eventName, args) {
   var arr = handlersMap[eventName];
   if (arr) {
     forEach(arr, function(obj) {
-      obj.handler.apply(obj.context, args);
+      obj.handler.apply(obj.context, args)
     });
   }
 }
@@ -1219,7 +1225,7 @@ kernel.reset = function() {
 
 // helper function
 kernel.getCache = function() {
-  return Module._cache;
+  return Module._cache
 };
 
 kernel.config = config;
@@ -1236,7 +1242,7 @@ kernel.path2id = {};
 
 // define an entry point module
 kernel.exec = function(id, factory) {
-  Module.define(id, factory, true);
+  Module.define(id, factory, true)
 };
 
 // config with preserved global kerneljs object
@@ -1244,7 +1250,7 @@ kernel.exec = function(id, factory) {
 // treat it as kerneljs configuration.
 if (global.kerneljs) {
   kernel._kernel = global.kerneljs;
-  kernel.config(kernel._kernel);
+  kernel.config(kernel._kernel)
 }
 
 // Global APIs

@@ -2,7 +2,7 @@
   "curly": true,
   "eqeqeq": true,
   "es3": true,
-  "maxlen": 90,
+  "maxlen": 80,
   "nonew": true,
   "freeze": true,
   "globals": {

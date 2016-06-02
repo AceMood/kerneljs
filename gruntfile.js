@@ -26,9 +26,10 @@ module.exports = function(grunt) {
         curly: true,
         eqeqeq: true,
         es3: true,
-        maxlen: 120,
+        maxlen: 100,
         nonew: true,
         freeze: true,
+        asi: true,
         globals: {
           document: true
         }
