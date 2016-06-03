@@ -395,7 +395,7 @@ if (engine[1] || engine[7]) {
   useOnload = false;
   // gecko
 } else if (engine[4]) {
-  useImportLoad = engine[4] < 18;
+  useImportLoad = engine[4] < 18
 }
 
 var ieCnt = 0;
@@ -409,7 +409,7 @@ function createIeLoad(url) {
   ieCnt++;
   if (ieCnt === 31) {
     createStyle();
-    ieCnt = 0;
+    ieCnt = 0
   }
 }
 
@@ -418,11 +418,11 @@ function processIeLoad() {
   var nextLoad = ieLoads.shift();
   if (!nextLoad) {
     ieCurCallback = null;
-    return;
+    return
   }
 
   ieCurCallback = nextLoad[1];
-  createIeLoad(nextLoad[0]);
+  createIeLoad(nextLoad[0])
 }
 
 /**
@@ -432,17 +432,17 @@ function processIeLoad() {
  */
 function importLoad(url, callback) {
   if (!curSheet || !curSheet.addImport) {
-    createStyle();
+    createStyle()
   }
 
   if (curSheet && curSheet.addImport) {
     // old IE
     if (ieCurCallback) {
-      ieLoads.push([url, callback]);
+      ieLoads.push([url, callback])
     }
     else {
       createIeLoad(url);
-      ieCurCallback = callback;
+      ieCurCallback = callback
     }
   } else {
     // old Firefox
@@ -452,7 +452,7 @@ function importLoad(url, callback) {
       try {
         var tmp = curStyle.sheet.cssRules;
         clearInterval(loadInterval);
-        callback();
+        callback()
       } catch(e) { }
     }, 10);
   }
@@ -469,10 +469,10 @@ function linkLoad(url, callback) {
       var sheet = $doc.styleSheets[i];
       if (sheet.href === link.href) {
         clearTimeout(loadInterval);
-        return callback();
+        return callback()
       }
     }
-    loadInterval = setTimeout(loop, 10);
+    loadInterval = setTimeout(loop, 10)
   };
   // link
   var link = $doc.createElement('link');
@@ -482,13 +482,13 @@ function linkLoad(url, callback) {
     link.onload = function() {
       link.onload = null;
       // for style dimensions queries, a short delay can still be necessary
-      setTimeout(callback, 7);
+      setTimeout(callback, 7)
     };
   } else {
-    var loadInterval = setTimeout(loop, 10);
+    var loadInterval = setTimeout(loop, 10)
   }
   link.href = url;
-  $head.appendChild(link);
+  $head.appendChild(link)
 }
 
 /**
@@ -497,7 +497,7 @@ function linkLoad(url, callback) {
 function createStyle() {
   curStyle = $doc.createElement('style');
   $head.appendChild(curStyle);
-  curSheet = curStyle.styleSheet || curStyle.sheet;
+  curSheet = curStyle.styleSheet || curStyle.sheet
 }
 /**
  * @file paths utilities
@@ -781,7 +781,7 @@ Module.prototype.compile = function() {
    * @return {string|object}
    */
   localRequire.toUrl = function(id) {
-    return resolvePath(id);
+    return resolvePath(id)
   };
 
   /**
@@ -791,15 +791,15 @@ Module.prototype.compile = function() {
    */
   localRequire.async = function(id, callback) {
     if (typeOf(callback) !== 'function') {
-      throw 'require.async second parameter must be a function';
+      throw 'require.async second parameter must be a function'
     }
 
     var deps = [];
     var type = typeOf(id);
     if (type === 'string') {
-      deps = [id];
+      deps = [id]
     } else if (type === 'array') {
-      deps = id;
+      deps = id
     }
 
     var anon = new AnonymousModule({
@@ -815,20 +815,16 @@ Module.prototype.compile = function() {
   // css module not have factory
   if (this.factory) {
     this.factory.apply(null, [localRequire, this.exports, this]);
-    delete this.factory;
+    delete this.factory
   }
   this.setStatus(Module.Status.complete);
-  return this.exports;
+  return this.exports
 };
 
 /**
  * async load dependency
  */
 Module.prototype.fetch = function() {
-  function onLoad() {
-
-  }
-
   var module = this;
   module.setStatus(Module.Status.fetching);
   // no dependencies
@@ -838,6 +834,16 @@ Module.prototype.fetch = function() {
   }
 
   forEach(module.deps, function(name) {
+    function onLoad() {
+      module.depsCount--;
+      if (module.isEntryPoint &&
+          module.checkAll() &&
+          module.status < Module.Status.loaded) {
+        ready(module)
+      }
+      dependencyModule.fetch()
+    }
+    
     var dependencyModule = resolve(name, module.uri);
     if (dependencyModule &&
         (dependencyModule.status >= Module.Status.loaded)) {
@@ -930,6 +936,7 @@ Module.define = function(id, factory, entry) {
   // cache in path2id
   recordPath2Id(uri, module.id);
 
+  // start fetch dependencies
   if (entry) {
     module.fetch()
   }
@@ -1103,7 +1110,8 @@ function define(id, factory) {
 }
 
 /**
- * When a module is ready, means that all the dependencies have been ready.
+ * When a module is ready, means that all the dependencies have been
+ * ready and its depsCount should be zero.
  * @param {Module} module
  */
 function ready(module) {
