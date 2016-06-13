@@ -1,7 +1,7 @@
 /**
  * Author:  AceMood
  * Email:   zmike86@gmail.com
- * Version: 1.3.0
+ * Version: 1.4.0
  */
 
 /**
@@ -76,11 +76,11 @@ function noop() {}
  */
 function forEach(arr, fn, opt_context) {
   if (native_forEach && arr.forEach === native_forEach) {
-    arr.forEach(fn, opt_context);
+    arr.forEach(fn, opt_context)
   } else if (arr.length === +arr.length) {
     for (var i = 0, length = arr.length; i < length; i++) {
       if (fn.call(opt_context, arr[i], i, arr) === break_obj) {
-        break;
+        break
       }
     }
   }
@@ -95,10 +95,10 @@ function forEach(arr, fn, opt_context) {
 function indexOf(arr, tar) {
   for (var i = 0; i < arr.length; ++i) {
     if (arr[i] === tar) {
-      return i;
+      return i
     }
   }
-  return -1;
+  return -1
 }
 
 /**
@@ -116,7 +116,7 @@ var typeMap = {
  * Object Type, see typeMap
  */
 function typeOf(obj) {
-  return typeMap[toString.call(obj)];
+  return typeMap[toString.call(obj)]
 }
 /**
  * @file DOM JS API relative ops
@@ -267,7 +267,7 @@ function getCurrentScript() {
   // 去掉document.currentScript的判断, 因为它并不准确.
   // 除了异步的情况, w3c对其值有明确说明, 有时未必是我们想要的特别在
   // CommonJS wrapper的情况下
-  return currentAddingScript ||
+  return currentAddingScript || document.currentScript ||
     (function() {
       var _scripts;
       if (useInteractive) {
@@ -533,7 +533,7 @@ function normalize(p) {
 
   // step2: resolve '.' and '..'
   p = resolveDot(p);
-  return p;
+  return p
 }
 
 /**
@@ -549,13 +549,13 @@ function resolveDot(path) {
   for (var i = 0; i < path.length; ++i) {
     if (path[i] === dotCH) {
       path.splice(i, 1);
-      --i;
+      --i
     } else if (path[i] === dot2CH && i > 0 && path[i - 1] !== dot2CH) {
       path.splice(i - 1, 2);
-      i -= 2;
+      i -= 2
     }
   }
-  return path.join(slashCH);
+  return path.join(slashCH)
 }
 
 /**
@@ -569,7 +569,7 @@ function isTopLevel(path) {
   // see more:
   // 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/
   // +Global_Objects/String#section_5'
-  return isRelative(path) && path.charAt(0) !== dotCH;
+  return isRelative(path) && path.charAt(0) !== dotCH
 }
 
 /**
@@ -581,7 +581,7 @@ function isTopLevel(path) {
  * @return {boolean} Is path absolute?
  */
 function isAbsolute(path) {
-  return /:\/\//.test(path) || /^\//.test(path);
+  return /:\/\//.test(path) || /^\//.test(path)
 }
 
 /**
@@ -593,7 +593,7 @@ function isAbsolute(path) {
  * @return {boolean} b
  */
 function isRelative(p) {
-  return !isAbsolute(p) && (/^(\.){1,2}\//.test(p) || p.charAt(0) !== slashCH);
+  return !isAbsolute(p) && (/^(\.){1,2}\//.test(p) || p.charAt(0) !== slashCH)
 }
 
 /**
@@ -610,7 +610,7 @@ function resolvePath(id, base) {
     id = parsePaths(id);
     // here if a top-level path then relative base change to
     // current document's baseUri.
-    base = null;
+    base = null
   }
 
   // add file extension if necessary
@@ -619,10 +619,10 @@ function resolvePath(id, base) {
   var url = (base ? dirname(base) : dirname(loc.href)) + adjoin + id;
 
   if (!fileExtReg.test(url)) {
-    url += '.js';
+    url += '.js'
   }
 
-  return resolveDot(url);
+  return resolveDot(url)
 }
 
 /**
@@ -636,14 +636,14 @@ function resolvePath(id, base) {
  */
 function dirname(path) {
   if (dirReg.test(path)) {
-    return path.slice(0, -1);
+    return path.slice(0, -1)
   }
   // Here I used to use /\//ig to split string, but unfortunately
   // it has serious bug in IE<9. See for more:
   // 'http://blog.stevenlevithan.com/archives/cross-browser-split'.
   var ps = path.split(slashCH);
   ps.pop();
-  return ps.join(slashCH);
+  return ps.join(slashCH)
 }
 
 /**
@@ -659,11 +659,11 @@ function parsePaths(p) {
     var parts = p.split(slashCH);
     while (!(part in paths) && parts.length) {
       ret.unshift(parts.pop());
-      part = parts.join(slashCH);
+      part = parts.join(slashCH)
     }
-    p = paths[part] ? paths[part] : part;
+    p = paths[part] ? paths[part] : part
   }
-  return p + ret.join(slashCH);
+  return p + ret.join(slashCH)
 }
 /**
  * @file Module Class
@@ -726,7 +726,7 @@ Module.prototype.setStatus = function(status) {
     emit(events.fetch, [this])
   } else if (status === 2) {
     this.status = status;
-    emit(events.loaded, [this])
+    emit(events.ready, [this])
   } else if (status === 3) {
     this.status = status;
     emit(events.complete, [this])
@@ -764,10 +764,10 @@ Module.prototype.compile = function() {
       throw 'require must have at least one parameter.'
     }
 
-    // a simple require statements always be preloaded.
+    // a simple require statements always be pre-loaded.
     // so return its complied exports object.
     var mod = resolve(name, self.uri);
-    if (mod && (mod.status >= Module.Status.loaded)) {
+    if (mod && (mod.status >= Module.Status.ready)) {
       mod.compile();
       return mod.exports
     } else {
@@ -780,9 +780,7 @@ Module.prototype.compile = function() {
    * @param  {string} id
    * @return {string|object}
    */
-  localRequire.toUrl = function(id) {
-    return resolvePath(id)
-  };
+  localRequire.toUrl = resolvePath;
 
   /**
    * Asynchronously loading module after page loaded.
@@ -808,6 +806,7 @@ Module.prototype.compile = function() {
       factory: callback,
       isEntryPoint: true
     });
+
     anon.fetch()
   };
 
@@ -834,31 +833,34 @@ Module.prototype.fetch = function() {
   }
 
   forEach(module.deps, function(name) {
+    // will execute after define
     function onLoad() {
-      module.depsCount--;
-      if (module.isEntryPoint &&
-          module.checkAll() &&
-          module.status < Module.Status.loaded) {
-        ready(module)
+      dependencyModule = resolve(name, module.uri);
+      if (dependencyModule.deps.length === 0) {
+        ready(dependencyModule)
+      } else {
+        dependencyModule.fetch()
       }
-      dependencyModule.fetch()
-    }
-    
-    var dependencyModule = resolve(name, module.uri);
-    if (dependencyModule &&
-        (dependencyModule.status >= Module.Status.loaded)) {
-      module.depsCount--;
-      return
     }
 
-    var uri = buildFetchUri(name, module.uri);
-    recordDependencyList(uri, module);
-    // load
-    fetch(uri, onLoad)
+    var dependencyModule = resolve(name, module.uri);
+    if (dependencyModule) {
+      recordDependencyList(dependencyModule.uri, module);
+      if (dependencyModule.status >= Module.Status.ready) {
+        ready(dependencyModule);
+        module.depsCount--
+      } else if (dependencyModule.status === Module.Status.init) {
+        dependencyModule.fetch()
+      }
+    } else {
+      var uri = buildFetchUri(name, module.uri);
+      recordDependencyList(uri, module);
+      fetch(uri, onLoad)
+    }
   });
 
   // might been loaded through require.async and compiled before
-  if (module.checkAll() && module.status < Module.Status.loaded) {
+  if (module.checkAll() && module.status < Module.Status.ready) {
     ready(module)
   }
 };
@@ -867,13 +869,13 @@ Module.prototype.fetch = function() {
  * Module's status:
  *  init:     created with `new` operator, in define or fetchCss.
  *  fetching: loading dependencies script.
- *  loaded:   all dependencies are ready.
+ *  ready:   all dependencies are ready.
  *  complete: after compiled.
  */
 Module.Status = {
   'init'      : 0,
   'fetching'  : 1,
-  'loaded'    : 2,
+  'ready'     : 2,
   'complete'  : 3
 };
 
@@ -964,7 +966,7 @@ function AnonymousModule(obj) {
   this.factory = obj.factory || null;
   this.isEntryPoint = obj.isEntryPoint;
 
-  this.setStatus(Module.Status.init);
+  this.setStatus(Module.Status.init)
 }
 
 /**
@@ -980,11 +982,16 @@ AnonymousModule.prototype.setStatus = Module.prototype.setStatus;
 AnonymousModule.prototype.checkAll = Module.prototype.checkAll;
 
 /**
+ * async load dependency
+ */
+AnonymousModule.prototype.fetch = Module.prototype.fetch;
+
+/**
  * compile module
  */
 AnonymousModule.prototype.compile = function() {
   if (this.status === Module.Status.complete) {
-    return;
+    return
   }
 
   var mod = this;
@@ -993,14 +1000,14 @@ AnonymousModule.prototype.compile = function() {
   forEach(mod.deps, function(name) {
     var dependencyModule = resolve(name, mod.uri);
     if (dependencyModule &&
-      (dependencyModule.status >= Module.Status.loaded)) {
-      args.push(dependencyModule.compile());
+      (dependencyModule.status >= Module.Status.ready)) {
+      args.push(dependencyModule.compile())
     }
   });
 
   this.factory.apply(null, args);
   delete this.factory;
-  this.setStatus(Module.Status.complete);
+  this.setStatus(Module.Status.complete)
 };
 
 // extract `require('xxx')`
@@ -1115,7 +1122,7 @@ function define(id, factory) {
  * @param {Module} module
  */
 function ready(module) {
-  module.setStatus(Module.Status.loaded);
+  module.setStatus(Module.Status.ready);
   if (module.isEntryPoint) {
     module.compile()
   }
@@ -1153,7 +1160,7 @@ var handlersMap = {};
 var events = {
   create    : 'create',
   fetch     : 'fetch',
-  loaded    : 'loaded',
+  ready     : 'ready',
   complete  : 'complete',
   error     : 'error'
 };
@@ -1184,7 +1191,7 @@ function emit(eventName, args) {
   if (arr) {
     forEach(arr, function(obj) {
       obj.handler.apply(obj.context, args)
-    });
+    })
   }
 }
 /**
@@ -1214,10 +1221,10 @@ function config(obj) {
     if (hasOwn.call(obj, key)) {
       if (kernel.data[key]) {
         for (k in obj[key]) {
-          kernel.data[key][k] = obj[key][k];
+          kernel.data[key][k] = obj[key][k]
         }
       } else {
-        kernel.data[key] = obj[key];
+        kernel.data[key] = obj[key]
       }
     }
   }
@@ -1228,7 +1235,7 @@ kernel.reset = function() {
   Module._cache = {};
   this.path2id = {};
   this.data = {};
-  handlersMap = {};
+  handlersMap = {}
 };
 
 // helper function
