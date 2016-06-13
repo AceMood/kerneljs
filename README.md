@@ -1,5 +1,5 @@
 ## Kerneljs
-kerneljs是一个符合CommonJS规范的前端模块加载器。目前处于第二版本，重构了第一版本对于AMD官方的测试用例的部分支持，
+kerneljs是一个符合CommonJS规范的前端模块加载器。目前处于第二版本，测试用例基于AMD官方的测试用例,重构了部分代码的支持，
 不再支持package和paths等配置，而是通过resourceMap配置项提前指定资源表。与工程化工具[soi](https://github.com/Saber-Team/soi)
 共同配合完成前端任何项目的构建、打包、部署工作。
 
@@ -30,7 +30,7 @@ kernel.js向全局导出两个对象`define|__d`函数用于定义模块。kerne
 的参数一样，只不过定义的模块在依赖加载完毕后立即执行，通常用作页面（或页面一部分）功能的入口。而`define|__d`函数定义的模块不会被立即执行，
 只有当代码require的时候才会执行模块的代码导出exports对象。
 
-## Browser Support Range:
+## 浏览器支持范围
 * IE 6.0+
 * Chrome 1.0+
 * FF 3.5+
