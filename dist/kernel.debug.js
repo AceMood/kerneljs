@@ -119,7 +119,8 @@ function typeOf(obj) {
   return typeMap[toString.call(obj)]
 }
 /**
- * @file DOM JS API relative ops
+ * @file DOM JS API relative options
+ * @author AceMood
  * @email zmike86@gmail.com
  */
 
@@ -175,6 +176,7 @@ function fetchCss(url) {
 }
 
 /**
+ * add callback functions to a specific url when resource loaded
  * @param {string} url
  * @param {function} callback
  */
@@ -225,7 +227,7 @@ function fetchScript(url) {
 }
 
 /**
- * fetch script or css file
+ * fetch script or css
  * @param {string} url resource url
  * @param {function} callback
  */
@@ -246,7 +248,7 @@ function fetch(url, callback) {
 }
 
 /**
- * get all script elements in current document
+ * get all script elements in current document.head
  * @return {NodeList}
  */
 function scripts() {
@@ -264,7 +266,7 @@ function scripts() {
  * @return {*}
  */
 function getCurrentScript() {
-  // 去掉document.currentScript的判断, 因为它并不准确.
+  // todo remove document.currentScript, it's not always available.
   // 除了异步的情况, w3c对其值有明确说明, 有时未必是我们想要的特别在
   // CommonJS wrapper的情况下
   return currentAddingScript || document.currentScript ||
@@ -346,7 +348,7 @@ function getCurrentScript() {
 }
 
 /**
- * 跨浏览器解决方案获得script节点的src绝对路径.
+ * Get script abs src cross browsers.
  * @param {HTMLScriptElement} script
  * @return {string}
  */
