@@ -669,6 +669,7 @@ function parsePaths(p) {
 }
 /**
  * @file Module Class
+ * @author AceMood
  * @email zmike86@gmail.com
  */
 
@@ -684,7 +685,7 @@ function parsePaths(p) {
  *                     --status: Module.Status
  */
 function Module(obj) {
-  // user defined id
+  // custom id
   if (obj.id) {
     if (Module._cache[obj.id]) {
       emit(
@@ -753,7 +754,7 @@ Module.prototype.compile = function() {
   }
 
   /**
-   * require has two approaches:
+   * require has two forms:
    * a. var mod = require('widget/a');
    * b. require.async(['widget/a'], function(wid_a) {
    *      wid_a.init();
@@ -940,13 +941,14 @@ Module.define = function(id, factory, entry) {
   // cache in path2id
   recordPath2Id(uri, module.id);
 
-  // start fetch dependencies
+  // entry-point fetch dependencies
   if (entry) {
     module.fetch()
   }
 };
 /**
  * @file Anonymous Module Class represents require.async calls
+ * @author AceMood
  * @email zmike86@gmail.com
  */
 
@@ -1109,7 +1111,7 @@ function resolve(name, baseUri) {
 }
 
 /**
- * Global define|__d function.
+ * Global define function.
  * define(id?, factory);
  * @param {string|function} id module Id or factory function
  * @param {?function=} factory callback function
@@ -1119,8 +1121,8 @@ function define(id, factory) {
 }
 
 /**
- * When a module is ready, means that all the dependencies have been
- * ready and its depsCount should be zero.
+ * When a module is ready, means that all its dependencies have been
+ * loaded and its depsCount should be zero.
  * @param {Module} module
  */
 function ready(module) {
