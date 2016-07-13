@@ -4,16 +4,16 @@
 共同配合完成前端任何项目的构建、打包、部署工作。
 
 # 本地构建
-确保安装了grunt和grunt-cli。项目目录下通过npm install安装所有依赖模块。运行grunt完成代码构建，目标路径dist/。
+确保安装了grunt和grunt-cli。项目目录下通过npm install安装所有依赖模块。运行grunt完成代码构建，目标路径 dist/。
 
 # 测试
-测试用例部分基于RequireJS编写，修改了大部分测试用例，目前保证最小功能子集, 不轻易添加api和插件的实现，
+测试用例部分基于 RequireJS 编写，修改了大部分测试用例，目前保证最小功能子集, 不轻易添加api和插件的实现，
 是因为要尽量做到向后兼容最好从最小子集开始。
 进入tests目录，确保安装了express模块，运行`node server/server.js`，浏览器中打开`http://localhost:4000`看到测试结果。
 最终希望重构成自动化兼容测试，基于karma来做，调起客户机上所有浏览器程序。
 
 # 使用
-前端代码中可以像CommonJS一样写代码，用工具[soi](https://github.com/Saber-Team/soi)打包构建，也可以开发时直接写上模块定义：
+前端代码中可以像 CommonJS 一样写代码，用工具 [soi](https://github.com/Saber-Team/soi) 打包构建，也可以开发时直接写上模块定义：
 
 ```
 define(function(require, exports, module) {
@@ -41,8 +41,8 @@ kernel.js向全局导出两个对象`define|__d`函数用于定义模块。kerne
 * Safari 6.1+
 
 # 一点说明
-基于资源表的工程化方案最早被 Facebook 证明为 **future proof**，后百度团依据己有业务形态产出 FIS 是同样的思路。
-灵活支持普通页面加载、Bigpipe、Quickling、Bigrender等多种实现方式。在工程化方案中，应站在前端架构的角度考虑问题，
+基于资源表的工程化方案最早被 Facebook 证明为 **future proof**，后 Baidu.Inc 团依据己有业务形态产出 FIS 是同样的思路。
+该方案可灵活支持普通页面加载、Bigpipe、Quickling、Bigrender等多种实现方式。在工程化方案中，应站在前端架构的角度考虑问题，
 由整体解决方案决定模块加载器的实现，而不是依赖于模块加载器的实现去构建生态环境。这么说可能有点反模式，可能有人会说已经存在
 的 AMD 和 CMD 规范，加载器应依据于此。从已有经验来讲，自顶向下的方式会构建出更灵活的解决方案，其实在最终的实现上模块定义规范
 的实现很容易。
