@@ -1,6 +1,6 @@
 # kerneljs
-kerneljs是一个符合CommonJS规范的前端模块加载器。目前处于第二版本，测试用例基于AMD官方的测试用例,重构了部分代码的支持，
-不再支持package和paths等配置，而是通过resourceMap配置项提前指定资源表。与工程化工具[soi](https://github.com/Saber-Team/soi)
+**kerneljs** 是一个符合CommonJS规范的前端模块加载器。目前处于第二版本，测试用例基于AMD官方的测试用例，重构了部分代码的支持，
+不再支持package和paths等配置，而是通过 **resourceMap** 配置项提前指定资源表。与工程化工具[soi](https://github.com/Saber-Team/soi)
 共同配合完成前端任何项目的构建、打包、部署工作。
 
 # 本地构建
@@ -14,18 +14,22 @@ kerneljs是一个符合CommonJS规范的前端模块加载器。目前处于第�
 
 # 使用
 前端代码中可以像CommonJS一样写代码，用工具[soi](https://github.com/Saber-Team/soi)打包构建，也可以开发时直接写上模块定义：
+
 ```
 define(function(require, exports, module) {
   var moduleA = require('./A');  
   export.name = 'AceMood' + moduleA.name;
 })
 ```
+
 A模块的代码如下：
+
 ```
 define(function(require, exports) {
   exports.name = 'moduleA';
 });
 ```
+
 kernel.js向全局导出两个对象`define|__d`函数用于定义模块。kerneljs对象用于管理模块加载器，其中`kerneljs.exec`方法同define
 的参数一样，只不过定义的模块在依赖加载完毕后立即执行，通常用作页面（或页面一部分）功能的入口。而`define|__d`函数定义的模块不会被立即执行，
 只有当代码require的时候才会执行模块的代码导出exports对象。
@@ -35,3 +39,10 @@ kernel.js向全局导出两个对象`define|__d`函数用于定义模块。kerne
 * Chrome 1.0+
 * FF 3.5+
 * Safari 6.1+
+
+# 一点说明
+基于资源表的工程化方案最早被 Facebook 证明为 **future proof**，后百度团依据己有业务形态产出 FIS 是同样的思路。
+灵活支持普通页面加载、Bigpipe、Quickling、Bigrender等多种实现方式。在工程化方案中，应站在前端架构的角度考虑问题，
+由整体解决方案决定模块加载器的实现，而不是依赖于模块加载器的实现去构建生态环境。这么说可能有点反模式，可能有人会说已经存在
+的 AMD 和 CMD 规范，加载器应依据于此。从已有经验来讲，自顶向下的方式会构建出更灵活的解决方案，其实在最终的实现上模块定义规范
+的实现很容易。
