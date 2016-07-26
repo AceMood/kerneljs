@@ -1,6 +1,6 @@
 kerneljs.config({
   resourceMap: {
-    JS: {
+    js: {
       'a': {
         uri: '/kerneljs/config_map_css/a1.js',
         deps: ['c/sub'],
@@ -10,7 +10,7 @@ kerneljs.config({
         uri: '/kerneljs/config_map_css/c/sub.js'
       }
     },
-    CSS: {
+    css: {
       'b': {
         uri: '/kerneljs/config_map_css/c/b.css'
       },

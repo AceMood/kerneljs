@@ -896,7 +896,7 @@ Module._cache = {};
  */
 Module.define = function(id, factory, entry) {
   var resourceMap = kernel.data.resourceMap;
-  var inMap = resourceMap && resourceMap.JS[id];
+  var inMap = resourceMap && resourceMap.js[id];
 
   if (typeOf(id) !== 'string') {
     factory = id;
@@ -909,11 +909,11 @@ Module.define = function(id, factory, entry) {
 
   var uri, deps;
   if (inMap) {
-    uri = resourceMap.JS[id].uri;
-    deps = resourceMap.JS[id].deps;
-    if (resourceMap.JS[id].css) {
-      for (var n = 0; n < resourceMap.JS[id].css.length; n++) {
-        deps.push('css:' + resourceMap.JS[id].css[n])
+    uri = resourceMap.js[id].uri;
+    deps = resourceMap.js[id].deps;
+    if (resourceMap.js[id].css) {
+      for (var n = 0; n < resourceMap.js[id].css.length; n++) {
+        deps.push('css:' + resourceMap.js[id].css[n])
       }
     }
   } else {
@@ -1063,8 +1063,8 @@ function buildFetchUri(name, baseUri) {
   }
 
   // already record through build tool
-  if (resourceMap && resourceMap[type.toUpperCase()][name]) {
-    return resourceMap[type.toUpperCase()][name].uri
+  if (resourceMap && resourceMap[type][name]) {
+    return resourceMap[type][name].uri
   } else if (Module._cache[name]) {
     return Module._cache[name].uri
   } else {
@@ -1092,8 +1092,8 @@ function resolve(name, baseUri) {
   var resourceMap = kernel.data.resourceMap;
   var mid, id, uri;
   // already record through build tool
-  if (resourceMap && resourceMap[type.toUpperCase()][name]) {
-    uri = resourceMap[type.toUpperCase()][name].uri;
+  if (resourceMap && resourceMap[type][name]) {
+    uri = resourceMap[type][name].uri;
     id = name;
     if (Module._cache[id]) {
       return Module._cache[id]
