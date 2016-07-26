@@ -1,4 +1,7 @@
 # kerneljs
+
+![sloc stats](./sloc.png "sloc stats")
+
 **kerneljs** 是一个符合 CommonJS 规范的前端模块加载器。目前处于第二版本，测试用例基于AMD官方的测试用例，重构了部分代码的支持，
 不再支持 package 和 paths 等配置，而是通过 **resourceMap** 配置项提前指定资源表。与工程化工具 [soi](https://github.com/Saber-Team/soi) 
 共同配合完成前端项目的构建、打包、部署工作。
